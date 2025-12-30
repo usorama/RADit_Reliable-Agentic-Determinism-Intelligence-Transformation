@@ -1,0 +1,72 @@
+# Deployment Policy Configuration
+# This file defines the policy-as-code deployment gates
+# See Architecture section 05_deployment.md for details
+
+gates:
+  # Gate 1: Code Quality (BLOCKING)
+  # Ensures code meets quality standards before deployment
+  code_quality:
+    enabled: true
+    blocking: true
+    thresholds:
+      coverage_new_code: 80      # New code must have >= 80% test coverage
+      coverage_total: 70         # Total codebase must have >= 70% coverage
+      linting_errors: 0          # Zero linting errors allowed
+      typescript_strict: true    # TypeScript strict mode must be enabled
+
+  # Gate 2: Security (BLOCKING)
+  # Ensures no critical security vulnerabilities
+  security:
+    enabled: true
+    blocking: true
+    thresholds:
+      sast_critical: 0           # Zero critical SAST findings
+      sca_critical: 0            # Zero critical CVEs in dependencies
+      secrets_detected: 0        # Zero secrets in codebase
+
+  # Gate 3: Performance (WARNING)
+  # Monitors performance metrics, warns but doesn't block
+  performance:
+    enabled: true
+    blocking: false
+    thresholds:
+      api_p95_ms: 500            # API p95 latency < 500ms
+      bundle_size_increase_percent: 10  # Bundle size increase < 10%
+
+  # Gate 4: UAT (BLOCKING for prod only)
+  # Validates user acceptance tests pass
+  uat:
+    enabled: true
+    blocking: false              # Warning by default
+    thresholds:
+      p0_pass_rate: 100          # All P0 user journeys must pass
+      visual_regression: 0.1     # Visual regression < 0.1%
+
+# Environment-specific overrides
+environments:
+  # Development environment - relaxed policies
+  development:
+    gates:
+      code_quality:
+        thresholds:
+          coverage_new_code: 60  # Lower threshold for dev
+          coverage_total: 50
+      security:
+        blocking: false          # Don't block in dev
+      uat:
+        enabled: false           # Skip UAT in dev
+
+  # Staging environment - normal policies
+  staging:
+    gates:
+      uat:
+        blocking: false          # Warn but don't block
+
+  # Production environment - strict policies
+  production:
+    gates:
+      uat:
+        blocking: true           # UAT failures block production
+      performance:
+        thresholds:
+          api_p95_ms: 300        # Stricter latency for prod

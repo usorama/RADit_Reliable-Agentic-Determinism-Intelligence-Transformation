@@ -1,8 +1,8 @@
 # Project Progress Dashboard
 
 **Project**: RADit / DAW (Deterministic Agentic Workbench)
-**Last Updated**: 2025-12-31T02:30:00Z
-**Current Phase**: Wave 6 - Multi-Model Validation Ensemble Complete
+**Last Updated**: 2025-12-30T12:30:00Z
+**Current Phase**: Wave 7 - WebSocket Streaming Infrastructure Complete
 
 ---
 
@@ -11,9 +11,9 @@
 | Metric | Value | Target |
 |--------|-------|--------|
 | Tasks Defined | 52 | 52 |
-| Tasks Completed | 20 | 52 |
-| Current Wave | 6 (Planner & Security) | 10 |
-| Progress | 38% | 100% |
+| Tasks Completed | 21 | 52 |
+| Current Wave | 7 (UAT & Eval) | 10 |
+| Progress | 40% | 100% |
 | Blockers | 0 | 0 |
 
 ---
@@ -28,8 +28,8 @@
 | Phase 3 | Core Agent Infrastructure | 4 | Complete (4/4) |
 | Phase 4 | Planner Agent | 5 | In Progress (3/5) |
 | Phase 5 | Executor Agent | 3 | In Progress (1/3) |
-| Phase 6 | Validator & Quality | 4 | In Progress (2/4) |
-| Phase 7 | UAT & Eval | 15 | Pending |
+| Phase 6 | Validator & Quality | 4 | In Progress (3/4) |
+| Phase 7 | UAT & Eval | 15 | In Progress (1/15) |
 | Phase 8 | Observability & Operations | 5 | Pending |
 
 > **New (2025-12-31)**: Added 2 self-evolution tasks (EVOLVE-001, EVOLVE-002) for learning foundation. Epic 11 added to epics_stories.md.
@@ -48,6 +48,8 @@
 
 | Task ID | Description | Completed | Duration |
 |---------|-------------|-----------|----------|
+| POLICY-001 | Implement Policy-as-Code Deployment Gates | 2025-12-30 04:00 | 0.5h |
+| STREAMING-001 | Implement WebSocket Streaming Infrastructure | 2025-12-30 12:30 | 0.5h |
 | VALIDATOR-002 | Implement Multi-Model Validation Ensemble | 2025-12-31 02:30 | 0.5h |
 | EXECUTOR-001 | Implement Developer Agent Workflow (Critical Path) | 2025-12-30 23:15 | 0.75h |
 | MCP-SEC-001 | Implement MCP Gateway Authorization (OAuth 2.1 + RFC 8707) | 2025-12-31 01:00 | 0.5h |

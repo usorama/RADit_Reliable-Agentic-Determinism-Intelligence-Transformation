@@ -21,6 +21,8 @@ pyjwt = "^2.10.1"
 cryptography = "^46.0.3"
 e2b = "^2.9.0"
 tiktoken = "^0.12.0"
+celery = "^5.6.1"
+pyyaml = "^6.0.3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.2"
@@ -29,6 +31,8 @@ pytest-cov = "^7.0.0"
 mypy = "^1.19.1"
 ruff = "^0.14.10"
 httpx = "^0.28.1"
+types-pyyaml = "^6.0.12.20250915"
+celery-types = "^0.24.0"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
@@ -54,6 +58,10 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 warn_no_return = true
 strict_equality = true
+
+[[tool.mypy.overrides]]
+module = ["celery.*", "kombu.*"]
+ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 100

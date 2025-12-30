@@ -249,7 +249,10 @@
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/mcp/test_rbac.py"
-    }
+    },
+    "status": "completed",
+    "started_at": "2025-12-30T03:30:00Z",
+    "completed_at": "2025-12-30T04:00:00Z"
   },
   {
     "id": "MCP-SEC-003",
@@ -479,7 +482,9 @@
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/agents/planner/test_task_decomposer.py"
-    }
+    },
+    "status": "in_progress",
+    "started_at": "2025-12-30T13:48:12.154750Z"
   },
   {
     "id": "PRD-OUTPUT-001",
@@ -498,7 +503,9 @@
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/agents/planner/test_prd_generator.py"
-    }
+    },
+    "status": "in_progress",
+    "started_at": "2025-12-30T10:00:00Z"
   },
   {
     "id": "EXECUTOR-001",
@@ -542,7 +549,9 @@
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/agents/healer/test_graph.py"
-    }
+    },
+    "status": "in_progress",
+    "started_at": "2025-12-30T03:00:00Z"
   },
   {
     "id": "RULES-001",
@@ -561,7 +570,9 @@
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/workflow/test_rule_enforcer.py"
-    }
+    },
+    "status": "in_progress",
+    "started_at": "2025-12-30T12:00:00Z"
   },
   {
     "id": "VALIDATOR-001",
@@ -628,7 +639,10 @@
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/deploy/test_gates.py"
-    }
+    },
+    "status": "completed",
+    "started_at": "2025-12-30T03:30:00Z",
+    "completed_at": "2025-12-30T04:00:00Z"
   },
   {
     "id": "POLICY-002",
@@ -688,7 +702,10 @@
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/api/test_websocket.py"
-    }
+    },
+    "status": "completed",
+    "started_at": "2025-12-30T12:00:00Z",
+    "completed_at": "2025-12-30T12:30:00Z"
   },
   {
     "id": "FRONTEND-AUTH-001",
@@ -905,7 +922,10 @@
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/ops/test_drift_detector.py"
-    }
+    },
+    "status": "completed",
+    "started_at": "2025-12-30T13:49:02.510363Z",
+    "completed_at": "2025-12-30T13:55:55.579286Z"
   },
   {
     "id": "DRIFT-002",
@@ -966,7 +986,10 @@
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/evolution/test_experience_logger.py"
-    }
+    },
+    "status": "completed",
+    "started_at": "2025-12-30T12:00:00Z",
+    "completed_at": "2025-12-30T14:00:00Z"
   },
   {
     "id": "EVOLVE-002",
