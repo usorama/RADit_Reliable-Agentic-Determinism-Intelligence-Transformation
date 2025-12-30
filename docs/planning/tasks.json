@@ -1206,5 +1206,347 @@
     },
     "status": "completed",
     "completed_at": "2025-12-30T22:15:00Z"
+  },
+  {
+    "id": "INTERACT-001",
+    "type": "code",
+    "priority": "P0",
+    "phase": 10,
+    "epic": "Epic 13: User Interaction",
+    "description": "Interview Response Collection - Enable users to answer Planner clarifying questions",
+    "dependencies": [],
+    "context_files": [
+      "packages/daw-agents/src/daw_agents/agents/planner/taskmaster.py",
+      "apps/server/src/daw_server/api/routes.py",
+      "apps/web/src/components/plan/ClarificationFlow.tsx"
+    ],
+    "instruction": "Implement bidirectional interview flow: (1) Backend: Stream interview questions to UI via WebSocket, (2) New endpoint POST /api/workflow/{id}/interview-answer for user responses, (3) Update _interview_node in Taskmaster to pause and wait for user input (async), (4) Interview loop continues until user says 'proceed' or AI has no more questions, (5) Frontend: ClarificationFlow.tsx component displays questions with answer inputs, (6) Support text, multi-choice, and checkbox question types, (7) Progress indicator showing 'Question 2 of 4', (8) 'Skip remaining questions' option with warning, (9) User answers stored in workflow state for Roundtable access.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/agents/planner/test_interview_loop.py && pnpm --filter @daw/web test"
+    },
+    "status": "pending"
+  },
+  {
+    "id": "INTERACT-002",
+    "type": "code",
+    "priority": "P0",
+    "phase": 10,
+    "epic": "Epic 13: User Interaction",
+    "description": "PRD Presentation and Display - Show generated PRD in structured format",
+    "dependencies": ["INTERACT-001"],
+    "context_files": [
+      "apps/web/src/components/plan/PlanPresentation.tsx",
+      "apps/web/src/types/prd.ts"
+    ],
+    "instruction": "Create PRD display component: (1) PlanPresentation.tsx with structured sections: Overview, User Stories, Tech Specs, Acceptance Criteria, NFRs, Architecture, (2) Expandable/collapsible sections, (3) Roundtable persona feedback displayed (CTO, UX, Security critiques), (4) Complexity scores visualized (heat map or badges), (5) Syntax highlighting for code snippets, (6) Print/Export to PDF button, (7) Backend: PRD data structure includes display metadata, (8) WCAG 2.1 AA accessibility, screen reader compatible.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pnpm --filter @daw/web test && pnpm --filter @daw/web build"
+    },
+    "status": "pending"
+  },
+  {
+    "id": "INTERACT-003",
+    "type": "code",
+    "priority": "P0",
+    "phase": 10,
+    "epic": "Epic 13: User Interaction",
+    "description": "PRD Approval Gate - Enable user approval/rejection/modification of PRD",
+    "dependencies": ["INTERACT-002"],
+    "context_files": [
+      "apps/server/src/daw_server/api/routes.py",
+      "packages/daw-agents/src/daw_agents/workflow/orchestrator.py",
+      "apps/web/src/components/plan/ApprovalGate.tsx"
+    ],
+    "instruction": "Implement PRD approval gate: (1) Backend: New workflow status AWAITING_PRD_APPROVAL, (2) Orchestrator pauses after PRD generation, sets status, (3) New endpoint POST /api/workflow/{id}/prd-review with actions: approve (proceed to tasks), reject (return to interview), modify (regenerate), (4) Frontend: ApprovalGate.tsx with three action buttons, (5) Comment textarea for rejection reason, (6) Modifications form for inline edits, (7) Confirmation modal before approve/reject, (8) WebSocket streams status change when approval needed, (9) Audit: Approval actions logged with timestamp and user.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/workflow/test_prd_approval.py"
+    },
+    "status": "pending"
+  },
+  {
+    "id": "INTERACT-004",
+    "type": "code",
+    "priority": "P0",
+    "phase": 10,
+    "epic": "Epic 13: User Interaction",
+    "description": "Task List Review and Approval - Enable user review of decomposed tasks before execution",
+    "dependencies": ["INTERACT-003"],
+    "context_files": [
+      "apps/server/src/daw_server/api/routes.py",
+      "apps/web/src/components/plan/TaskList.tsx",
+      "apps/web/src/components/plan/TaskCard.tsx"
+    ],
+    "instruction": "Implement task review gate: (1) Backend: New workflow status AWAITING_TASK_APPROVAL, (2) Orchestrator pauses after task decomposition, (3) New endpoint POST /api/workflow/{id}/tasks-review with actions: approve (proceed), reorder, remove, modify, (4) Frontend: TaskList.tsx with hierarchical display (Phase → Story → Task), (5) Dependency arrows or badges, (6) Complexity/effort badges per task, (7) Checkbox to remove tasks, inline edit for descriptions, (8) 'Approve and Begin Execution' prominent button, (9) Dependency recalculation when tasks removed.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/workflow/test_task_approval.py && pnpm --filter @daw/web test"
+    },
+    "status": "pending"
+  },
+  {
+    "id": "INTERACT-005",
+    "type": "code",
+    "priority": "P1",
+    "phase": 10,
+    "epic": "Epic 13: User Interaction",
+    "description": "Research Display and Evidence - Show research findings that informed PRD",
+    "dependencies": ["INTERACT-002"],
+    "context_files": [
+      "apps/web/src/components/plan/ResearchDisplay.tsx"
+    ],
+    "instruction": "Create research display component: (1) ResearchDisplay.tsx with tabbed interface: Requirements Analysis, Architecture Recommendations, Competitive Analysis, Risk Assessment, Technology Recommendations, (2) Source citations with links, (3) Confidence scores for recommendations, (4) Backend: Research phase captures structured findings attached to workflow state.",
+    "verification": {
+      "type": "file_exists",
+      "path": "apps/web/src/components/plan/ResearchDisplay.tsx"
+    },
+    "status": "pending"
+  },
+  {
+    "id": "INTERACT-006",
+    "type": "code",
+    "priority": "P1",
+    "phase": 10,
+    "epic": "Epic 13: User Interaction",
+    "description": "Complexity Analysis Visualization - Display complexity analysis before commitment",
+    "dependencies": ["INTERACT-002", "COMPLEXITY-001"],
+    "context_files": [
+      "apps/web/src/components/plan/ComplexityAnalysis.tsx"
+    ],
+    "instruction": "Create complexity visualization: (1) ComplexityAnalysis.tsx component, (2) Cognitive load scores visualized (1-10 scale bars), (3) Dependency graph with risk coloring (low=green, high=red), (4) Recommended model tier per task (info tooltip), (5) Bottleneck warnings highlighted, (6) Overall risk assessment summary, (7) Backend: COMPLEXITY-001 output surfaced to API.",
+    "verification": {
+      "type": "file_exists",
+      "path": "apps/web/src/components/plan/ComplexityAnalysis.tsx"
+    },
+    "status": "pending"
+  },
+  {
+    "id": "INTERACT-007",
+    "type": "code",
+    "priority": "P1",
+    "phase": 10,
+    "epic": "Epic 13: User Interaction",
+    "description": "Web Research MCP Integration - Enable Planner to perform web research",
+    "dependencies": ["CORE-003"],
+    "context_files": [
+      "packages/daw-mcp/src/daw_mcp/web_research/server.py",
+      "packages/daw-agents/src/daw_agents/mcp/rbac.py"
+    ],
+    "instruction": "Implement web research capability: (1) WebSearchMCPServer in packages/daw-mcp with tools: web_search, fetch_page, summarize_url, (2) Rate limiting and caching, (3) Integration with search API (SerpAPI, Brave, or similar), (4) DocumentationLookupMCPServer with tools: lookup_library_docs, get_api_reference, (5) Integration with Context7 or similar, (6) RBAC policy updated to grant Planner access, (7) Research findings stored in workflow state.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-mcp/tests/web_research/test_server.py"
+    },
+    "status": "pending"
+  },
+  {
+    "id": "INTERACT-008",
+    "type": "code",
+    "priority": "P1",
+    "phase": 10,
+    "epic": "Epic 13: User Interaction",
+    "description": "Iterative Planning Refinement - Enable multiple planning iterations",
+    "dependencies": ["INTERACT-003"],
+    "context_files": [
+      "packages/daw-agents/src/daw_agents/workflow/orchestrator.py",
+      "apps/web/src/components/plan/VersionSelector.tsx"
+    ],
+    "instruction": "Implement iterative refinement: (1) Backend: Support for 'back to interview' from any planning phase, (2) State preservation when returning to earlier phases, (3) Version history of PRD iterations, (4) Frontend: 'Refine Further' button at each approval gate, (5) Version selector to compare PRD iterations, (6) Diff view showing changes between versions.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/workflow/test_iteration.py"
+    },
+    "status": "pending"
+  },
+  {
+    "id": "INTERACT-009",
+    "type": "code",
+    "priority": "P2",
+    "phase": 11,
+    "epic": "Epic 13: User Interaction",
+    "description": "Workflow Progress Dashboard - Visual workflow state machine",
+    "dependencies": ["INTERACT-001", "INTERACT-002", "INTERACT-003", "INTERACT-004"],
+    "context_files": [
+      "apps/web/src/components/plan/WorkflowDashboard.tsx"
+    ],
+    "instruction": "Create workflow dashboard: (1) WorkflowDashboard.tsx with visual state machine (Interview → Roundtable → PRD → Tasks → Execution → Validation → Deploy), (2) Current phase highlighted, (3) Phase descriptions on hover, (4) Time spent in each phase, (5) Phase-specific success criteria checklist.",
+    "verification": {
+      "type": "file_exists",
+      "path": "apps/web/src/components/plan/WorkflowDashboard.tsx"
+    },
+    "status": "pending"
+  },
+  {
+    "id": "INTERACT-010",
+    "type": "code",
+    "priority": "P2",
+    "phase": 11,
+    "epic": "Epic 13: User Interaction",
+    "description": "Inline PRD Editing - Direct PRD modification in UI",
+    "dependencies": ["INTERACT-002", "INTERACT-003"],
+    "context_files": [
+      "apps/web/src/components/plan/PRDEditor.tsx"
+    ],
+    "instruction": "Implement inline editing: (1) Inline markdown editor for PRD sections, (2) Real-time preview of changes, (3) Backend endpoint to save PRD modifications, (4) Re-validation of modified PRD, (5) 'Save Changes' and 'Discard' buttons.",
+    "verification": {
+      "type": "file_exists",
+      "path": "apps/web/src/components/plan/PRDEditor.tsx"
+    },
+    "status": "pending"
+  },
+  {
+    "id": "INTERACT-011",
+    "type": "code",
+    "priority": "P2",
+    "phase": 11,
+    "epic": "Epic 13: User Interaction",
+    "description": "Real-time Persona Collaboration Indicators - Show which AI persona is speaking",
+    "dependencies": ["INTERACT-002"],
+    "context_files": [
+      "apps/web/src/components/plan/PersonaIndicator.tsx"
+    ],
+    "instruction": "Implement persona indicators: (1) Persona avatars with 'speaking' animation, (2) Persona name badge on each message, (3) Backend: WebSocket events include persona_id, (4) 'Planner is thinking...', 'CTO is reviewing...' messages.",
+    "verification": {
+      "type": "file_exists",
+      "path": "apps/web/src/components/plan/PersonaIndicator.tsx"
+    },
+    "status": "pending"
+  },
+  {
+    "id": "INTERACT-012",
+    "type": "code",
+    "priority": "P2",
+    "phase": 11,
+    "epic": "Epic 13: User Interaction",
+    "description": "Dependency Resolver MCP Server - Check package dependencies and versions",
+    "dependencies": ["INTERACT-007"],
+    "context_files": [
+      "packages/daw-mcp/src/daw_mcp/dependency_resolver/server.py"
+    ],
+    "instruction": "Implement dependency resolver: (1) DependencyResolverMCPServer with tools: check_package_version, find_conflicts, get_latest_version, (2) Support for npm, PyPI, Cargo registries, (3) Caching for frequent lookups.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-mcp/tests/dependency_resolver/test_server.py"
+    },
+    "status": "pending"
+  },
+  {
+    "id": "INTEG-001",
+    "type": "test",
+    "priority": "P0",
+    "phase": 12,
+    "epic": "Epic 14: Real-World Integration Testing",
+    "description": "E2B Sandbox Real Connection Tests - Actual E2B API calls",
+    "dependencies": [],
+    "context_files": [
+      "packages/daw-agents/src/daw_agents/sandbox/e2b.py",
+      "tests/integration/test_e2b_real.py"
+    ],
+    "instruction": "Create integration tests with REAL E2B connections: (1) Create tests/integration/ directory, (2) Add @pytest.mark.integration and @pytest.mark.slow markers to pytest.ini, (3) Load E2B API key from .creds/e2b_api_key.txt, (4) Test real command execution in E2B sandbox, (5) Test real file operations, (6) Test sandbox lifecycle (start/stop), (7) NO MOCKS - actual E2B API calls. Tests should be excluded from default pytest runs.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/integration/test_e2b_real.py -m 'integration' -v"
+    },
+    "estimated_hours": 3,
+    "status": "pending"
+  },
+  {
+    "id": "INTEG-002",
+    "type": "test",
+    "priority": "P0",
+    "phase": 12,
+    "epic": "Epic 14: Real-World Integration Testing",
+    "description": "Neo4j VPS Real Connection Tests - Hostinger VPS integration",
+    "dependencies": [],
+    "context_files": [
+      "packages/daw-agents/src/daw_agents/memory/neo4j.py",
+      "tests/integration/test_neo4j_real.py"
+    ],
+    "instruction": "Create integration tests with REAL Neo4j on Hostinger VPS: (1) Connect to bolt://72.60.204.156:7687, (2) Load credentials from .creds/neo4j_vps.txt, (3) Test create_node with real data, (4) Test query with real Cypher, (5) Test create_relationship, (6) Test Experience Logger integration, (7) Cleanup test data after each test (no pollution), (8) NO MOCKS - actual Neo4j calls.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/integration/test_neo4j_real.py -m 'integration' -v"
+    },
+    "estimated_hours": 3,
+    "status": "pending"
+  },
+  {
+    "id": "INTEG-003",
+    "type": "test",
+    "priority": "P0",
+    "phase": 12,
+    "epic": "Epic 14: Real-World Integration Testing",
+    "description": "E2B → Neo4j End-to-End Test - Full round-trip validation",
+    "dependencies": ["INTEG-001", "INTEG-002"],
+    "context_files": [
+      "tests/integration/test_e2b_neo4j_e2e.py"
+    ],
+    "instruction": "Create E2E test validating E2B can communicate with Neo4j VPS: (1) Start real E2B sandbox, (2) Write Python script inside sandbox that connects to Neo4j VPS (bolt://72.60.204.156:7687), (3) Script creates test node in Neo4j, (4) Verify node exists by querying Neo4j directly from test, (5) Cleanup test data, (6) This validates network connectivity from E2B cloud to Hostinger VPS.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/integration/test_e2b_neo4j_e2e.py -m 'integration' -v"
+    },
+    "estimated_hours": 4,
+    "status": "pending"
+  },
+  {
+    "id": "FUNC-001",
+    "type": "test",
+    "priority": "P0",
+    "phase": 13,
+    "epic": "Epic 14: Real-World Integration Testing",
+    "description": "Dogfood Test - Build Calculator with DAW",
+    "dependencies": ["ORCHESTRATOR-001", "INTEG-003"],
+    "context_files": [
+      "tests/functional/test_dogfood_calculator.py",
+      "eval/benchmarks/calculator/"
+    ],
+    "instruction": "Create functional test that uses DAW to build a calculator: (1) Submit PRD 'Build a calculator with add, subtract, multiply, divide', (2) Invoke Planner Agent to decompose tasks, (3) Invoke Executor Agent to generate code, (4) Invoke Validator Agent to run tests, (5) Verify generated calculator actually works (2+2=4), (6) Full agent pipeline validation, (7) Store results in eval_results/. This is the 'dogfood' test from test strategy.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/functional/test_dogfood_calculator.py -v"
+    },
+    "estimated_hours": 6,
+    "status": "pending"
+  },
+  {
+    "id": "FUNC-002",
+    "type": "test",
+    "priority": "P1",
+    "phase": 13,
+    "epic": "Epic 14: Real-World Integration Testing",
+    "description": "Dogfood Test - Build Settings Page with DAW",
+    "dependencies": ["FUNC-001", "FRONTEND-002"],
+    "context_files": [
+      "tests/functional/test_dogfood_settings.py"
+    ],
+    "instruction": "Create functional test that uses DAW to build a settings page FOR DAW itself: (1) Submit PRD 'Add settings page to DAW dashboard with theme toggle', (2) Planner generates frontend tasks (React/TypeScript), (3) Executor generates component code, (4) Validator verifies component compiles and tests pass, (5) Generated component should integrate with existing dashboard, (6) Visual regression test for new component.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/functional/test_dogfood_settings.py -v"
+    },
+    "estimated_hours": 8,
+    "status": "pending"
+  },
+  {
+    "id": "FUNC-003",
+    "type": "infra",
+    "priority": "P0",
+    "phase": 12,
+    "epic": "Epic 14: Real-World Integration Testing",
+    "description": "Nightly Integration CI Workflow - Automated regression with real services",
+    "dependencies": ["INTEG-001", "INTEG-002"],
+    "context_files": [
+      ".github/workflows/integration-nightly.yml"
+    ],
+    "instruction": "Create GitHub Actions workflow for nightly integration tests: (1) Runs at 3 AM UTC daily, (2) Uses real E2B API key from secrets, (3) Connects to real Neo4j VPS, (4) Runs all @pytest.mark.integration tests, (5) Stores results in eval_results/, (6) Compares against baseline for regression detection, (7) Sends Slack notification on failure, (8) Does NOT run on PR (too expensive/slow).",
+    "verification": {
+      "type": "file_exists",
+      "path": ".github/workflows/integration-nightly.yml"
+    },
+    "estimated_hours": 4,
+    "status": "pending"
   }
 ]
