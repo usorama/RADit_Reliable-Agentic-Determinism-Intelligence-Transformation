@@ -47,6 +47,7 @@ markers = [
     "prompt_regression: marks tests as prompt regression tests (run with '-m prompt_regression')",
     "integration: marks tests as integration tests (require real services)",
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "functional: marks tests as functional/dogfood tests (run with '-m functional')",
 ]
 
 [tool.mypy]
