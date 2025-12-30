@@ -1,0 +1,88 @@
+# RBAC Policies for MCP Tools
+# Per PRD FR-01.3.2: Fine-grained Role-Based Access Control
+#
+# Role Permissions:
+# - Planner: search, read_file, query_db (SELECT) - No writes
+# - Executor: read_file, write_file, git_commit - write_file scoped to project directory
+# - Validator: run_tests, security_scan, lint - No file writes
+# - Healer: read_file, write_file (patches only) - Requires human approval for production
+#
+# Version: 1.0.0
+# Last Updated: 2025-12-30
+
+roles:
+  # Planner Role - Read-only access for planning and research
+  planner:
+    description: "Read-only access for planning, research, and analysis tasks"
+    permissions:
+      - tool: search
+        actions:
+          - search
+        description: "Search codebase and documentation"
+
+      - tool: read_file
+        actions:
+          - read
+        description: "Read source files for analysis"
+
+      - tool: query_db
+        actions:
+          - SELECT
+        description: "Execute read-only database queries"
+
+  # Executor Role - Write access scoped to project directory
+  executor:
+    description: "Development agent with write access scoped to project"
+    permissions:
+      - tool: read_file
+        actions:
+          - read
+        description: "Read source files"
+
+      - tool: write_file
+        actions:
+          - write
+        scope: "{project_root}"
+        description: "Write files within project directory only"
+
+      - tool: git_commit
+        actions:
+          - commit
+        description: "Create git commits"
+
+  # Validator Role - Testing and scanning, no write access
+  validator:
+    description: "Quality assurance agent with test and scan permissions only"
+    permissions:
+      - tool: run_tests
+        actions:
+          - run
+        description: "Execute test suites"
+
+      - tool: security_scan
+        actions:
+          - scan
+        description: "Run security scans (SAST/SCA)"
+
+      - tool: lint
+        actions:
+          - run
+        description: "Run code linters"
+
+  # Healer Role - Patch-only writes with approval in production
+  healer:
+    description: "Remediation agent with patch-only write access"
+    permissions:
+      - tool: read_file
+        actions:
+          - read
+        description: "Read source files for diagnosis"
+
+      - tool: write_file
+        actions:
+          - write
+        scope: "patches"
+        conditions:
+          requires_approval_in:
+            - production
+        description: "Write patch files only, requires approval in production"

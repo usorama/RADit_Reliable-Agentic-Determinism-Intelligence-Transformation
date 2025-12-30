@@ -1,8 +1,8 @@
 # Project Progress Dashboard
 
 **Project**: RADit / DAW (Deterministic Agentic Workbench)
-**Last Updated**: 2025-12-30T12:30:00Z
-**Current Phase**: Wave 7 - WebSocket Streaming Infrastructure Complete
+**Last Updated**: 2025-12-30T04:00:00Z
+**Current Phase**: Wave 7 - MCP Security Complete
 
 ---
 
@@ -11,9 +11,9 @@
 | Metric | Value | Target |
 |--------|-------|--------|
 | Tasks Defined | 52 | 52 |
-| Tasks Completed | 21 | 52 |
+| Tasks Completed | 22 | 52 |
 | Current Wave | 7 (UAT & Eval) | 10 |
-| Progress | 40% | 100% |
+| Progress | 42% | 100% |
 | Blockers | 0 | 0 |
 
 ---
@@ -24,7 +24,7 @@
 |-------|-------------|-------|--------|
 | Phase 0 | Infrastructure Setup | 4 | Complete |
 | Phase 1 | Core Foundations | 6 | Complete (6/6) |
-| Phase 2 | Security & Governance | 6 | In Progress (1/6) |
+| Phase 2 | Security & Governance | 6 | In Progress (2/6) |
 | Phase 3 | Core Agent Infrastructure | 4 | Complete (4/4) |
 | Phase 4 | Planner Agent | 5 | In Progress (3/5) |
 | Phase 5 | Executor Agent | 3 | In Progress (1/3) |
@@ -48,6 +48,7 @@
 
 | Task ID | Description | Completed | Duration |
 |---------|-------------|-----------|----------|
+| MCP-SEC-002 | Implement RBAC for MCP Tools | 2025-12-30 04:00 | 0.5h |
 | POLICY-001 | Implement Policy-as-Code Deployment Gates | 2025-12-30 04:00 | 0.5h |
 | STREAMING-001 | Implement WebSocket Streaming Infrastructure | 2025-12-30 12:30 | 0.5h |
 | VALIDATOR-002 | Implement Multi-Model Validation Ensemble | 2025-12-31 02:30 | 0.5h |
