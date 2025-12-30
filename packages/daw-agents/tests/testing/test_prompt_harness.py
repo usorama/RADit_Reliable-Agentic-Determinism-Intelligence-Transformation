@@ -591,12 +591,14 @@ class TestRunPromptTest:
         mock_embedding_provider: MagicMock,
     ) -> None:
         """Test running a prompt test that fails due to low similarity."""
-        # Mock low similarity
+        # Create orthogonal vectors for very low cosine similarity
+        # Vector 1: [1, 1, 1, ...] - all positive
+        # Vector 2: [1, -1, 1, -1, ...] - alternating (orthogonal to vector 1)
+        expected_embedding = [1.0] * 1536
+        actual_embedding = [(1.0 if i % 2 == 0 else -1.0) for i in range(1536)]
+
         mock_embedding_provider.get_embedding = AsyncMock(
-            side_effect=[
-                [0.1] * 1536,  # Expected output embedding
-                [0.9] * 1536,  # Actual output embedding (very different)
-            ]
+            side_effect=[expected_embedding, actual_embedding]
         )
 
         result = await prompt_harness.run_prompt_test(
@@ -604,7 +606,7 @@ class TestRunPromptTest:
             config=PromptTestConfig(similarity_threshold=0.9),
         )
 
-        # Should fail due to low similarity
+        # Should fail due to low similarity (orthogonal vectors have ~0 similarity)
         assert result.similarity_score < 0.9
 
     @pytest.mark.asyncio
