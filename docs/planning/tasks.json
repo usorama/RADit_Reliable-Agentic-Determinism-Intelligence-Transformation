@@ -1450,7 +1450,8 @@
       "command": "pytest tests/integration/test_e2b_real.py -m 'integration' -v"
     },
     "estimated_hours": 3,
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2025-12-30T23:00:00Z"
   },
   {
     "id": "INTEG-002",
@@ -1470,7 +1471,8 @@
       "command": "pytest tests/integration/test_neo4j_real.py -m 'integration' -v"
     },
     "estimated_hours": 3,
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2025-12-30T23:00:00Z"
   },
   {
     "id": "INTEG-003",
@@ -1489,7 +1491,8 @@
       "command": "pytest tests/integration/test_e2b_neo4j_e2e.py -m 'integration' -v"
     },
     "estimated_hours": 4,
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2025-12-30T23:15:00Z"
   },
   {
     "id": "FUNC-001",
@@ -1547,6 +1550,507 @@
       "path": ".github/workflows/integration-nightly.yml"
     },
     "estimated_hours": 4,
+    "status": "completed",
+    "completed_at": "2025-12-30T23:15:00Z"
+  },
+  {
+    "id": "KANBAN-001",
+    "type": "code",
+    "priority": "P0",
+    "phase": 14,
+    "epic": "Epic 15: Kanban Board & Real-Time Visualization",
+    "scope": "MVP",
+    "description": "Core Kanban Board Component - Task visualization with column-based workflow",
+    "dependencies": ["STREAMING-001", "FRONTEND-001"],
+    "context_files": [
+      "apps/web/src/components/kanban/KanbanBoard.tsx",
+      "apps/web/src/components/kanban/TaskCard.tsx",
+      "apps/web/src/components/kanban/ColumnHeader.tsx"
+    ],
+    "instruction": "Implement Kanban board: (1) KanbanBoard.tsx with 6 columns: Backlog, Planning, Coding, Validating, Deploying, Done, (2) TaskCard.tsx with ID, description, status, assignee, (3) Real-time updates via WebSocket subscription, (4) Column task counts, (5) GET /api/workflow/{id}/kanban endpoint, (6) PATCH /api/workflow/{id}/kanban/{taskId} for moves, (7) Two-way sync: UI <-> tasks.json, (8) Unit tests for board state.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pnpm --filter @daw/web test -- --grep 'KanbanBoard'"
+    },
+    "estimated_hours": 12,
+    "status": "pending"
+  },
+  {
+    "id": "KANBAN-002",
+    "type": "code",
+    "priority": "P0",
+    "phase": 14,
+    "epic": "Epic 15: Kanban Board & Real-Time Visualization",
+    "scope": "MVP",
+    "description": "Task Card Details Panel - Expandable task information view",
+    "dependencies": ["KANBAN-001"],
+    "context_files": [
+      "apps/web/src/components/kanban/TaskDetailPanel.tsx"
+    ],
+    "instruction": "Implement task detail panel: (1) TaskDetailPanel.tsx slide-out panel, (2) Shows description, dependencies, assigned agent, artifacts, (3) Activity timeline with status changes and commits, (4) Link to agent trace view, (5) Unit tests for panel rendering.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pnpm --filter @daw/web test -- --grep 'TaskDetailPanel'"
+    },
+    "estimated_hours": 6,
+    "status": "pending"
+  },
+  {
+    "id": "KANBAN-003",
+    "type": "code",
+    "priority": "P0",
+    "phase": 14,
+    "epic": "Epic 15: Kanban Board & Real-Time Visualization",
+    "scope": "MVP",
+    "description": "Live Status Streaming to Kanban - Real-time WebSocket updates",
+    "dependencies": ["KANBAN-001", "STREAMING-001"],
+    "context_files": [
+      "apps/web/src/hooks/useKanban.ts",
+      "packages/daw-agents/src/daw_agents/api/websocket.py"
+    ],
+    "instruction": "Implement live streaming: (1) useKanban hook with WebSocket subscription, (2) Backend emits kanban_update events on task status change, (3) Optimistic updates with rollback on failure, (4) Connection status indicator, (5) Auto-reconnect on disconnect, (6) WebSocket event handling tests.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pnpm --filter @daw/web test -- --grep 'useKanban'"
+    },
+    "estimated_hours": 6,
+    "status": "pending"
+  },
+  {
+    "id": "KANBAN-004",
+    "type": "code",
+    "priority": "P1",
+    "phase": 15,
+    "epic": "Epic 15: Kanban Board & Real-Time Visualization",
+    "scope": "Production",
+    "description": "Drag-and-Drop Task Prioritization - Manual task reordering",
+    "dependencies": ["KANBAN-001"],
+    "context_files": [
+      "apps/web/src/components/kanban/DraggableCard.tsx"
+    ],
+    "instruction": "Implement drag-drop: (1) @dnd-kit integration, (2) Visual feedback during drag, (3) Priority update endpoint, (4) Dependency validation (can't move before dependencies), (5) Orchestrator respects user priority ordering.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pnpm --filter @daw/web test -- --grep 'Draggable'"
+    },
+    "estimated_hours": 8,
+    "status": "pending"
+  },
+  {
+    "id": "KANBAN-005",
+    "type": "code",
+    "priority": "P1",
+    "phase": 15,
+    "epic": "Epic 15: Kanban Board & Real-Time Visualization",
+    "scope": "Production",
+    "description": "Agent Assignment Display - Show which agent is working on tasks",
+    "dependencies": ["KANBAN-001"],
+    "context_files": [
+      "apps/web/src/components/kanban/AgentAvatar.tsx"
+    ],
+    "instruction": "Implement agent display: (1) Agent avatar on task cards, (2) Agent status indicator (working, idle, error), (3) Click avatar -> agent detail popover, (4) Backend: agent assignment tracking.",
+    "verification": {
+      "type": "file_exists",
+      "path": "apps/web/src/components/kanban/AgentAvatar.tsx"
+    },
+    "estimated_hours": 5,
+    "status": "pending"
+  },
+  {
+    "id": "KANBAN-006",
+    "type": "code",
+    "priority": "P1",
+    "phase": 15,
+    "epic": "Epic 15: Kanban Board & Real-Time Visualization",
+    "scope": "Production",
+    "description": "Metrics Dashboard - Workflow analytics and cost tracking",
+    "dependencies": ["KANBAN-001"],
+    "context_files": [
+      "apps/web/src/components/dashboard/MetricsDashboard.tsx"
+    ],
+    "instruction": "Implement metrics: (1) MetricsDashboard.tsx component, (2) Tasks completed, avg time per task, error rate, (3) Token usage, cost accumulation, (4) Model distribution charts, (5) Progress over time visualization.",
+    "verification": {
+      "type": "file_exists",
+      "path": "apps/web/src/components/dashboard/MetricsDashboard.tsx"
+    },
+    "estimated_hours": 8,
+    "status": "pending"
+  },
+  {
+    "id": "KANBAN-007",
+    "type": "code",
+    "priority": "P2",
+    "phase": 16,
+    "epic": "Epic 15: Kanban Board & Real-Time Visualization",
+    "scope": "Future",
+    "description": "Multi-Workflow Board - View multiple workflows on single board",
+    "dependencies": ["KANBAN-001"],
+    "context_files": [],
+    "instruction": "Implement multi-workflow view: (1) Workflow selector dropdown, (2) Split view option, (3) Cross-workflow dependency visualization.",
+    "verification": {
+      "type": "file_exists",
+      "path": "apps/web/src/components/kanban/MultiWorkflowBoard.tsx"
+    },
+    "status": "pending"
+  },
+  {
+    "id": "KANBAN-008",
+    "type": "code",
+    "priority": "P2",
+    "phase": 16,
+    "epic": "Epic 15: Kanban Board & Real-Time Visualization",
+    "scope": "Future",
+    "description": "Custom Column Configuration - User-defined workflow stages",
+    "dependencies": ["KANBAN-001"],
+    "context_files": [],
+    "instruction": "Implement custom columns: (1) Column configuration modal, (2) Persist column settings per user, (3) Default templates for common workflows.",
+    "verification": {
+      "type": "file_exists",
+      "path": "apps/web/src/components/kanban/ColumnConfig.tsx"
+    },
+    "status": "pending"
+  },
+  {
+    "id": "KANBAN-009",
+    "type": "code",
+    "priority": "P2",
+    "phase": 16,
+    "epic": "Epic 15: Kanban Board & Real-Time Visualization",
+    "scope": "Future",
+    "description": "Swimlane Views - Group tasks by feature, priority, or agent",
+    "dependencies": ["KANBAN-001"],
+    "context_files": [],
+    "instruction": "Implement swimlanes: (1) Group by feature, priority, or agent, (2) Collapsible swimlane rows, (3) Swimlane totals.",
+    "verification": {
+      "type": "file_exists",
+      "path": "apps/web/src/components/kanban/SwimLaneView.tsx"
+    },
+    "status": "pending"
+  },
+  {
+    "id": "MDH-001",
+    "type": "code",
+    "priority": "P1",
+    "phase": 17,
+    "epic": "Epic 16: Monitor-Diagnose-Heal Loop",
+    "scope": "Production",
+    "description": "Monitor Node Integration - Post-deployment health monitoring",
+    "dependencies": ["ORCHESTRATOR-001"],
+    "context_files": [
+      "packages/daw-agents/src/daw_agents/orchestrator/orchestrator.py"
+    ],
+    "instruction": "Implement monitor node: (1) MONITORING status in OrchestratorStatus enum, (2) _monitor_node() in Orchestrator, (3) Health check logic for deployed code, (4) Integration with Sentry/Datadog hooks, (5) Anomaly detection thresholds, (6) Tests for monitoring state transitions.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/orchestrator/test_monitor_node.py -v"
+    },
+    "estimated_hours": 8,
+    "status": "pending"
+  },
+  {
+    "id": "MDH-002",
+    "type": "code",
+    "priority": "P1",
+    "phase": 17,
+    "epic": "Epic 16: Monitor-Diagnose-Heal Loop",
+    "scope": "Production",
+    "description": "Diagnose Node Implementation - Automated error analysis",
+    "dependencies": ["MDH-001"],
+    "context_files": [
+      "packages/daw-agents/src/daw_agents/orchestrator/orchestrator.py"
+    ],
+    "instruction": "Implement diagnose node: (1) DIAGNOSING status, (2) _diagnose_node() in Orchestrator, (3) Error classification (fixable vs. critical), (4) Root cause analysis using error knowledge graph, (5) Query Neo4j for similar past errors, (6) Connect to Healer agent, (7) Diagnosis accuracy tests.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/orchestrator/test_diagnose_node.py -v"
+    },
+    "estimated_hours": 8,
+    "status": "pending"
+  },
+  {
+    "id": "MDH-003",
+    "type": "code",
+    "priority": "P1",
+    "phase": 17,
+    "epic": "Epic 16: Monitor-Diagnose-Heal Loop",
+    "scope": "Production",
+    "description": "Heal Node Implementation - Automated fix application",
+    "dependencies": ["MDH-002"],
+    "context_files": [
+      "packages/daw-agents/src/daw_agents/orchestrator/orchestrator.py",
+      "packages/daw-agents/src/daw_agents/agents/healer/"
+    ],
+    "instruction": "Implement heal node: (1) HEALING status, (2) _heal_node() in Orchestrator, (3) Wire existing Healer agent into workflow, (4) Auto-retry up to 3x before escalation, (5) Create reproduction test case (Red), (6) Apply fix (Green), (7) Push to staging branch, (8) Healing success rate tests.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/orchestrator/test_heal_node.py -v"
+    },
+    "estimated_hours": 8,
+    "status": "pending"
+  },
+  {
+    "id": "MDH-004",
+    "type": "code",
+    "priority": "P1",
+    "phase": 17,
+    "epic": "Epic 16: Monitor-Diagnose-Heal Loop",
+    "scope": "Production",
+    "description": "Escalation & Human Override - Unfixable error handling",
+    "dependencies": ["MDH-003"],
+    "context_files": [
+      "packages/daw-agents/src/daw_agents/orchestrator/orchestrator.py",
+      "apps/web/src/components/dashboard/EscalationAlert.tsx"
+    ],
+    "instruction": "Implement escalation: (1) ESCALATING status, (2) Alert generation with full context, (3) Human approval endpoint, (4) Frontend: EscalationAlert component, (5) 'Override and Continue' or 'Pause' buttons, (6) Slack/email webhook integration.",
+    "verification": {
+      "type": "file_exists",
+      "path": "apps/web/src/components/dashboard/EscalationAlert.tsx"
+    },
+    "estimated_hours": 6,
+    "status": "pending"
+  },
+  {
+    "id": "MDH-005",
+    "type": "code",
+    "priority": "P2",
+    "phase": 18,
+    "epic": "Epic 16: Monitor-Diagnose-Heal Loop",
+    "scope": "Future",
+    "description": "Sentinel Agent - Risk scanning and interception",
+    "dependencies": ["MDH-001", "CORE-003"],
+    "context_files": [
+      "packages/daw-mcp/src/daw_mcp/servers/sentinel.py"
+    ],
+    "instruction": "Implement Sentinel: (1) SentinelAgent class running parallel to Orchestrator, (2) Intercepts dangerous commands (DROP, rm -rf, sudo), (3) Requires human approval for intercepted ops, (4) SentinelMCPServer with tools: scan_command, request_approval, log_interception.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-mcp/tests/sentinel/test_server.py -v"
+    },
+    "status": "pending"
+  },
+  {
+    "id": "MDH-006",
+    "type": "code",
+    "priority": "P2",
+    "phase": 18,
+    "epic": "Epic 16: Monitor-Diagnose-Heal Loop",
+    "scope": "Future",
+    "description": "Predictive Issue Detection - Proactive problem identification",
+    "dependencies": ["MDH-001", "EVOLVE-001"],
+    "context_files": [],
+    "instruction": "Implement prediction: (1) Pattern analysis from historical data, (2) Predict issues before they occur, (3) Proactive alerts.",
+    "verification": {
+      "type": "file_exists",
+      "path": "packages/daw-agents/src/daw_agents/orchestrator/predictor.py"
+    },
+    "status": "pending"
+  },
+  {
+    "id": "MDH-007",
+    "type": "code",
+    "priority": "P2",
+    "phase": 18,
+    "epic": "Epic 16: Monitor-Diagnose-Heal Loop",
+    "scope": "Future",
+    "description": "Auto-Rollback Capability - Automatic recovery to last good state",
+    "dependencies": ["MDH-003"],
+    "context_files": [],
+    "instruction": "Implement rollback: (1) Track deployment checkpoints, (2) Auto-rollback on critical failure, (3) Notify user of rollback.",
+    "verification": {
+      "type": "file_exists",
+      "path": "packages/daw-agents/src/daw_agents/orchestrator/rollback.py"
+    },
+    "status": "pending"
+  },
+  {
+    "id": "EVOLVE-003",
+    "type": "code",
+    "priority": "P1",
+    "phase": 17,
+    "epic": "Epic 17: Self-Evolution & Learning",
+    "scope": "Production",
+    "description": "Skill Extraction Library - Extract reusable patterns from successes",
+    "dependencies": ["EVOLVE-001", "EVOLVE-002"],
+    "context_files": [
+      "packages/daw-agents/src/daw_agents/evolution/skill_extractor.py"
+    ],
+    "instruction": "Implement skill extraction: (1) SkillExtractor class, (2) Analyze successful task completions, (3) Extract code patterns as reusable 'skills', (4) Store skills in Neo4j with success_rate, (5) Retrieve skills for similar future tasks, (6) Voyager-style skill library pattern, (7) Skill extraction accuracy tests.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/evolution/test_skill_extractor.py -v"
+    },
+    "estimated_hours": 12,
+    "status": "pending"
+  },
+  {
+    "id": "EVOLVE-004",
+    "type": "code",
+    "priority": "P1",
+    "phase": 17,
+    "epic": "Epic 17: Self-Evolution & Learning",
+    "scope": "Production",
+    "description": "Model Performance Analytics - Track model effectiveness by task type",
+    "dependencies": ["EVOLVE-001", "MODEL-001"],
+    "context_files": [
+      "packages/daw-agents/src/daw_agents/evolution/model_analytics.py",
+      "apps/web/src/components/dashboard/ModelAnalytics.tsx"
+    ],
+    "instruction": "Implement analytics: (1) Performance metrics per model per task type, (2) Success rate, latency, cost analysis, (3) Automatic model recommendation updates, (4) Frontend: ModelAnalytics dashboard, (5) Helicone data aggregation.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/evolution/test_model_analytics.py -v"
+    },
+    "estimated_hours": 10,
+    "status": "pending"
+  },
+  {
+    "id": "EVOLVE-005",
+    "type": "code",
+    "priority": "P2",
+    "phase": 18,
+    "epic": "Epic 17: Self-Evolution & Learning",
+    "scope": "Future",
+    "description": "Prompt Optimization (DSPy) - Automatic prompt improvement",
+    "dependencies": ["EVOLVE-003", "EVOLVE-004"],
+    "context_files": [],
+    "instruction": "Implement DSPy-style prompt optimization: (1) Track prompt effectiveness, (2) Suggest prompt improvements, (3) A/B test prompt variations.",
+    "verification": {
+      "type": "file_exists",
+      "path": "packages/daw-agents/src/daw_agents/evolution/prompt_optimizer.py"
+    },
+    "status": "pending"
+  },
+  {
+    "id": "EVOLVE-006",
+    "type": "code",
+    "priority": "P2",
+    "phase": 18,
+    "epic": "Epic 17: Self-Evolution & Learning",
+    "scope": "Future",
+    "description": "A/B Testing Infrastructure - Statistical experiment framework",
+    "dependencies": ["EVOLVE-005"],
+    "context_files": [],
+    "instruction": "Implement A/B testing: (1) Experiment definition, (2) Traffic splitting, (3) Statistical significance calculation, (4) Winner declaration.",
+    "verification": {
+      "type": "file_exists",
+      "path": "packages/daw-agents/src/daw_agents/evolution/ab_testing.py"
+    },
+    "status": "pending"
+  },
+  {
+    "id": "EVOLVE-007",
+    "type": "code",
+    "priority": "P2",
+    "phase": 18,
+    "epic": "Epic 17: Self-Evolution & Learning",
+    "scope": "Future",
+    "description": "Constitutional Safety Constraints - Safety guardrails for self-modification",
+    "dependencies": ["EVOLVE-005"],
+    "context_files": [],
+    "instruction": "Implement safety: (1) RLAIF constraints for self-modification, (2) Bounded evolution limits, (3) Human approval for significant changes.",
+    "verification": {
+      "type": "file_exists",
+      "path": "packages/daw-agents/src/daw_agents/evolution/constitutional.py"
+    },
+    "status": "pending"
+  },
+  {
+    "id": "DRIVER-001",
+    "type": "code",
+    "priority": "P1",
+    "phase": 17,
+    "epic": "Epic 18: Multi-Model Driver Support",
+    "scope": "Production",
+    "description": "Model Driver Abstraction Layer - Hot-swappable model configuration",
+    "dependencies": ["MODEL-001"],
+    "context_files": [
+      "packages/daw-agents/src/daw_agents/models/drivers/base.py",
+      "packages/daw-agents/src/daw_agents/models/drivers/claude.py",
+      "packages/daw-agents/src/daw_agents/models/drivers/openai.py",
+      "packages/daw-agents/src/daw_agents/models/drivers/gemini.py"
+    ],
+    "instruction": "Implement driver abstraction: (1) ModelDriver abstract interface, (2) ClaudeDriver, OpenAIDriver, GeminiDriver, LocalDriver implementations, (3) Config via config.yaml use_driver setting, (4) Task formatting per driver requirements, (5) Unified response parsing, (6) Automatic fallback on driver failure, (7) Driver switching tests.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/models/test_drivers.py -v"
+    },
+    "estimated_hours": 10,
+    "status": "pending"
+  },
+  {
+    "id": "DRIVER-002",
+    "type": "code",
+    "priority": "P1",
+    "phase": 17,
+    "epic": "Epic 18: Multi-Model Driver Support",
+    "scope": "Production",
+    "description": "Model Driver MCP Server - Expose model config via MCP",
+    "dependencies": ["DRIVER-001", "CORE-003"],
+    "context_files": [
+      "packages/daw-mcp/src/daw_mcp/servers/model_driver.py"
+    ],
+    "instruction": "Implement MCP server: (1) ModelDriverMCPServer in packages/daw-mcp/, (2) Tools: list_models, get_model_config, estimate_cost, recommend_model, (3) Query from Planner for recommendations, (4) MCP server unit tests.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-mcp/tests/model_driver/test_server.py -v"
+    },
+    "estimated_hours": 6,
+    "status": "pending"
+  },
+  {
+    "id": "DRIVER-003",
+    "type": "code",
+    "priority": "P1",
+    "phase": 17,
+    "epic": "Epic 18: Multi-Model Driver Support",
+    "scope": "Production",
+    "description": "Cost Optimization Router - Intelligent cost/capability routing",
+    "dependencies": ["DRIVER-001", "MODEL-001"],
+    "context_files": [
+      "packages/daw-agents/src/daw_agents/models/cost_router.py"
+    ],
+    "instruction": "Implement cost router: (1) Cost-aware routing in ModelRouter, (2) Task complexity -> model tier mapping, (3) Budget constraints respected, (4) Frontend: cost projection display, (5) Cost optimization accuracy tests.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/models/test_cost_router.py -v"
+    },
+    "estimated_hours": 8,
+    "status": "pending"
+  },
+  {
+    "id": "DRIVER-004",
+    "type": "code",
+    "priority": "P2",
+    "phase": 18,
+    "epic": "Epic 18: Multi-Model Driver Support",
+    "scope": "Future",
+    "description": "Local Model Support - Ollama/LM Studio integration",
+    "dependencies": ["DRIVER-001"],
+    "context_files": [
+      "packages/daw-agents/src/daw_agents/models/drivers/local.py"
+    ],
+    "instruction": "Implement local models: (1) LocalDriver for Ollama/LM Studio, (2) Model discovery and configuration, (3) Performance benchmarking.",
+    "verification": {
+      "type": "file_exists",
+      "path": "packages/daw-agents/src/daw_agents/models/drivers/local.py"
+    },
+    "status": "pending"
+  },
+  {
+    "id": "DRIVER-005",
+    "type": "code",
+    "priority": "P2",
+    "phase": 18,
+    "epic": "Epic 18: Multi-Model Driver Support",
+    "scope": "Future",
+    "description": "Model Ensemble Voting - Multi-model consensus for critical decisions",
+    "dependencies": ["DRIVER-001"],
+    "context_files": [],
+    "instruction": "Implement ensemble: (1) Multiple models vote on critical decisions, (2) Consensus threshold configuration, (3) Disagreement escalation to human.",
+    "verification": {
+      "type": "file_exists",
+      "path": "packages/daw-agents/src/daw_agents/models/ensemble.py"
+    },
     "status": "pending"
   }
 ]
