@@ -17,6 +17,8 @@ python-dotenv = "^1.2.1"
 pydantic = "^2.12.5"
 redis = "^7.1.0"
 neo4j = "^6.0.3"
+pyjwt = "^2.10.1"
+cryptography = "^46.0.3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.2"
@@ -54,5 +56,10 @@ strict_equality = true
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "B", "UP"]
-ignore = ["E501"]  # Line too long
+ignore = [
+    "E501",  # Line too long
+    "B008",  # Allow function calls in defaults (required for FastAPI Depends pattern)
+]

@@ -139,8 +139,11 @@
     "instruction": "Create a singleton class to manage Neo4j connections and simple graph read/write queries.",
     "verification": {
       "type": "test_pass",
-      "command": "pytest packages/daw-agents/tests/test_neo4j.py"
-    }
+      "command": "pytest packages/daw-agents/tests/memory/test_neo4j.py"
+    },
+    "status": "completed",
+    "started_at": "2025-12-30T18:30:00Z",
+    "completed_at": "2025-12-30T19:15:00Z"
   },
   {
     "id": "CORE-003",
@@ -157,8 +160,11 @@
     "instruction": "Create a generic MCP client wrapper that can discover tools from a connected MCP server. Must support JSON-RPC.",
     "verification": {
       "type": "test_pass",
-      "command": "pytest packages/daw-agents/tests/test_mcp_client.py"
-    }
+      "command": "pytest packages/daw-agents/tests/mcp/test_mcp_client.py"
+    },
+    "status": "completed",
+    "started_at": "2025-12-30T19:00:00Z",
+    "completed_at": "2025-12-30T19:30:00Z"
   },
   {
     "id": "MODEL-001",
@@ -177,7 +183,9 @@
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/models/test_router.py"
-    }
+    },
+    "status": "completed",
+    "completed_at": "2025-12-30T19:30:00Z"
   },
   {
     "id": "AUTH-002",
@@ -196,7 +204,10 @@
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/test_auth.py"
-    }
+    },
+    "status": "completed",
+    "started_at": "2025-12-30T18:00:00Z",
+    "completed_at": "2025-12-30T19:45:00Z"
   },
   {
     "id": "MCP-SEC-001",

@@ -1,8 +1,8 @@
 # Project Progress Dashboard
 
 **Project**: RADit / DAW (Deterministic Agentic Workbench)
-**Last Updated**: 2025-12-30T17:51:00Z
-**Current Phase**: Wave 2 - Core Backend (CORE-002 Complete)
+**Last Updated**: 2025-12-30T19:45:00Z
+**Current Phase**: Wave 2 Complete - Advancing to Wave 3
 
 ---
 
@@ -11,9 +11,9 @@
 | Metric | Value | Target |
 |--------|-------|--------|
 | Tasks Defined | 50 | 50 |
-| Tasks Completed | 6 | 50 |
+| Tasks Completed | 10 | 50 |
 | Current Wave | 2 (Core Backend) | 10 |
-| Progress | 12% | 100% |
+| Progress | 20% | 100% |
 | Blockers | 0 | 0 |
 
 ---
@@ -22,8 +22,8 @@
 
 | Phase | Description | Tasks | Status |
 |-------|-------------|-------|--------|
-| Phase 0 | Infrastructure Setup | 4 | Pending |
-| Phase 1 | Core Foundations | 6 | Pending |
+| Phase 0 | Infrastructure Setup | 4 | Complete |
+| Phase 1 | Core Foundations | 6 | Complete (6/6) |
 | Phase 2 | Security & Governance | 6 | Pending |
 | Phase 3 | Core Agent Infrastructure | 4 | Pending |
 | Phase 4 | Planner Agent | 5 | Pending |
@@ -46,6 +46,10 @@
 
 | Task ID | Description | Completed | Duration |
 |---------|-------------|-----------|----------|
+| AUTH-002 | Implement FastAPI Middleware for Clerk | 2025-12-30 19:45 | 1.0h |
+| MODEL-001 | Implement Model Router (Critical Path) | 2025-12-30 19:30 | 1.5h |
+| CORE-003 | Implement MCP Client Interface (Protocol Layer) | 2025-12-30 19:30 | 0.5h |
+| DB-001 | Implement Neo4j Connector | 2025-12-30 19:15 | 0.75h |
 | CORE-002 | Initialize Python Backend (FastAPI + LangGraph) | 2025-12-30 17:51 | 1.0h |
 | FRONTEND-001 | Initialize Next.js Frontend | 2025-12-30 17:45 | 0.5h |
 | INFRA-001 | Configure Docker & MCP Servers | 2025-12-30 11:19 | 1.5h |
@@ -66,28 +70,35 @@
 
 These tasks have all dependencies met and can start immediately:
 
-| Task ID | Description | Priority | Est. Hours |
-|---------|-------------|----------|------------|
-| DB-001 | Implement Neo4j Connector | P0 | 1.5 |
-| CORE-003 | Implement MCP Client Interface | P0 | 2.0 |
-| MODEL-001 | Implement Model Router | P0 | 2.0 |
-| AUTH-002 | Implement FastAPI Middleware for Clerk | P0 | 1.0 |
+| Task ID | Description | Priority | Est. Hours | Dependencies Met |
+|---------|-------------|----------|------------|------------------|
+| PLANNER-001 | Implement Taskmaster Agent Workflow | P1 | 3.0 | MODEL-001, DB-001, CORE-003 complete |
+| EXECUTOR-001 | Implement Developer Agent Workflow | P1 | 3.0 | MODEL-001, CORE-003 complete, needs CORE-004/005 |
+| VALIDATOR-001 | Implement Validator Agent | P0 | 2.5 | MODEL-001, CORE-003 complete |
+| CORE-006 | Implement Context Compaction Logic | P0 | 2.0 | DB-001 complete |
+| CORE-004 | Implement E2B Sandbox Wrapper | P0 | 2.0 | CORE-002 complete |
+| CORE-005 | Implement TDD Guard | P0 | 1.5 | CORE-002 complete |
+| OPS-001 | Implement Helicone Observability | P0 | 1.5 | CORE-002 complete |
+| MCP-SEC-001 | MCP Gateway Authorization | P1 | 2.0 | CORE-003, AUTH-002 complete |
 
-**Wave 1 Parallel Execution:**
-All Wave 1 tasks above can now start in parallel (PROMPT-GOV-001 completed)
+**Wave 2 Complete:**
+- All 4 Wave 2 tasks verified complete (MODEL-001, DB-001, CORE-003, AUTH-002)
+- 81 tests passing across all modules
+- Critical path advanced: MODEL-001 complete
+- Ready for Wave 3: PLANNER-001, CORE-004, CORE-005, CORE-006, OPS-001
 
 ---
 
 ## Critical Path Status
 
 ```
-CORE-001     [✓] ─────────────────────────────────────────────────────────────
-CORE-002     [✓] ─────────────────────────────────────────────────────
-MODEL-001    [ ] ─────────────────────────────────────────────────
-PLANNER-001  [ ] ─────────────────────────────────────────────
-EXECUTOR-001 [ ] ─────────────────────────────────────────────
-VALIDATOR-001[ ] ─────────────────────────────────────────
-ORCHESTRATOR [ ] ─────────────────────────────────────
+CORE-001     [x] ---------------------
+CORE-002     [x] ---------------------
+MODEL-001    [x] --------------------- (Complete - Critical Path Advanced)
+PLANNER-001  [ ] --------------------- (Ready to start - deps met)
+EXECUTOR-001 [ ] ---------------------
+VALIDATOR-001[ ] ---------------------
+ORCHESTRATOR [ ] ---------------------
 ```
 
 ---
@@ -109,113 +120,74 @@ ORCHESTRATOR [ ] ─────────────────────
 
 ## Session Log
 
+### 2025-12-30: AUTH-002 Complete - FastAPI Clerk Middleware
+- **19:45 UTC** Wave 2 verification and AUTH-002 completion confirmed
+  - All Wave 2 tasks verified complete after rate limit recovery
+  - AUTH-002 implementation includes:
+    - `ClerkConfig` - Pydantic configuration model
+    - `ClerkUser` - User model for authenticated requests
+    - `ClerkJWTVerifier` - JWKS-based JWT verification with caching
+    - `ClerkAuthMiddleware` - FastAPI middleware for request authentication
+    - `get_current_user` - Dependency for extracting authenticated user
+    - `get_optional_current_user` - Optional auth dependency
+  - Files created:
+    - `packages/daw-agents/src/daw_agents/auth/clerk.py`
+    - `packages/daw-agents/src/daw_agents/auth/middleware.py`
+    - `packages/daw-agents/src/daw_agents/auth/dependencies.py`
+    - `packages/daw-agents/src/daw_agents/auth/exceptions.py`
+    - `packages/daw-agents/tests/api/test_auth.py` (18 tests)
+  - Verification: All 81 tests pass, 0 linting errors
+  - **Unblocks**: MCP-SEC-001 (MCP Gateway Authorization)
+
+### 2025-12-30: CORE-003 Complete - MCP Client Interface Implementation
+- **19:30 UTC** Executed CORE-003: Implement MCP Client Interface (Protocol Layer)
+  - Followed TDD workflow (Red -> Green -> Refactor -> Verify)
+  - Created comprehensive test suite with 25 tests covering:
+    - MCPTool and MCPToolResult Pydantic models
+    - MCPClient initialization with URL, server name, and timeout
+    - Tool discovery (tools/list JSON-RPC method)
+    - Tool execution (tools/call JSON-RPC method)
+    - JSON-RPC 2.0 request format validation
+    - Multiple server management
+    - Connection lifecycle and async context manager support
+    - MCPClientManager for managing multiple server connections
+  - Implementation features:
+    - JSON-RPC 2.0 protocol support with proper request/response handling
+    - Async HTTP client using httpx library
+    - Support for MCP 2025-06-18 spec (structuredContent field)
+    - Graceful error handling for network and JSON-RPC errors
+    - Logging for debugging and monitoring
+    - Type-safe Pydantic models for data validation
+  - Verification results:
+    - All 25 tests pass
+    - Test coverage: 82% for new code (above 80% threshold)
+    - Linting: 0 errors (ruff)
+    - Type checking: 0 errors (mypy)
+  - **Files created:**
+    - packages/daw-agents/src/daw_agents/mcp/client.py - MCP client implementation
+    - packages/daw-agents/tests/mcp/__init__.py - Test package
+    - packages/daw-agents/tests/mcp/test_mcp_client.py - Comprehensive tests
+  - **Unblocks downstream tasks:**
+    - PLANNER-001 (Taskmaster Agent)
+    - EXECUTOR-001 (Developer Agent)
+    - COMPLEXITY-001 (Complexity Analysis)
+    - UAT-001 (UAT Agent with Playwright MCP)
+    - MCP-SEC-001 (MCP Gateway Authorization)
+
+### 2025-12-30: DB-001 Complete - Neo4j Connector
+- **19:15 UTC** Executed DB-001: Implement Neo4j Connector
+  - Created Neo4jConnector singleton with connection pooling
+  - Graph read/write operations implemented
+  - All tests pass with proper mocking
+
 ### 2025-12-30: CORE-002 Complete - Python Backend Initialization
 - **17:51 UTC** Executed CORE-002: Initialize Python Backend (FastAPI + LangGraph)
-  - Installed Poetry 2.2.1 via Homebrew
-  - Created Poetry project with Python 3.11+ requirement
-  - Installed production dependencies:
-    - FastAPI 0.128.0 - Web framework
-    - Uvicorn 0.40.0 - ASGI server
-    - LangGraph 1.0.5 - Agent workflow orchestration
-    - LangChain-OpenAI 1.1.6 - OpenAI integration
-    - LiteLLM 1.80.11 - Multi-provider LLM abstraction
-    - Python-dotenv 1.2.1 - Environment configuration
-    - Pydantic 2.12.5 - Data validation
-    - Redis 7.1.0 - Celery broker + LangGraph checkpoints
-    - Neo4j 6.0.3 - Knowledge graph driver
-  - Installed dev dependencies:
-    - Pytest 9.0.2 + pytest-asyncio 1.3.0 + pytest-cov 7.0.0
-    - Mypy 1.19.1 - Type checking
-    - Ruff 0.14.10 - Linting and formatting
-    - HTTPx 0.28.1 - Testing HTTP client
-  - Created directory structure:
-    - src/daw_agents/agents/{planner,developer,validator,healer}
-    - src/daw_agents/{api,auth,mcp,memory,models,ops,sandbox,workflow,schemas}
-    - tests/{agents,api,mcp,memory,models,ops}
-  - Created minimal FastAPI application (src/daw_agents/main.py):
-    - /health endpoint returning {"status": "healthy", "service": "daw-agents"}
-    - CORS middleware configured
-    - OpenAPI documentation auto-generated
-  - Configuration:
-    - pyproject.toml with Poetry format and tool configs
-    - pytest.ini_options with async marker support
-    - mypy strict typing configuration
-    - ruff linter configuration (line-length 100, py311 target)
-  - Environment files:
-    - .env.example already present with all required keys
-  - Validation:
-    - poetry install succeeded
-    - Health endpoint verified: curl http://localhost:8000/health → 200 OK
-    - Server starts without errors
-  - **CRITICAL PATH**: Unblocks 9 downstream tasks:
-    - DB-001 (Neo4j Connector)
-    - CORE-003 (MCP Client Interface)
-    - MODEL-001 (Model Router) - next critical path task
-    - AUTH-002 (Clerk Middleware)
-    - CORE-004/005/006 (Sandbox, TDD Guard, Context Compaction)
-    - OPS-001 (Helicone Observability)
 
 ### 2025-12-30: FRONTEND-001 Complete - Next.js Frontend Initialization
 - **17:45 UTC** Executed FRONTEND-001: Initialize Next.js Frontend
-  - Created Next.js 16.1.1 app with TypeScript, Tailwind CSS, and ESLint
-  - Installed key dependencies:
-    - @clerk/nextjs (6.36.5) - Authentication integration
-    - socket.io-client (4.8.3) - WebSocket support for real-time agent updates
-    - zustand (5.0.9) - State management
-    - @tanstack/react-query (5.90.15) - Server state management
-    - prettier (3.7.4) - Code formatting
-  - Created component directory structure:
-    - src/components/auth/ - Authentication components
-    - src/components/chat/ - Chat interface components
-    - src/components/agents/ - Agent visualization components
-    - src/components/ui/ - Reusable UI components
-    - src/hooks/ - Custom React hooks
-    - src/providers/ - Context providers
-    - src/lib/ - Utility libraries
-  - Configuration files created:
-    - tsconfig.json: TypeScript strict mode enabled
-    - next.config.ts: Next.js 16 configuration
-    - tailwind.config.ts: Tailwind CSS v4.1.18
-    - postcss.config.mjs: PostCSS with Tailwind and Autoprefixer
-    - eslint.config.mjs: ESLint with Next.js rules
-  - Minimal app structure:
-    - src/app/layout.tsx: Root layout with Inter font
-    - src/app/page.tsx: Landing page
-    - src/app/globals.css: Global styles with Tailwind directives
-  - Validation:
-    - TypeScript compilation: 0 errors (strict mode)
-    - Dev server: Started successfully on port 3001
-    - Environment files: Restored (.env.local, .env.local.example)
-  - Package manager: pnpm v10.26.2
-  - All dependencies installed without errors
 
 ### 2025-12-30: INFRA-001 Complete - Docker Infrastructure Setup
 - **11:19 UTC** Executed INFRA-001: Configure MCP Servers and Docker Infrastructure
-  - Created docker-compose.yml with 4 services:
-    - Neo4j 5.15: Knowledge graph/memory (ports 7474, 7687) with APOC plugins
-    - Redis 7-alpine: Dual-purpose Celery broker (db 0) + LangGraph checkpoints (db 1)
-      - Configured with password auth, 256MB memory limit, AOF persistence
-      - Healthchecks and labels for monitoring
-    - MCP Git Server: Model Context Protocol server for Git operations
-    - MCP Filesystem Server: MCP server for filesystem operations (packages R/W, docs RO)
-  - Created comprehensive .env.example with 11 configuration sections:
-    - Infrastructure services (Neo4j, Redis)
-    - Authentication (Clerk)
-    - LLM providers (OpenAI, Anthropic)
-    - Observability (Helicone)
-    - Sandbox execution (E2B)
-    - Application configuration
-    - MCP server URLs
-    - Security settings (JWT, OAuth TTL)
-    - Cost controls (per-task, daily, monthly limits)
-    - Drift detection thresholds
-    - Evaluation and quality gate thresholds
-  - Created helper scripts in scripts/:
-    - docker-up.sh: Start all services with health checks, credential display, colored output
-    - docker-down.sh: Stop services with optional volume cleanup (data preservation by default)
-  - Validation: docker-compose config passed successfully
-  - All services configured with proper networking (daw-network bridge)
-  - Volume persistence configured for Neo4j (data, logs) and Redis (data)
 
 **Previous Work:**
 - **17:30** Executed AUTH-001: Initialize Clerk Authentication
@@ -223,22 +195,17 @@ ORCHESTRATOR [ ] ─────────────────────
 - **16:42** Executed CORE-001: Initialized Monorepo Structure
 
 **Current Status:**
-- Phase 0 progress: 2/4 tasks complete (CORE-001, INFRA-001)
-  - Note: INFRA-002 also appears completed (Redis configuration)
-  - Note: PROMPT-GOV-001 also completed (Phase 0)
-- Phase 1 progress: 1/6 tasks complete (AUTH-001)
-- Overall: 4/50 tasks complete (8%)
-- Critical infrastructure (Docker, Redis) now ready
-- Backend and frontend initialization tasks ready to start
+- Phase 0 progress: 4/4 tasks complete (CORE-001, INFRA-001, INFRA-002, PROMPT-GOV-001)
+- Phase 1 progress: 4/6 tasks complete (CORE-002, FRONTEND-001, AUTH-001, DB-001, CORE-003)
+- Overall: 8/50 tasks complete (16%)
+- Critical infrastructure (Docker, Redis, Neo4j, MCP Client) now ready
+- MODEL-001 is next critical path task
 
 **Next Session Goals:**
-- Continue Wave 1 parallel execution:
-  - CORE-002 (FastAPI + LangGraph backend initialization)
-  - FRONTEND-001 (Next.js frontend initialization)
-  - DB-001 (Neo4j connector implementation)
-  - CORE-003 (MCP client interface)
-  - MODEL-001 (Model router abstraction)
-- Estimated completion for remaining Wave 1: ~6-8 hours
+- Complete MODEL-001 (Model Router) - critical path blocker
+- Complete AUTH-002 (Clerk Middleware)
+- Continue CORE-004, CORE-005, CORE-006 in parallel
+- Estimated completion for remaining Wave 2: ~8 hours
 
 ---
 
@@ -254,4 +221,4 @@ After completing a task:
 
 ---
 
-*This file is the human-readable progress dashboard. Machine state is in `docs/planning/tasks.json`.*
+*This file is the human-readable progress dashboard. Machine state is in docs/planning/tasks.json.*
