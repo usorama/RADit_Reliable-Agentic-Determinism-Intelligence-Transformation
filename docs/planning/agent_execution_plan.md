@@ -185,6 +185,128 @@ Phase 3 (After CORE-002 completes):
 
 **Max Concurrent Agents**: 1 (critical path task)
 
+### Wave 11: Architecture Conformance Refactoring [Epic 12] (Hour 41-49)
+
+> **Purpose**: Restructure codebase to align with documented architecture in `docs/planning/architecture/sections/02_project_structure.md`
+
+| Agent ID | Task | Duration | Dependencies | Parallel Slots | Story Ref |
+|----------|------|----------|--------------|----------------|-----------|
+| A1 | REFACTOR-001 | 1hr | None | 1 | 12.1 |
+| A2 | REFACTOR-002 | 3hr | REFACTOR-001 | 2 | 12.2 |
+| A3 | REFACTOR-003 | 4hr | REFACTOR-001 | 2 | 12.3 |
+| A4 | REFACTOR-005 | 2hr | REFACTOR-001 | 2 | 12.5 |
+| A5 | REFACTOR-006 | 2hr | REFACTOR-001 | 2 | 12.6 |
+| A6 | REFACTOR-004 | 2hr | REFACTOR-003 | 3 | 12.4 |
+| A7 | REFACTOR-007 | 2hr | ALL above | 4 | 12.7 |
+
+**Max Concurrent Agents**: 4
+**Wave Duration**: ~8 hours (with parallelization)
+
+#### Wave 11 Execution Strategy
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    WAVE 11: ARCHITECTURE REFACTORING                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  Hour 41: REFACTOR-001 (Create apps/ structure)                             │
+│               │                                                              │
+│               ▼                                                              │
+│  Hour 42: ┌─ REFACTOR-002 (Frontend → apps/web/) ─────────────┐             │
+│           ├─ REFACTOR-003 (Extract server → apps/server/) ────┼─ Parallel   │
+│           ├─ REFACTOR-005 (Create daw-mcp/) ──────────────────┤             │
+│           └─ REFACTOR-006 (Rename daw-shared → daw-protocol) ─┘             │
+│               │                                                              │
+│               ▼                                                              │
+│  Hour 46: REFACTOR-004 (Clean daw-agents - after REFACTOR-003)              │
+│               │                                                              │
+│               ▼                                                              │
+│  Hour 47: REFACTOR-007 (E2E Validation - BLOCKING)                          │
+│               │                                                              │
+│               ▼                                                              │
+│  Hour 49: ✓ COMPLETE - Codebase aligned with architecture                   │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### REFACTOR Task Details
+
+**REFACTOR-001: Create apps/ Directory Structure**
+```
+Input:  docs/planning/architecture/sections/02_project_structure.md
+Output: apps/web/, apps/server/ directories created
+        pnpm-workspace.yaml updated with 'apps/*'
+        turbo.json updated (if exists)
+Verify: pnpm install succeeds, directories exist
+```
+
+**REFACTOR-002: Migrate Frontend to apps/web/**
+```
+Input:  packages/daw-frontend/*
+Output: apps/web/* (all files moved)
+        package.json name updated to '@daw/web'
+        All imports updated
+Verify: pnpm dev runs, pnpm typecheck passes (0 errors)
+        pnpm build succeeds
+```
+
+**REFACTOR-003: Extract FastAPI Server to apps/server/**
+```
+Input:  packages/daw-agents/src/daw_agents/{api,workers,auth,main.py}
+Output: apps/server/* with pyproject.toml
+        Server imports daw-agents as dependency
+        uvicorn entry point configured
+Verify: uvicorn main:app starts successfully
+        All API endpoints respond (curl -f http://localhost:8000/health)
+```
+
+**REFACTOR-004: Clean daw-agents Package**
+```
+Input:  packages/daw-agents/src/daw_agents/*
+Output: Keep ONLY: agents/, schemas/, prompts/, evolution/, core utilities
+        Remove: api/, workers/, auth/, main.py (moved to apps/server)
+        Updated __init__.py exports
+Verify: Package importable as library
+        pytest tests/agents/ passes
+```
+
+**REFACTOR-005: Create daw-mcp Package**
+```
+Input:  packages/daw-agents/src/daw_agents/mcp/* (if exists)
+Output: packages/daw-mcp/ with pyproject.toml
+        Subdirs: git-mcp/, graph-memory/
+        MCP servers register with protocol
+Verify: poetry install succeeds
+        MCP servers start and respond
+```
+
+**REFACTOR-006: Rename daw-shared to daw-protocol**
+```
+Input:  packages/daw-shared/*
+Output: packages/daw-protocol/* (renamed)
+        All imports updated across codebase
+        package.json/pyproject.toml name updated
+Verify: pnpm install succeeds
+        Full test suite passes (no import errors)
+```
+
+**REFACTOR-007: Comprehensive E2E Validation (BLOCKING)**
+```
+Input:  Entire codebase after refactoring
+Verify:
+  □ All unit tests pass (pytest, jest)
+  □ All integration tests pass
+  □ docker-compose build succeeds
+  □ docker-compose up - all services healthy
+  □ Frontend connects to backend
+  □ Backend connects to Neo4j/Redis
+  □ Smoke tests: auth, chat, agent trace
+  □ No TypeScript errors (strict mode)
+  □ No linting errors (ruff, eslint)
+
+CRITICAL: This task BLOCKS merge. All checks must pass.
+```
+
 ---
 
 ## Timeline Summary

@@ -224,40 +224,366 @@
     -   *AC*: `apps/web/` and `apps/server/` directories created. Monorepo tooling (pnpm workspaces, turbo) updated to recognize new structure.
     -   *Task Ref*: REFACTOR-001
     -   *Architecture Ref*: 02_project_structure.md
+    -   *Dependencies*: None (first task)
+    -   *Implementation Steps*:
+        1. Create directory structure: `mkdir -p apps/web apps/server`
+        2. Read current `pnpm-workspace.yaml` and add `'apps/*'` to packages array
+        3. If `turbo.json` exists, update pipeline to include apps
+        4. Run `pnpm install` to verify monorepo recognizes new structure
+        5. Verify: `ls apps/` shows web/ and server/ directories
+    -   *Files to Create/Modify*:
+        - `apps/web/.gitkeep` (placeholder)
+        - `apps/server/.gitkeep` (placeholder)
+        - `pnpm-workspace.yaml` (add apps/*)
+        - `turbo.json` (if exists)
 
 -   **Story 12.2**: [Frontend] Migrate daw-frontend to apps/web/.
     -   *AC*: All files from `packages/daw-frontend/` moved to `apps/web/`. Package.json updated with correct name. All imports updated. `pnpm install` succeeds. `pnpm dev` runs frontend successfully. No TypeScript errors.
     -   *Task Ref*: REFACTOR-002
     -   *Architecture Ref*: 02_project_structure.md
+    -   *Dependencies*: REFACTOR-001
+    -   *Implementation Steps*:
+        1. Copy all files from `packages/daw-frontend/` to `apps/web/` (preserve structure)
+           - EXCLUDE: `node_modules/`, `.next/`, `*.tsbuildinfo`
+        2. Update `apps/web/package.json`:
+           - Change `"name"` to `"@daw/web"`
+           - Verify all dependency paths are correct
+        3. Update `apps/web/tsconfig.json`:
+           - Adjust `baseUrl` and `paths` if they reference parent directories
+        4. Search for any imports referencing `daw-frontend` and update to `@daw/web`
+        5. Run `cd apps/web && pnpm install`
+        6. Run `cd apps/web && pnpm typecheck` - must be 0 errors
+        7. Run `cd apps/web && pnpm dev` - verify it starts on localhost:3000
+        8. Run `cd apps/web && pnpm build` - verify production build succeeds
+        9. Delete `packages/daw-frontend/` only after all verifications pass
+    -   *Files to Move*:
+        - `packages/daw-frontend/src/**/*` → `apps/web/src/**/*`
+        - `packages/daw-frontend/public/**/*` → `apps/web/public/**/*`
+        - `packages/daw-frontend/package.json` → `apps/web/package.json` (modify)
+        - `packages/daw-frontend/tsconfig.json` → `apps/web/tsconfig.json`
+        - `packages/daw-frontend/next.config.*` → `apps/web/next.config.*`
+        - `packages/daw-frontend/postcss.config.*` → `apps/web/postcss.config.*`
+        - `packages/daw-frontend/tailwind.config.*` → `apps/web/tailwind.config.*`
+    -   *Verification Commands*:
+        ```bash
+        cd apps/web && pnpm install
+        cd apps/web && pnpm typecheck  # 0 errors
+        cd apps/web && pnpm build      # succeeds
+        cd apps/web && pnpm dev &      # starts on :3000
+        curl -f http://localhost:3000  # responds
+        ```
 
 -   **Story 12.3**: [Backend] Extract FastAPI server to apps/server/.
     -   *AC*: FastAPI application code extracted from `packages/daw-agents/` to `apps/server/`. Includes: API routes, WebSocket handlers, middleware, Celery workers. Server imports agents from `packages/daw-agents/`. `uvicorn` starts successfully. All API endpoints respond.
     -   *Task Ref*: REFACTOR-003
     -   *Architecture Ref*: 02_project_structure.md
+    -   *Dependencies*: REFACTOR-001
+    -   *Implementation Steps*:
+        1. Create `apps/server/pyproject.toml` with project metadata:
+           - name = "daw-server"
+           - Add dependency on `daw-agents` (path = "../../packages/daw-agents")
+           - Add FastAPI, uvicorn, celery, redis dependencies
+        2. Create `apps/server/src/daw_server/` package structure
+        3. Move from `packages/daw-agents/src/daw_agents/`:
+           - `api/` → `apps/server/src/daw_server/api/`
+           - `workers/` → `apps/server/src/daw_server/workers/`
+           - `auth/` → `apps/server/src/daw_server/auth/`
+           - `main.py` → `apps/server/src/daw_server/main.py`
+        4. Update all imports in moved files:
+           - `from daw_agents.agents` → `from daw_agents.agents` (external import)
+           - `from daw_agents.api` → `from daw_server.api` (internal import)
+        5. Create `apps/server/src/daw_server/__init__.py` with exports
+        6. Run `cd apps/server && poetry install`
+        7. Run `cd apps/server && uvicorn daw_server.main:app` - verify starts
+        8. Test: `curl -f http://localhost:8000/health` - must respond
+        9. Run `cd apps/server && pytest tests/` - API tests pass
+    -   *Files to Create*:
+        - `apps/server/pyproject.toml`
+        - `apps/server/src/daw_server/__init__.py`
+        - `apps/server/src/daw_server/main.py`
+        - `apps/server/tests/__init__.py`
+    -   *Files to Move*:
+        - `packages/daw-agents/src/daw_agents/api/**/*` → `apps/server/src/daw_server/api/**/*`
+        - `packages/daw-agents/src/daw_agents/workers/**/*` → `apps/server/src/daw_server/workers/**/*`
+        - `packages/daw-agents/src/daw_agents/auth/**/*` → `apps/server/src/daw_server/auth/**/*`
+    -   *Verification Commands*:
+        ```bash
+        cd apps/server && poetry install
+        cd apps/server && poetry run uvicorn daw_server.main:app --host 0.0.0.0 --port 8000 &
+        sleep 5 && curl -f http://localhost:8000/health
+        cd apps/server && poetry run pytest tests/
+        ```
 
 -   **Story 12.4**: [Agents] Refactor daw-agents to contain only agent definitions.
     -   *AC*: `packages/daw-agents/` contains ONLY: LangGraph agent definitions (planner/, developer/, validator/, healer/, uat/), agent schemas, agent prompts. No FastAPI routes, no Celery config, no API handlers. Agents importable as library.
     -   *Task Ref*: REFACTOR-004
     -   *Architecture Ref*: 02_project_structure.md
+    -   *Dependencies*: REFACTOR-003 (must complete first - files moved to apps/server)
+    -   *Implementation Steps*:
+        1. Verify REFACTOR-003 completed - files now in apps/server/
+        2. Delete from `packages/daw-agents/src/daw_agents/`:
+           - `api/` directory (now in apps/server)
+           - `workers/` directory (now in apps/server)
+           - `auth/` directory (now in apps/server)
+           - `main.py` (now in apps/server)
+        3. Keep these directories/files:
+           - `agents/` - all agent implementations
+           - `schemas/` - Pydantic models
+           - `evolution/` - experience logger, reflection
+           - `models/` - model router
+           - `mcp/` - MCP client (NOT servers - those go to daw-mcp)
+           - `memory/` - Neo4j connector
+           - `context/` - context compaction
+           - `sandbox/` - E2B wrapper
+           - `tdd/` - TDD guard
+           - `ops/` - drift detection
+           - `deploy/` - deployment gates
+           - `testing/` - prompt harness
+           - `workflow/` - orchestrator, rule enforcer
+           - `config/` - configuration
+           - `prompts/` at package root
+        4. Update `packages/daw-agents/src/daw_agents/__init__.py`:
+           - Remove exports for api, workers, auth
+           - Keep exports for agents, schemas, evolution, etc.
+        5. Update `packages/daw-agents/pyproject.toml`:
+           - Remove FastAPI, uvicorn, celery from dependencies (server-only)
+           - Keep langgraph, langchain, litellm, neo4j, etc.
+        6. Run `cd packages/daw-agents && poetry install`
+        7. Run `cd packages/daw-agents && pytest tests/agents/` - all pass
+        8. Verify package is importable: `python -c "from daw_agents.agents import *"`
+    -   *Directories to DELETE* (after REFACTOR-003):
+        - `packages/daw-agents/src/daw_agents/api/`
+        - `packages/daw-agents/src/daw_agents/workers/`
+        - `packages/daw-agents/src/daw_agents/auth/`
+        - `packages/daw-agents/src/daw_agents/main.py`
+    -   *Directories to KEEP*:
+        - `packages/daw-agents/src/daw_agents/agents/`
+        - `packages/daw-agents/src/daw_agents/schemas/`
+        - `packages/daw-agents/src/daw_agents/evolution/`
+        - `packages/daw-agents/src/daw_agents/models/`
+        - `packages/daw-agents/src/daw_agents/mcp/` (client only)
+        - `packages/daw-agents/src/daw_agents/memory/`
+        - `packages/daw-agents/src/daw_agents/context/`
+        - `packages/daw-agents/src/daw_agents/sandbox/`
+        - `packages/daw-agents/src/daw_agents/tdd/`
+        - `packages/daw-agents/src/daw_agents/ops/`
+        - `packages/daw-agents/src/daw_agents/deploy/`
+        - `packages/daw-agents/src/daw_agents/testing/`
+        - `packages/daw-agents/src/daw_agents/workflow/`
+        - `packages/daw-agents/src/daw_agents/config/`
+        - `packages/daw-agents/prompts/`
+    -   *Verification Commands*:
+        ```bash
+        cd packages/daw-agents && poetry install
+        cd packages/daw-agents && poetry run pytest tests/agents/
+        python -c "from daw_agents.agents.planner import *; print('OK')"
+        python -c "from daw_agents.agents.validator import *; print('OK')"
+        ```
 
 -   **Story 12.5**: [MCP] Create packages/daw-mcp/ for custom MCP servers.
     -   *AC*: `packages/daw-mcp/` created with subdirectories: `git-mcp/`, `graph-memory/`. MCP server implementations moved/created here. Servers register with MCP protocol correctly.
     -   *Task Ref*: REFACTOR-005
     -   *Architecture Ref*: 02_project_structure.md
+    -   *Dependencies*: REFACTOR-001
+    -   *Implementation Steps*:
+        1. Create directory structure:
+           ```
+           packages/daw-mcp/
+           ├── pyproject.toml
+           ├── src/
+           │   └── daw_mcp/
+           │       ├── __init__.py
+           │       ├── git_mcp/
+           │       │   ├── __init__.py
+           │       │   └── server.py
+           │       └── graph_memory/
+           │           ├── __init__.py
+           │           └── server.py
+           └── tests/
+               └── __init__.py
+           ```
+        2. Create `pyproject.toml` with MCP SDK dependencies:
+           - mcp (Model Context Protocol SDK)
+           - neo4j (for graph-memory)
+           - gitpython (for git-mcp)
+        3. If MCP server code exists in `packages/daw-agents/src/daw_agents/mcp/`:
+           - Identify SERVER code (not client) and move to daw-mcp
+           - Keep CLIENT code in daw-agents
+        4. Create placeholder implementations if servers don't exist yet:
+           - `git_mcp/server.py`: Git operations MCP server
+           - `graph_memory/server.py`: Neo4j memory MCP server
+        5. Each server must implement MCP protocol:
+           - `list_tools()` - returns available tools
+           - `call_tool(name, params)` - executes tool
+        6. Run `cd packages/daw-mcp && poetry install`
+        7. Test: Start each server and verify tool discovery works
+    -   *Files to Create*:
+        - `packages/daw-mcp/pyproject.toml`
+        - `packages/daw-mcp/src/daw_mcp/__init__.py`
+        - `packages/daw-mcp/src/daw_mcp/git_mcp/__init__.py`
+        - `packages/daw-mcp/src/daw_mcp/git_mcp/server.py`
+        - `packages/daw-mcp/src/daw_mcp/graph_memory/__init__.py`
+        - `packages/daw-mcp/src/daw_mcp/graph_memory/server.py`
+        - `packages/daw-mcp/tests/__init__.py`
+    -   *Verification Commands*:
+        ```bash
+        cd packages/daw-mcp && poetry install
+        cd packages/daw-mcp && poetry run pytest tests/
+        # Test MCP server starts (implementation-specific)
+        ```
 
 -   **Story 12.6**: [Shared] Rename daw-shared to daw-protocol.
     -   *AC*: `packages/daw-shared/` renamed to `packages/daw-protocol/`. All imports across codebase updated. Contains: Pydantic models, Zod schemas, shared TypeScript types. No import errors.
     -   *Task Ref*: REFACTOR-006
     -   *Architecture Ref*: 02_project_structure.md
+    -   *Dependencies*: REFACTOR-001
+    -   *Implementation Steps*:
+        1. Rename directory: `mv packages/daw-shared packages/daw-protocol`
+        2. Update package configuration:
+           - If Python: Update `pyproject.toml` name to `daw-protocol`
+           - If TypeScript: Update `package.json` name to `@daw/protocol`
+        3. Search entire codebase for `daw-shared` imports:
+           ```bash
+           grep -r "daw-shared" --include="*.py" --include="*.ts" --include="*.tsx" --include="*.json"
+           ```
+        4. Replace all occurrences:
+           - Python: `from daw_shared` → `from daw_protocol`
+           - TypeScript: `@daw/shared` or `daw-shared` → `@daw/protocol`
+           - package.json dependencies
+        5. Update `pnpm-workspace.yaml` if it references daw-shared
+        6. Run `pnpm install` at root to update workspace
+        7. Run full test suite to catch any missed imports:
+           ```bash
+           cd packages/daw-agents && poetry run pytest
+           cd apps/web && pnpm typecheck
+           cd apps/server && poetry run pytest
+           ```
+    -   *Files to Modify*:
+        - `packages/daw-protocol/package.json` or `pyproject.toml` (name field)
+        - All files importing from daw-shared (search and replace)
+        - `pnpm-workspace.yaml` (if references daw-shared)
+        - Any `requirements.txt` or `pyproject.toml` with daw-shared dependency
+    -   *Verification Commands*:
+        ```bash
+        # Ensure no references to old name remain
+        grep -r "daw-shared" --include="*.py" --include="*.ts" --include="*.json" | wc -l  # should be 0
+
+        # Full test suite
+        pnpm install
+        cd packages/daw-agents && poetry run pytest
+        cd apps/web && pnpm typecheck
+        ```
 
 -   **Story 12.7**: [Testing] Comprehensive E2E validation post-refactor.
     -   *AC*: All unit tests pass (pytest, jest). All integration tests pass. Docker Compose builds successfully. Full system starts: frontend connects to backend, backend connects to Neo4j/Redis, agents execute successfully. Manual smoke test of critical flows: auth, chat, agent trace.
     -   *Task Ref*: REFACTOR-007
     -   *Architecture Ref*: 02_project_structure.md
+    -   *Dependencies*: ALL previous REFACTOR tasks (REFACTOR-001 through REFACTOR-006)
+    -   *BLOCKING*: This story MUST pass before Epic 12 is considered complete.
+    -   *Implementation Steps*:
+        1. **Unit Tests (Python)**:
+           ```bash
+           cd packages/daw-agents && poetry run pytest tests/ -v
+           cd packages/daw-mcp && poetry run pytest tests/ -v
+           cd apps/server && poetry run pytest tests/ -v
+           ```
+           All must pass with 0 failures.
+
+        2. **Unit Tests (TypeScript)**:
+           ```bash
+           cd apps/web && pnpm test
+           ```
+           All must pass.
+
+        3. **Type Checking**:
+           ```bash
+           cd apps/web && pnpm typecheck  # 0 errors
+           cd packages/daw-agents && poetry run mypy src/  # 0 errors (if mypy configured)
+           ```
+
+        4. **Linting**:
+           ```bash
+           cd packages/daw-agents && poetry run ruff check src/
+           cd apps/server && poetry run ruff check src/
+           cd apps/web && pnpm lint
+           ```
+           0 errors required.
+
+        5. **Docker Build**:
+           ```bash
+           docker-compose build
+           ```
+           Must complete without errors.
+
+        6. **Full System Startup**:
+           ```bash
+           docker-compose up -d
+           sleep 30  # wait for services
+
+           # Check all services healthy
+           docker-compose ps  # all should be "Up"
+           ```
+
+        7. **Connectivity Tests**:
+           ```bash
+           # Frontend responds
+           curl -f http://localhost:3000
+
+           # Backend responds
+           curl -f http://localhost:8000/health
+
+           # Neo4j responds (if exposed)
+           curl -f http://localhost:7474
+
+           # Redis responds
+           docker-compose exec redis redis-cli ping  # PONG
+           ```
+
+        8. **Smoke Tests** (manual or scripted):
+           - [ ] User can access sign-in page
+           - [ ] Auth flow works (sign in/out)
+           - [ ] Chat interface loads
+           - [ ] Agent trace component renders
+           - [ ] API endpoints respond with valid JSON
+
+        9. **Integration Verification**:
+           - [ ] Frontend successfully calls backend API
+           - [ ] Backend successfully connects to Neo4j
+           - [ ] Backend successfully connects to Redis
+           - [ ] Celery workers can be started
+
+        10. **Coverage Check**:
+            ```bash
+            cd packages/daw-agents && poetry run pytest --cov=daw_agents --cov-report=term-missing
+            ```
+            Must be >= 80% on new code.
+
+    -   *Success Criteria Checklist*:
+        - [ ] `pytest` (all packages): 0 failures
+        - [ ] `pnpm test` (apps/web): 0 failures
+        - [ ] `pnpm typecheck` (apps/web): 0 errors
+        - [ ] `ruff check` (Python): 0 errors
+        - [ ] `pnpm lint` (TypeScript): 0 errors
+        - [ ] `docker-compose build`: succeeds
+        - [ ] `docker-compose up`: all services healthy
+        - [ ] Frontend accessible at localhost:3000
+        - [ ] Backend accessible at localhost:8000
+        - [ ] All smoke tests pass
+
+    -   *If ANY check fails*:
+        1. Document the failure in PROGRESS.md
+        2. Create follow-up task to fix the issue
+        3. Do NOT mark Epic 12 as complete
+        4. Re-run REFACTOR-007 after fixes
 
 **Execution Strategy**:
-1. Stories 12.1-12.6 can be executed in waves with dependency tracking
-2. Each story requires: file moves, import updates, package.json updates, test verification
-3. Story 12.7 is the final gate - blocks merge until full system validation passes
-4. Agents must work file-by-file, verifying each change before proceeding
-5. Rollback strategy: git branch isolation, merge only after 12.7 passes
+1. **Wave 1**: REFACTOR-001 (create structure) - must complete first
+2. **Wave 2**: REFACTOR-002, 003, 005, 006 (parallel - all depend only on 001)
+3. **Wave 3**: REFACTOR-004 (depends on 003 completing)
+4. **Wave 4**: REFACTOR-007 (E2E validation - depends on all above)
+
+**Rollback Strategy**:
+- All work done on a feature branch: `git checkout -b epic-12-architecture-refactor`
+- Each story committed separately with clear messages
+- If REFACTOR-007 fails, branch can be abandoned
+- Only merge to main after REFACTOR-007 passes all checks
