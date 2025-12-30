@@ -16,34 +16,14 @@ For parallel agent execution strategy, see: `docs/planning/agent_execution_plan.
 
 ---
 
-## E2B Execution Environment
-
-**All agents that execute code use E2B sandboxes.**
+## E2B Sandbox
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│ E2B SANDBOX EXECUTION PATTERN                                   │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│   1. Agent writes code locally (packages/*)                     │
-│   2. Agent commits to git                                       │
-│   3. E2B sandbox spins up (~300ms)                              │
-│   4. Sandbox clones repo from GitHub                            │
-│   5. Tests/commands execute in isolation                        │
-│   6. Results returned to agent                                  │
-│   7. Sandbox terminates (ephemeral)                             │
-│                                                                 │
-│   API Key: .creds/e2b_api_key.txt                               │
-│   Env Var: E2B_API_KEY                                          │
-│   Task:    CORE-004 implements the E2B Sandbox Wrapper          │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+API Key:  .creds/e2b_api_key.txt (E2B_API_KEY)
+Wrapper:  CORE-004
+Users:    Executor, Test Runner, Healer
+Pattern:  Write → Commit → Push → E2B executes → Results
 ```
-
-**Agents using E2B:**
-- Executor Agent (primary user)
-- Test Runner (via CORE-004)
-- Healer Agent (debugging in sandbox)
 
 ---
 
@@ -76,19 +56,11 @@ For parallel agent execution strategy, see: `docs/planning/agent_execution_plan.
 *   `run_test`: Execute `pytest` or `npm test` (in E2B Sandbox).
 *   `git_commit`: Commit changes to version control.
 
-### E2B Sandbox Configuration
-```
-API Key Location: .creds/e2b_api_key.txt
-Environment Var:  E2B_API_KEY
-Pattern:          Write locally → Commit → E2B clones & executes → Results returned
-```
-
 ### Workflow Constraints
 *   **Red Phase**: MUST create a failing test file (`tests/test_foo.py`) before modifying `src/`.
 *   **Green Phase**: MUST write minimal code to pass the test.
 *   **Refactor**: MUST run linters (`ruff`, `eslint`) before committing.
-*   **Sandboxing**: ALL code execution happens in E2B. No local execution.
-*   **E2B Pattern**: Code must be committed before execution. E2B clones from git.
+*   **Sandboxing**: ALL code execution happens in E2B (see E2B Sandbox section above).
 
 ---
 

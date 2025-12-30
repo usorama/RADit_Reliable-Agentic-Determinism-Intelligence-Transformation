@@ -224,51 +224,13 @@ if not test_fails(test_file):
 
 ---
 
-## E2B Sandbox Execution Environment
+## E2B Sandbox (Code Execution)
 
-### Why E2B (Not Codespaces)
 ```
-E2B is purpose-built for AI agent code execution:
-- Sub-second sandbox spin-up (~300ms vs 30-90s for Codespaces)
-- Native Python/JS SDK for programmatic control
-- Ephemeral by design (perfect for TDD: run tests, discard)
-- Per-second billing (cost-efficient for burst workloads)
-- No SSH/API workarounds needed
-```
-
-### E2B API Configuration
-```
-Location: .creds/e2b_api_key.txt
-Env Var:  E2B_API_KEY
-Usage:    CORE-004 (E2B Sandbox Wrapper), Executor Agent, Test Runner
-```
-
-### Code Execution Pattern
-```
-1. Write code locally (packages/*)
-2. Commit and push to GitHub
-3. E2B sandbox clones repo
-4. Tests execute in isolated environment
-5. Results returned, sandbox terminates
-6. Code persists in git, not in sandbox
-```
-
-### E2B Usage in Agents
-```python
-# CORE-004 wraps E2B for the Executor Agent
-from e2b import Sandbox
-
-sandbox = Sandbox(api_key=os.getenv("E2B_API_KEY"))
-result = sandbox.run_code("pytest tests/")
-sandbox.close()
-```
-
-### Critical: E2B is for EXECUTION, not STORAGE
-```
-- Sandboxes are ephemeral - code disappears on termination
-- All code must be committed to git before execution
-- E2B clones from git, executes, returns results
-- Never rely on sandbox persistence
+API Key:  .creds/e2b_api_key.txt → E2B_API_KEY
+Wrapper:  CORE-004 (E2B Sandbox Wrapper)
+Pattern:  Write locally → Commit → Push → E2B executes → Results returned
+Critical: E2B is ephemeral - code must be in git before execution
 ```
 
 ---

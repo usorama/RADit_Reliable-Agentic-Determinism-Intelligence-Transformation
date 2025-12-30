@@ -240,6 +240,69 @@ async def execute_wave(wave_tasks: list[Task]):
 
 ---
 
+## E2B Execution Environment
+
+**All test execution and code verification happens in E2B sandboxes.**
+
+### Configuration
+```
+API Key Location: .creds/e2b_api_key.txt
+Environment Var:  E2B_API_KEY
+Sandbox Task:     CORE-004 (E2B Sandbox Wrapper)
+```
+
+### Execution Pattern
+```
+┌───────────────────────────────────────────────────────────────┐
+│                    E2B EXECUTION FLOW                         │
+├───────────────────────────────────────────────────────────────┤
+│                                                               │
+│  Agent writes code locally → Commits to git → Pushes          │
+│                               ↓                               │
+│  E2B sandbox spins up (~300ms)                                │
+│                               ↓                               │
+│  Sandbox clones repo from GitHub                              │
+│                               ↓                               │
+│  Tests/linters execute in isolation                           │
+│                               ↓                               │
+│  Results returned (stdout, stderr, exit code)                 │
+│                               ↓                               │
+│  Sandbox terminates (ephemeral)                               │
+│                                                               │
+│  CRITICAL: Code persists in git, NOT in sandbox               │
+│                                                               │
+└───────────────────────────────────────────────────────────────┘
+```
+
+### Agent-E2B Integration
+```python
+# Agents using E2B (via CORE-004 wrapper)
+AGENTS_USING_E2B = [
+    "Executor Agent",    # Primary: runs tests in TDD workflow
+    "Test Runner",       # Runs full test suites
+    "Healer Agent",      # Debugs failures in isolated environment
+]
+
+# Agents NOT using E2B
+AGENTS_NOT_USING_E2B = [
+    "Planner Agent",     # No code execution
+    "Validator Agent",   # Static analysis, no sandbox needed
+    "Monitor Agent",     # Observes traces, no execution
+]
+```
+
+### Pre-E2B Commit Requirement
+```
+BEFORE any test can run in E2B:
+1. Code must be written to local files
+2. Code must be committed: git add . && git commit
+3. Code must be pushed: git push
+
+E2B clones from GitHub - uncommitted code is invisible to E2B.
+```
+
+---
+
 ## Progress Tracking Protocol
 
 ### Primary Progress File: `tasks.json`
