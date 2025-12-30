@@ -488,8 +488,9 @@
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/agents/planner/test_task_decomposer.py"
     },
-    "status": "in_progress",
-    "started_at": "2025-12-30T13:48:12.154750Z"
+    "status": "completed",
+    "started_at": "2025-12-30T13:48:12.154750Z",
+    "completed_at": "2025-12-30T13:58:40.335192Z"
   },
   {
     "id": "PRD-OUTPUT-001",
