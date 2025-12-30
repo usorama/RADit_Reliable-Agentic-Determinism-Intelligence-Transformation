@@ -674,8 +674,9 @@
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/deploy/test_migration.py"
     },
-    "status": "in_progress",
-    "started_at": "2025-12-30T22:00:00Z"
+    "status": "completed",
+    "started_at": "2025-12-30T22:00:00Z",
+    "completed_at": "2025-12-30T15:23:41Z"
   },
   {
     "id": "API-001",
@@ -786,7 +787,10 @@
     "verification": {
       "type": "file_exists",
       "path": "packages/daw-frontend/src/components/ChatInterface.tsx"
-    }
+    },
+    "status": "completed",
+    "started_at": "2025-12-30T20:45:00Z",
+    "completed_at": "2025-12-30T21:00:00Z"
   },
   {
     "id": "INFRA-003",
@@ -967,14 +971,17 @@
       "DRIFT-001"
     ],
     "context_files": [
-      "packages/daw-agents/src/ops/alerts.py",
-      "packages/daw-agents/src/ops/actions.py"
+      "packages/daw-agents/src/daw_agents/ops/alerts.py",
+      "packages/daw-agents/src/daw_agents/ops/actions.py"
     ],
     "instruction": "Implement drift response system: (1) Integrate with observability stack (Helicone, Datadog), (2) Slack/Linear notifications for drift detection, (3) Weekly drift report generation, (4) Action triggers: Mild drift = increase monitoring + log; Moderate drift = context compaction + model switch; Severe drift = pause agent + human intervention required. See FR-05.1 in PRD.",
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/ops/test_alerts.py"
-    }
+    },
+    "status": "completed",
+    "started_at": "2025-12-30T15:15:00.000Z",
+    "completed_at": "2025-12-30T15:30:00.000Z"
   },
   {
     "id": "ORCHESTRATOR-001",
@@ -997,8 +1004,9 @@
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/workflow/test_orchestrator.py"
     },
-    "status": "in_progress",
-    "started_at": "2025-12-30T15:15:34.789341+00:00"
+    "status": "completed",
+    "started_at": "2025-12-30T15:15:34.789341+00:00",
+    "completed_at": "2025-12-30T15:24:23.458719+00:00"
   },
   {
     "id": "EVOLVE-001",
@@ -1042,7 +1050,8 @@
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/evolution/test_reflection.py"
     },
-    "status": "in_progress",
-    "started_at": "2025-12-30T23:00:00Z"
+    "status": "completed",
+    "started_at": "2025-12-30T23:00:00Z",
+    "completed_at": "2025-12-30T23:45:00Z"
   }
 ]
