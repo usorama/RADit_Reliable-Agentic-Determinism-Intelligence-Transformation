@@ -301,6 +301,20 @@ BEFORE any test can run in E2B:
 E2B clones from GitHub - uncommitted code is invisible to E2B.
 ```
 
+### E2B → VPS Neo4j Connection
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  E2B Cloud Sandbox ──────► bolt://72.60.204.156:7687 ──────► VPS│
+│                            (public internet)                    │
+│                                                                 │
+│  Local Dev ──────────────► bolt://72.60.204.156:7687 ──────► VPS│
+│                            (public internet)                    │
+│                                                                 │
+│  Same Neo4j instance for all environments.                      │
+│  Credentials: .creds/neo4j_vps.txt                              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Progress Tracking Protocol

@@ -235,6 +235,20 @@ Critical: E2B is ephemeral - code must be in git before execution
 
 ---
 
+## Hostinger VPS Infrastructure
+
+```
+IP:       72.60.204.156
+SSH:      ssh root@72.60.204.156 (creds: .creds/hostinger_vps.txt)
+Neo4j:    bolt://72.60.204.156:7687 (creds: .creds/neo4j_vps.txt)
+          User: neo4j / Pass: daw_graph_2024
+          HTTP: http://72.60.204.156:7474
+
+Both local dev and E2B connect to VPS Neo4j over public internet.
+```
+
+---
+
 ## Session Continuity
 
 When starting a new session:

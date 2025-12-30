@@ -27,6 +27,16 @@ Pattern:  Write → Commit → Push → E2B executes → Results
 
 ---
 
+## VPS Infrastructure (Hostinger)
+
+```
+Neo4j:    bolt://72.60.204.156:7687 (creds: .creds/neo4j_vps.txt)
+SSH:      root@72.60.204.156 (creds: .creds/hostinger_vps.txt)
+Access:   Both local dev and E2B connect over public internet
+```
+
+---
+
 ## 1. The Planner Agent ("The Taskmaster")
 **Role**: Senior Product Manager & Architect
 **Model**: High-Reasoning (e.g., `o1`, `claude-3-5-sonnet`)
