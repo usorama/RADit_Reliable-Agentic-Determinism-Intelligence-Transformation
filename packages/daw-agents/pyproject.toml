@@ -45,6 +45,8 @@ addopts = "-v --strict-markers"
 markers = [
     "asyncio: marks tests as async (deselect with '-m \"not asyncio\"')",
     "prompt_regression: marks tests as prompt regression tests (run with '-m prompt_regression')",
+    "integration: marks tests as integration tests (require real services)",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
 ]
 
 [tool.mypy]
