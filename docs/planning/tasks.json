@@ -264,13 +264,15 @@
       "MCP-SEC-001"
     ],
     "context_files": [
-      "packages/daw-agents/src/mcp/audit.py"
+      "packages/daw-agents/src/daw_agents/mcp/audit.py"
     ],
     "instruction": "Every tool call must be logged with: timestamp, agent_id, user_id, tool name, action, parameters, result status, response time. Implement hash-chaining for tamper resistance. Configure 7-year retention for SOC 2/ISO 27001 compliance. Integrate with observability stack (Helicone). See FR-01.3.3 in PRD.",
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/mcp/test_audit.py"
-    }
+    },
+    "status": "completed",
+    "completed_at": "2025-12-30T19:30:00Z"
   },
   {
     "id": "MCP-SEC-004",
@@ -288,7 +290,10 @@
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/mcp/test_shields.py"
-    }
+    },
+    "status": "completed",
+    "started_at": "2025-12-30T15:00:00Z",
+    "completed_at": "2025-12-30T15:30:00Z"
   },
   {
     "id": "PROMPT-GOV-002",
@@ -550,8 +555,9 @@
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/agents/healer/test_graph.py"
     },
-    "status": "in_progress",
-    "started_at": "2025-12-30T03:00:00Z"
+    "status": "completed",
+    "started_at": "2025-12-30T03:00:00Z",
+    "completed_at": "2025-12-30T03:45:00Z"
   },
   {
     "id": "RULES-001",
