@@ -1,0 +1,119 @@
+[
+  {
+    "id": "CALC-001",
+    "type": "setup",
+    "priority": "P0",
+    "phase": 0,
+    "description": "Initialize calculator project structure",
+    "command": "mkdir -p src/calculator tests/test_calculator && touch src/calculator/__init__.py tests/test_calculator/__init__.py",
+    "verification": {
+      "type": "file_exists",
+      "path": "src/calculator/__init__.py"
+    },
+    "estimated_hours": 0.25
+  },
+  {
+    "id": "CALC-002",
+    "type": "code",
+    "priority": "P0",
+    "phase": 1,
+    "description": "Implement addition operation with TDD",
+    "dependencies": ["CALC-001"],
+    "context_files": [
+      "src/calculator/operations.py",
+      "tests/test_calculator/test_operations.py"
+    ],
+    "instruction": "Write failing test for add function, then implement. Must handle int, float, and negative numbers.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_calculator/test_operations.py::test_add -v"
+    },
+    "estimated_hours": 0.5
+  },
+  {
+    "id": "CALC-003",
+    "type": "code",
+    "priority": "P0",
+    "phase": 1,
+    "description": "Implement subtraction operation with TDD",
+    "dependencies": ["CALC-001"],
+    "context_files": [
+      "src/calculator/operations.py",
+      "tests/test_calculator/test_operations.py"
+    ],
+    "instruction": "Write failing test for subtract function, then implement. Must handle int, float, and negative numbers.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_calculator/test_operations.py::test_subtract -v"
+    },
+    "estimated_hours": 0.5
+  },
+  {
+    "id": "CALC-004",
+    "type": "code",
+    "priority": "P0",
+    "phase": 1,
+    "description": "Implement multiplication operation with TDD",
+    "dependencies": ["CALC-001"],
+    "context_files": [
+      "src/calculator/operations.py",
+      "tests/test_calculator/test_operations.py"
+    ],
+    "instruction": "Write failing test for multiply function, then implement. Must handle int, float, negative numbers, and zero.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_calculator/test_operations.py::test_multiply -v"
+    },
+    "estimated_hours": 0.5
+  },
+  {
+    "id": "CALC-005",
+    "type": "code",
+    "priority": "P0",
+    "phase": 1,
+    "description": "Implement division operation with TDD",
+    "dependencies": ["CALC-001"],
+    "context_files": [
+      "src/calculator/operations.py",
+      "tests/test_calculator/test_operations.py"
+    ],
+    "instruction": "Write failing test for divide function, then implement. Must handle int, float, negative numbers, and raise ZeroDivisionError for division by zero.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_calculator/test_operations.py::test_divide -v"
+    },
+    "estimated_hours": 0.5
+  },
+  {
+    "id": "CALC-006",
+    "type": "code",
+    "priority": "P1",
+    "phase": 2,
+    "description": "Implement input validation with TDD",
+    "dependencies": ["CALC-002", "CALC-003", "CALC-004", "CALC-005"],
+    "context_files": [
+      "src/calculator/validator.py",
+      "tests/test_calculator/test_validator.py"
+    ],
+    "instruction": "Write failing tests for validate_number and validate_operation functions. Implement ValidationError exception class. Handle non-numeric, empty, and invalid inputs.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_calculator/test_validator.py -v"
+    },
+    "estimated_hours": 0.75
+  },
+  {
+    "id": "CALC-007",
+    "type": "verification",
+    "priority": "P0",
+    "phase": 3,
+    "description": "Run full test suite and verify coverage",
+    "dependencies": ["CALC-006"],
+    "command": "pytest --cov=src/calculator --cov-report=term-missing -v",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest --cov=src/calculator --cov-fail-under=80"
+    },
+    "estimated_hours": 0.25
+  }
+]

@@ -1,0 +1,210 @@
+{
+  "benchmark_id": "ecommerce_checkout",
+  "analysis_version": "1.0",
+  "timestamp": "2025-12-30T19:50:00Z",
+  "overall_complexity": {
+    "score": 6,
+    "level": "medium",
+    "rationale": "Multi-step workflow with multiple services, validation layers, state management, and transaction-like order placement"
+  },
+  "feature_scores": [
+    {
+      "feature": "US-001: View Cart",
+      "cognitive_load": 3,
+      "rationale": "Display logic with total calculation",
+      "risks": []
+    },
+    {
+      "feature": "US-002: Add Item to Cart",
+      "cognitive_load": 4,
+      "rationale": "Stock validation, quantity updates for existing items",
+      "risks": [
+        {
+          "type": "concurrency",
+          "description": "Race condition on stock check",
+          "mitigation": "Accept for benchmark scope, note in production needs locking"
+        }
+      ]
+    },
+    {
+      "feature": "US-003: Update Cart Item",
+      "cognitive_load": 3,
+      "rationale": "Quantity validation and stock check",
+      "risks": []
+    },
+    {
+      "feature": "US-004: Remove Cart Item",
+      "cognitive_load": 2,
+      "rationale": "Simple removal with total recalculation",
+      "risks": []
+    },
+    {
+      "feature": "US-005: Enter Shipping Address",
+      "cognitive_load": 4,
+      "rationale": "Multiple field validation, postal code format",
+      "risks": []
+    },
+    {
+      "feature": "US-006: Select Shipping Method",
+      "cognitive_load": 2,
+      "rationale": "Enum selection with cost lookup",
+      "risks": []
+    },
+    {
+      "feature": "US-007: Enter Payment Information",
+      "cognitive_load": 6,
+      "rationale": "Luhn validation, expiry check, tokenization, security considerations",
+      "risks": [
+        {
+          "type": "security",
+          "description": "Card number handling requires care",
+          "mitigation": "Never store full card number, use mock tokenization"
+        }
+      ]
+    },
+    {
+      "feature": "US-008: Review Order",
+      "cognitive_load": 5,
+      "rationale": "Aggregate data from multiple sources, calculate totals",
+      "risks": []
+    },
+    {
+      "feature": "US-009: Place Order",
+      "cognitive_load": 8,
+      "rationale": "Multi-step transaction: validate all, process payment, create order, update inventory, clear cart",
+      "risks": [
+        {
+          "type": "data_integrity",
+          "description": "Partial failure can leave inconsistent state",
+          "mitigation": "Implement proper rollback on any failure"
+        },
+        {
+          "type": "inventory",
+          "description": "Stock may become negative without proper checks",
+          "mitigation": "Check stock availability before payment"
+        }
+      ]
+    },
+    {
+      "feature": "US-010: Handle Payment Failure",
+      "cognitive_load": 5,
+      "rationale": "Error handling, state rollback, retry logic",
+      "risks": []
+    },
+    {
+      "feature": "US-011: Calculate Tax",
+      "cognitive_load": 3,
+      "rationale": "State-based lookup and calculation",
+      "risks": []
+    },
+    {
+      "feature": "US-012: Apply Discount Code",
+      "cognitive_load": 4,
+      "rationale": "Code validation, expiry check, percentage vs fixed discount",
+      "risks": []
+    }
+  ],
+  "dependency_graph": {
+    "nodes": [
+      { "id": "ECOM-001", "type": "setup", "risk": "low" },
+      { "id": "ECOM-002", "type": "code", "risk": "low" },
+      { "id": "ECOM-003", "type": "code", "risk": "low" },
+      { "id": "ECOM-004", "type": "code", "risk": "low" },
+      { "id": "ECOM-005", "type": "code", "risk": "low" },
+      { "id": "ECOM-006", "type": "code", "risk": "low" },
+      { "id": "ECOM-007", "type": "code", "risk": "low" },
+      { "id": "ECOM-008", "type": "code", "risk": "low" },
+      { "id": "ECOM-009", "type": "code", "risk": "low" },
+      { "id": "ECOM-010", "type": "code", "risk": "low" },
+      { "id": "ECOM-011", "type": "code", "risk": "medium" },
+      { "id": "ECOM-012", "type": "code", "risk": "medium" },
+      { "id": "ECOM-013", "type": "code", "risk": "low" },
+      { "id": "ECOM-014", "type": "code", "risk": "medium" },
+      { "id": "ECOM-015", "type": "code", "risk": "low" },
+      { "id": "ECOM-016", "type": "code", "risk": "low" },
+      { "id": "ECOM-017", "type": "code", "risk": "medium" },
+      { "id": "ECOM-018", "type": "code", "risk": "medium" },
+      { "id": "ECOM-019", "type": "code", "risk": "high" },
+      { "id": "ECOM-020", "type": "code", "risk": "medium" },
+      { "id": "ECOM-021", "type": "code", "risk": "low" },
+      { "id": "ECOM-022", "type": "verification", "risk": "low" }
+    ],
+    "edges": [
+      { "from": "ECOM-001", "to": "ECOM-002" },
+      { "from": "ECOM-001", "to": "ECOM-004" },
+      { "from": "ECOM-001", "to": "ECOM-005" },
+      { "from": "ECOM-001", "to": "ECOM-007" },
+      { "from": "ECOM-002", "to": "ECOM-003" },
+      { "from": "ECOM-003", "to": "ECOM-006" },
+      { "from": "ECOM-004", "to": "ECOM-006" },
+      { "from": "ECOM-005", "to": "ECOM-006" },
+      { "from": "ECOM-007", "to": "ECOM-008" },
+      { "from": "ECOM-004", "to": "ECOM-009" },
+      { "from": "ECOM-007", "to": "ECOM-009" },
+      { "from": "ECOM-002", "to": "ECOM-010" },
+      { "from": "ECOM-007", "to": "ECOM-010" },
+      { "from": "ECOM-003", "to": "ECOM-011" },
+      { "from": "ECOM-010", "to": "ECOM-011" },
+      { "from": "ECOM-008", "to": "ECOM-012" },
+      { "from": "ECOM-007", "to": "ECOM-012" },
+      { "from": "ECOM-004", "to": "ECOM-013" },
+      { "from": "ECOM-007", "to": "ECOM-013" },
+      { "from": "ECOM-011", "to": "ECOM-014" },
+      { "from": "ECOM-009", "to": "ECOM-015" },
+      { "from": "ECOM-014", "to": "ECOM-015" },
+      { "from": "ECOM-015", "to": "ECOM-016" },
+      { "from": "ECOM-012", "to": "ECOM-017" },
+      { "from": "ECOM-014", "to": "ECOM-017" },
+      { "from": "ECOM-016", "to": "ECOM-018" },
+      { "from": "ECOM-017", "to": "ECOM-018" },
+      { "from": "ECOM-013", "to": "ECOM-018" },
+      { "from": "ECOM-018", "to": "ECOM-019" },
+      { "from": "ECOM-019", "to": "ECOM-020" },
+      { "from": "ECOM-018", "to": "ECOM-021" },
+      { "from": "ECOM-019", "to": "ECOM-022" },
+      { "from": "ECOM-020", "to": "ECOM-022" }
+    ],
+    "critical_path": ["ECOM-001", "ECOM-002", "ECOM-003", "ECOM-011", "ECOM-014", "ECOM-015", "ECOM-016", "ECOM-018", "ECOM-019", "ECOM-022"],
+    "bottlenecks": [
+      {
+        "task_id": "ECOM-014",
+        "reason": "CheckoutSession is central to all checkout operations",
+        "mitigation": "Complete early, provides foundation for all checkout steps"
+      },
+      {
+        "task_id": "ECOM-019",
+        "reason": "Place order integrates all services",
+        "mitigation": "Ensure all dependencies are well-tested before integration"
+      }
+    ]
+  },
+  "model_recommendations": {
+    "planning": {
+      "recommended_model": "claude-sonnet-4-20250514",
+      "rationale": "Medium complexity with multiple services, balanced model handles well"
+    },
+    "coding": {
+      "recommended_model": "claude-sonnet-4-20250514",
+      "rationale": "Standard patterns, good for iterative TDD"
+    },
+    "validation": {
+      "recommended_model": "gpt-4o",
+      "rationale": "Cross-model validation for transaction logic"
+    }
+  },
+  "architectural_warnings": [
+    {
+      "type": "transaction_integrity",
+      "severity": "high",
+      "description": "Order placement involves multiple operations that must succeed or fail together",
+      "recommendation": "Implement manual rollback pattern: if payment fails, don't create order or reduce inventory"
+    },
+    {
+      "type": "security",
+      "severity": "medium",
+      "description": "Credit card handling requires careful implementation",
+      "recommendation": "Never store full card numbers, use mock tokenization, mask card in display"
+    }
+  ],
+  "estimated_total_hours": 12.5
+}

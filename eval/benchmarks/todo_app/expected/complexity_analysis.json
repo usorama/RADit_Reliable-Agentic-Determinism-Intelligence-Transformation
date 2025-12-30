@@ -1,0 +1,157 @@
+{
+  "benchmark_id": "todo_app",
+  "analysis_version": "1.0",
+  "timestamp": "2025-12-30T19:40:00Z",
+  "overall_complexity": {
+    "score": 4,
+    "level": "low-medium",
+    "rationale": "CRUD operations with state management, data persistence, and multiple entity states"
+  },
+  "feature_scores": [
+    {
+      "feature": "US-001: Create Task",
+      "cognitive_load": 3,
+      "rationale": "UUID generation, validation, timestamps, and persistence",
+      "risks": []
+    },
+    {
+      "feature": "US-002: List Tasks",
+      "cognitive_load": 3,
+      "rationale": "Filtering, ordering, empty state handling",
+      "risks": []
+    },
+    {
+      "feature": "US-003: View Task Details",
+      "cognitive_load": 2,
+      "rationale": "Simple lookup with error handling",
+      "risks": []
+    },
+    {
+      "feature": "US-004: Update Task",
+      "cognitive_load": 4,
+      "rationale": "Partial updates, validation, timestamp management",
+      "risks": [
+        {
+          "type": "data_integrity",
+          "description": "Partial updates must not overwrite unchanged fields",
+          "mitigation": "Use explicit None checks and only update provided fields"
+        }
+      ]
+    },
+    {
+      "feature": "US-005: Complete Task",
+      "cognitive_load": 3,
+      "rationale": "State transition with timestamp and idempotency",
+      "risks": [
+        {
+          "type": "state_management",
+          "description": "Re-completing already completed task needs defined behavior",
+          "mitigation": "Either idempotent (no-op) or raise TaskAlreadyCompletedError"
+        }
+      ]
+    },
+    {
+      "feature": "US-006: Delete Task",
+      "cognitive_load": 2,
+      "rationale": "Simple removal with error handling",
+      "risks": []
+    },
+    {
+      "feature": "US-007: Reopen Task",
+      "cognitive_load": 3,
+      "rationale": "State transition with timestamp clearing",
+      "risks": []
+    },
+    {
+      "feature": "US-008: Add Due Date (Optional)",
+      "cognitive_load": 4,
+      "rationale": "Date validation, future date check, overdue filtering",
+      "risks": [
+        {
+          "type": "edge_case",
+          "description": "Timezone handling for due dates",
+          "mitigation": "Use UTC consistently or document timezone assumptions"
+        }
+      ]
+    },
+    {
+      "feature": "US-009: Data Persistence",
+      "cognitive_load": 5,
+      "rationale": "File I/O, JSON serialization, error recovery, atomic writes",
+      "risks": [
+        {
+          "type": "data_loss",
+          "description": "File corruption during write can lose all data",
+          "mitigation": "Write to temp file then atomic rename"
+        },
+        {
+          "type": "concurrency",
+          "description": "Concurrent access can corrupt file",
+          "mitigation": "File locking or single-process assumption"
+        }
+      ]
+    }
+  ],
+  "dependency_graph": {
+    "nodes": [
+      { "id": "TODO-001", "type": "setup", "risk": "low" },
+      { "id": "TODO-002", "type": "code", "risk": "low" },
+      { "id": "TODO-003", "type": "code", "risk": "low" },
+      { "id": "TODO-004", "type": "code", "risk": "medium" },
+      { "id": "TODO-005", "type": "code", "risk": "low" },
+      { "id": "TODO-006", "type": "code", "risk": "low" },
+      { "id": "TODO-007", "type": "code", "risk": "low" },
+      { "id": "TODO-008", "type": "code", "risk": "low" },
+      { "id": "TODO-009", "type": "code", "risk": "low" },
+      { "id": "TODO-010", "type": "code", "risk": "low" },
+      { "id": "TODO-011", "type": "code", "risk": "low" },
+      { "id": "TODO-012", "type": "verification", "risk": "low" }
+    ],
+    "edges": [
+      { "from": "TODO-001", "to": "TODO-002" },
+      { "from": "TODO-001", "to": "TODO-003" },
+      { "from": "TODO-002", "to": "TODO-004" },
+      { "from": "TODO-003", "to": "TODO-004" },
+      { "from": "TODO-004", "to": "TODO-005" },
+      { "from": "TODO-005", "to": "TODO-006" },
+      { "from": "TODO-006", "to": "TODO-007" },
+      { "from": "TODO-006", "to": "TODO-008" },
+      { "from": "TODO-006", "to": "TODO-009" },
+      { "from": "TODO-008", "to": "TODO-010" },
+      { "from": "TODO-007", "to": "TODO-011" },
+      { "from": "TODO-009", "to": "TODO-012" },
+      { "from": "TODO-010", "to": "TODO-012" }
+    ],
+    "critical_path": ["TODO-001", "TODO-002", "TODO-004", "TODO-005", "TODO-006", "TODO-009", "TODO-012"],
+    "bottlenecks": [
+      {
+        "task_id": "TODO-004",
+        "reason": "Repository is dependency for all service operations",
+        "mitigation": "Complete repository early, consider mock for service tests"
+      }
+    ]
+  },
+  "model_recommendations": {
+    "planning": {
+      "recommended_model": "claude-sonnet-4-20250514",
+      "rationale": "Standard complexity PRD, balanced model sufficient"
+    },
+    "coding": {
+      "recommended_model": "claude-sonnet-4-20250514",
+      "rationale": "CRUD patterns well-understood, balanced speed/quality"
+    },
+    "validation": {
+      "recommended_model": "gpt-4o",
+      "rationale": "Cross-model validation for reliability"
+    }
+  },
+  "architectural_warnings": [
+    {
+      "type": "data_integrity",
+      "severity": "medium",
+      "description": "JSON file persistence is not atomic by default",
+      "recommendation": "Implement atomic writes using temp file + rename pattern"
+    }
+  ],
+  "estimated_total_hours": 6.25
+}

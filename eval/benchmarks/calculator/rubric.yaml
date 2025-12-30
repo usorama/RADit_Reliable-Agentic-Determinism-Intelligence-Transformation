@@ -1,0 +1,168 @@
+version: "1.0"
+benchmark_id: "calculator"
+description: "Scoring rubric for Calculator benchmark evaluation"
+
+scoring:
+  task_decomposition:
+    weight: 0.30
+    description: "Measures quality of PRD to task breakdown"
+    criteria:
+      - name: task_count_accuracy
+        weight: 0.25
+        tolerance: 0.20
+        expected_range: [6, 8]
+        description: "Task count should be 6-8 tasks"
+        scoring:
+          full_credit: "6-8 tasks"
+          partial_credit: "5 or 9 tasks (within tolerance)"
+          no_credit: "<5 or >9 tasks"
+
+      - name: dependency_correctness
+        weight: 0.40
+        description: "Critical dependencies correctly identified"
+        required_dependencies:
+          - from: "setup"
+            to: "operations"
+          - from: "operations"
+            to: "validation"
+        scoring:
+          full_credit: "All critical dependencies present"
+          partial_credit: "Most dependencies present"
+          no_credit: "Missing critical dependencies"
+
+      - name: priority_alignment
+        weight: 0.35
+        description: "Priority distribution matches requirements"
+        expected_distribution:
+          P0: 5  # Core operations + setup + verification
+          P1: 1  # Validation
+          P2: 1  # Expression parsing (optional)
+        scoring:
+          full_credit: "Distribution within 1 task difference"
+          partial_credit: "Distribution within 2 task difference"
+          no_credit: "Distribution off by more than 2 tasks"
+
+  code_quality:
+    weight: 0.40
+    description: "Measures quality of generated code"
+    criteria:
+      - name: test_coverage
+        weight: 0.30
+        threshold: 0.80
+        description: ">= 80% test coverage on generated code"
+        scoring:
+          full_credit: ">= 80% coverage"
+          partial_credit: ">= 70% coverage"
+          no_credit: "< 70% coverage"
+
+      - name: lint_pass
+        weight: 0.25
+        threshold: 1.00
+        description: "0 linting errors (ruff)"
+        scoring:
+          full_credit: "0 errors"
+          partial_credit: "1-3 minor warnings"
+          no_credit: ">3 issues or any errors"
+
+      - name: type_safety
+        weight: 0.25
+        threshold: 1.00
+        description: "0 type errors (mypy)"
+        scoring:
+          full_credit: "0 errors"
+          partial_credit: "1-2 minor issues"
+          no_credit: ">2 type errors"
+
+      - name: pattern_adherence
+        weight: 0.20
+        description: "Follows expected architectural patterns"
+        expected_patterns:
+          - "Separate modules for operations and validation"
+          - "Exception class for validation errors"
+          - "Type hints on all public functions"
+          - "Docstrings on all public functions"
+        scoring:
+          full_credit: "All patterns followed"
+          partial_credit: "Most patterns followed (3/4)"
+          no_credit: "Less than 3 patterns followed"
+
+  similarity:
+    weight: 0.30
+    description: "Measures output similarity to golden references"
+    criteria:
+      - name: semantic_similarity
+        weight: 0.50
+        threshold: 0.85
+        model: "text-embedding-3-small"
+        description: "PRD and documentation similarity"
+        scoring:
+          full_credit: ">= 0.85 similarity"
+          partial_credit: ">= 0.75 similarity"
+          no_credit: "< 0.75 similarity"
+
+      - name: structural_similarity
+        weight: 0.50
+        threshold: 0.80
+        description: "Code structure and API similarity"
+        comparison_points:
+          - "Function signatures match expected"
+          - "Module structure matches expected"
+          - "Error handling patterns match"
+        scoring:
+          full_credit: ">= 0.80 structural match"
+          partial_credit: ">= 0.70 structural match"
+          no_credit: "< 0.70 structural match"
+
+pass_criteria:
+  required:
+    - task_decomposition_score: ">= 0.70"
+    - code_quality_score: ">= 0.80"
+    - all_tests_pass: true
+
+  optional:
+    - similarity_score: ">= 0.85"
+    - time_under_budget: true
+
+expected_outputs:
+  files:
+    - "src/calculator/__init__.py"
+    - "src/calculator/operations.py"
+    - "src/calculator/validator.py"
+    - "tests/test_calculator/__init__.py"
+    - "tests/test_calculator/test_operations.py"
+    - "tests/test_calculator/test_validator.py"
+
+  functions:
+    operations:
+      - name: "add"
+        signature: "(a: float, b: float) -> float"
+      - name: "subtract"
+        signature: "(a: float, b: float) -> float"
+      - name: "multiply"
+        signature: "(a: float, b: float) -> float"
+      - name: "divide"
+        signature: "(a: float, b: float) -> float"
+
+    validator:
+      - name: "validate_number"
+        signature: "(value: str) -> float"
+      - name: "validate_operation"
+        signature: "(op: str) -> str"
+
+  exceptions:
+    - name: "ValidationError"
+      base: "Exception"
+
+test_requirements:
+  minimum_test_count: 15
+  required_test_categories:
+    - "test_add_integers"
+    - "test_add_floats"
+    - "test_add_negatives"
+    - "test_subtract_basic"
+    - "test_multiply_basic"
+    - "test_multiply_by_zero"
+    - "test_divide_basic"
+    - "test_divide_by_zero"
+    - "test_validate_number_valid"
+    - "test_validate_number_invalid"

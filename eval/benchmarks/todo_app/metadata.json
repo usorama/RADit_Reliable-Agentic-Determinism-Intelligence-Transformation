@@ -1,0 +1,110 @@
+{
+  "benchmark_id": "todo_app",
+  "name": "ToDo App",
+  "version": "1.0.0",
+  "created_at": "2025-12-30T19:40:00Z",
+  "updated_at": "2025-12-30T19:40:00Z",
+  "author": "DAW Eval Team",
+  "description": "CRUD application to validate state management and data persistence patterns",
+  "complexity": {
+    "level": "low-medium",
+    "score": 4,
+    "scale": "1-10"
+  },
+  "category": "productivity",
+  "tags": ["crud", "state-management", "persistence", "pydantic", "repository-pattern"],
+  "technology_stack": {
+    "language": "python",
+    "version": "3.11+",
+    "testing": "pytest",
+    "linting": "ruff",
+    "type_checking": "mypy",
+    "validation": "pydantic"
+  },
+  "expected_metrics": {
+    "task_count": {
+      "min": 12,
+      "max": 15,
+      "target": 12
+    },
+    "duration": {
+      "min_seconds": 720,
+      "max_seconds": 1200,
+      "target_seconds": 900
+    },
+    "cost": {
+      "min_usd": 0.40,
+      "max_usd": 1.00,
+      "target_usd": 0.65
+    },
+    "test_count": {
+      "min": 25,
+      "target": 35
+    },
+    "coverage": {
+      "min_percent": 80,
+      "target_percent": 90
+    }
+  },
+  "key_patterns_tested": [
+    {
+      "pattern": "CRUD operations",
+      "description": "Create, Read, Update, Delete for task entities",
+      "importance": "high"
+    },
+    {
+      "pattern": "State management",
+      "description": "Task status transitions (pending -> completed -> pending)",
+      "importance": "high"
+    },
+    {
+      "pattern": "Data persistence",
+      "description": "JSON file storage with load/save operations",
+      "importance": "high"
+    },
+    {
+      "pattern": "Repository pattern",
+      "description": "Abstraction layer for data access",
+      "importance": "medium"
+    },
+    {
+      "pattern": "Service layer",
+      "description": "Business logic separation from data access",
+      "importance": "medium"
+    },
+    {
+      "pattern": "Pydantic validation",
+      "description": "Data validation using Pydantic models",
+      "importance": "medium"
+    }
+  ],
+  "user_stories": {
+    "count": 9,
+    "priority_distribution": {
+      "P0": 6,
+      "P1": 2,
+      "P2": 1
+    }
+  },
+  "dependencies": [],
+  "prerequisites": {
+    "knowledge": ["Python basics", "Pydantic", "pytest", "TDD principles", "Repository pattern"],
+    "tools": ["Python 3.11+", "pytest", "ruff", "mypy", "pydantic"]
+  },
+  "success_criteria": {
+    "pass_at_1_required": true,
+    "similarity_threshold": 0.85,
+    "test_coverage_threshold": 0.80,
+    "lint_errors_allowed": 0,
+    "type_errors_allowed": 0,
+    "crud_operations_required": ["create", "read", "update", "delete"]
+  },
+  "related_benchmarks": ["calculator"],
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2025-12-30",
+      "changes": ["Initial release"]
+    }
+  ]
+}

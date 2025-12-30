@@ -1,0 +1,98 @@
+{
+  "benchmark_id": "calculator",
+  "name": "Calculator",
+  "version": "1.0.0",
+  "created_at": "2025-12-30T19:30:00Z",
+  "updated_at": "2025-12-30T19:30:00Z",
+  "author": "DAW Eval Team",
+  "description": "Basic arithmetic calculator to validate TDD workflow and simple operations",
+  "complexity": {
+    "level": "low",
+    "score": 2,
+    "scale": "1-10"
+  },
+  "category": "utility",
+  "tags": ["arithmetic", "tdd", "validation", "beginner"],
+  "technology_stack": {
+    "language": "python",
+    "version": "3.11+",
+    "testing": "pytest",
+    "linting": "ruff",
+    "type_checking": "mypy"
+  },
+  "expected_metrics": {
+    "task_count": {
+      "min": 6,
+      "max": 8,
+      "target": 7
+    },
+    "duration": {
+      "min_seconds": 300,
+      "max_seconds": 600,
+      "target_seconds": 420
+    },
+    "cost": {
+      "min_usd": 0.10,
+      "max_usd": 0.50,
+      "target_usd": 0.25
+    },
+    "test_count": {
+      "min": 15,
+      "target": 20
+    },
+    "coverage": {
+      "min_percent": 80,
+      "target_percent": 90
+    }
+  },
+  "key_patterns_tested": [
+    {
+      "pattern": "Basic arithmetic operations",
+      "description": "Add, subtract, multiply, divide functions",
+      "importance": "high"
+    },
+    {
+      "pattern": "Input validation",
+      "description": "Validate numeric input and operation types",
+      "importance": "medium"
+    },
+    {
+      "pattern": "Error handling",
+      "description": "Custom exceptions and error messages",
+      "importance": "medium"
+    },
+    {
+      "pattern": "TDD red-green-refactor cycle",
+      "description": "Write failing tests before implementation",
+      "importance": "high"
+    }
+  ],
+  "user_stories": {
+    "count": 6,
+    "priority_distribution": {
+      "P0": 4,
+      "P1": 1,
+      "P2": 1
+    }
+  },
+  "dependencies": [],
+  "prerequisites": {
+    "knowledge": ["Python basics", "pytest", "TDD principles"],
+    "tools": ["Python 3.11+", "pytest", "ruff", "mypy"]
+  },
+  "success_criteria": {
+    "pass_at_1_required": true,
+    "similarity_threshold": 0.85,
+    "test_coverage_threshold": 0.80,
+    "lint_errors_allowed": 0,
+    "type_errors_allowed": 0
+  },
+  "related_benchmarks": [],
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2025-12-30",
+      "changes": ["Initial release"]
+    }
+  ]
+}

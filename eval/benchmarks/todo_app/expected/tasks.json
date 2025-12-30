@@ -1,0 +1,210 @@
+[
+  {
+    "id": "TODO-001",
+    "type": "setup",
+    "priority": "P0",
+    "phase": 0,
+    "description": "Initialize todo app project structure",
+    "command": "mkdir -p src/todo tests/test_todo data && touch src/todo/__init__.py tests/test_todo/__init__.py",
+    "verification": {
+      "type": "file_exists",
+      "path": "src/todo/__init__.py"
+    },
+    "estimated_hours": 0.25
+  },
+  {
+    "id": "TODO-002",
+    "type": "code",
+    "priority": "P0",
+    "phase": 1,
+    "description": "Implement Task model and TaskStatus enum with TDD",
+    "dependencies": ["TODO-001"],
+    "context_files": [
+      "src/todo/models.py",
+      "tests/test_todo/test_models.py"
+    ],
+    "instruction": "Write failing tests for Task model with Pydantic. Include validation for title, default values for optional fields, and timestamp handling.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_todo/test_models.py -v"
+    },
+    "estimated_hours": 0.75
+  },
+  {
+    "id": "TODO-003",
+    "type": "code",
+    "priority": "P0",
+    "phase": 1,
+    "description": "Implement custom exceptions with TDD",
+    "dependencies": ["TODO-001"],
+    "context_files": [
+      "src/todo/exceptions.py",
+      "tests/test_todo/test_exceptions.py"
+    ],
+    "instruction": "Create TaskNotFoundError, InvalidTaskError, and TaskAlreadyCompletedError exception classes.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_todo/test_exceptions.py -v"
+    },
+    "estimated_hours": 0.25
+  },
+  {
+    "id": "TODO-004",
+    "type": "code",
+    "priority": "P0",
+    "phase": 2,
+    "description": "Implement TaskRepository JSON persistence with TDD",
+    "dependencies": ["TODO-002", "TODO-003"],
+    "context_files": [
+      "src/todo/repository.py",
+      "tests/test_todo/test_repository.py"
+    ],
+    "instruction": "Implement TaskRepository with JSON file persistence. Include save, find_by_id, find_all, delete methods. Handle file not exists and corrupted file scenarios.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_todo/test_repository.py -v"
+    },
+    "estimated_hours": 1.0
+  },
+  {
+    "id": "TODO-005",
+    "type": "code",
+    "priority": "P0",
+    "phase": 3,
+    "description": "Implement TodoService create_task with TDD",
+    "dependencies": ["TODO-004"],
+    "context_files": [
+      "src/todo/service.py",
+      "tests/test_todo/test_service.py"
+    ],
+    "instruction": "Implement create_task method in TodoService. Generate UUID, validate title, set defaults, persist via repository.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_todo/test_service.py::TestCreateTask -v"
+    },
+    "estimated_hours": 0.5
+  },
+  {
+    "id": "TODO-006",
+    "type": "code",
+    "priority": "P0",
+    "phase": 3,
+    "description": "Implement TodoService get_task and list_tasks with TDD",
+    "dependencies": ["TODO-005"],
+    "context_files": [
+      "src/todo/service.py",
+      "tests/test_todo/test_service.py"
+    ],
+    "instruction": "Implement get_task (raise TaskNotFoundError if not found) and list_tasks (with optional status filter).",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_todo/test_service.py::TestGetTask tests/test_todo/test_service.py::TestListTasks -v"
+    },
+    "estimated_hours": 0.5
+  },
+  {
+    "id": "TODO-007",
+    "type": "code",
+    "priority": "P0",
+    "phase": 3,
+    "description": "Implement TodoService update_task with TDD",
+    "dependencies": ["TODO-006"],
+    "context_files": [
+      "src/todo/service.py",
+      "tests/test_todo/test_service.py"
+    ],
+    "instruction": "Implement update_task method. Validate inputs, update only provided fields, set updated_at timestamp.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_todo/test_service.py::TestUpdateTask -v"
+    },
+    "estimated_hours": 0.5
+  },
+  {
+    "id": "TODO-008",
+    "type": "code",
+    "priority": "P0",
+    "phase": 3,
+    "description": "Implement TodoService complete_task with TDD",
+    "dependencies": ["TODO-006"],
+    "context_files": [
+      "src/todo/service.py",
+      "tests/test_todo/test_service.py"
+    ],
+    "instruction": "Implement complete_task method. Set status to COMPLETED, set completed_at timestamp. Handle already completed tasks.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_todo/test_service.py::TestCompleteTask -v"
+    },
+    "estimated_hours": 0.5
+  },
+  {
+    "id": "TODO-009",
+    "type": "code",
+    "priority": "P0",
+    "phase": 3,
+    "description": "Implement TodoService delete_task with TDD",
+    "dependencies": ["TODO-006"],
+    "context_files": [
+      "src/todo/service.py",
+      "tests/test_todo/test_service.py"
+    ],
+    "instruction": "Implement delete_task method. Remove task from repository. Handle non-existent tasks.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_todo/test_service.py::TestDeleteTask -v"
+    },
+    "estimated_hours": 0.5
+  },
+  {
+    "id": "TODO-010",
+    "type": "code",
+    "priority": "P1",
+    "phase": 4,
+    "description": "Implement TodoService reopen_task with TDD",
+    "dependencies": ["TODO-008"],
+    "context_files": [
+      "src/todo/service.py",
+      "tests/test_todo/test_service.py"
+    ],
+    "instruction": "Implement reopen_task method. Change status from COMPLETED to PENDING, clear completed_at. Handle already pending tasks.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_todo/test_service.py::TestReopenTask -v"
+    },
+    "estimated_hours": 0.5
+  },
+  {
+    "id": "TODO-011",
+    "type": "code",
+    "priority": "P2",
+    "phase": 4,
+    "description": "Implement due date functionality with TDD (optional)",
+    "dependencies": ["TODO-007"],
+    "context_files": [
+      "src/todo/models.py",
+      "src/todo/service.py",
+      "tests/test_todo/test_service.py"
+    ],
+    "instruction": "Add due_date field to Task model. Implement set_due_date in service. Add overdue filtering to list_tasks.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_todo/test_service.py::TestDueDate -v"
+    },
+    "estimated_hours": 0.75
+  },
+  {
+    "id": "TODO-012",
+    "type": "verification",
+    "priority": "P0",
+    "phase": 5,
+    "description": "Run full test suite and verify coverage",
+    "dependencies": ["TODO-009", "TODO-010"],
+    "command": "pytest --cov=src/todo --cov-report=term-missing -v",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest --cov=src/todo --cov-fail-under=80"
+    },
+    "estimated_hours": 0.25
+  }
+]

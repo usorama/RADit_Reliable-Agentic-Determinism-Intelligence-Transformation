@@ -1,0 +1,391 @@
+[
+  {
+    "id": "ECOM-001",
+    "type": "setup",
+    "priority": "P0",
+    "phase": 0,
+    "description": "Initialize e-commerce checkout project structure",
+    "command": "mkdir -p src/checkout/{models,services,validators} tests/test_checkout/{test_models,test_services,test_validators}",
+    "verification": {
+      "type": "file_exists",
+      "path": "src/checkout/__init__.py"
+    },
+    "estimated_hours": 0.25
+  },
+  {
+    "id": "ECOM-002",
+    "type": "code",
+    "priority": "P0",
+    "phase": 1,
+    "description": "Implement Product model with TDD",
+    "dependencies": ["ECOM-001"],
+    "context_files": [
+      "src/checkout/models/product.py",
+      "tests/test_checkout/test_models/test_product.py"
+    ],
+    "instruction": "Write failing tests for Product model with Pydantic. Include id, name, price (Decimal), and stock fields.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_checkout/test_models/test_product.py -v"
+    },
+    "estimated_hours": 0.5
+  },
+  {
+    "id": "ECOM-003",
+    "type": "code",
+    "priority": "P0",
+    "phase": 1,
+    "description": "Implement CartItem and Cart models with TDD",
+    "dependencies": ["ECOM-002"],
+    "context_files": [
+      "src/checkout/models/cart.py",
+      "tests/test_checkout/test_models/test_cart.py"
+    ],
+    "instruction": "Write failing tests for CartItem and Cart models. CartItem has product reference, quantity, subtotal. Cart has items list and total calculation.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_checkout/test_models/test_cart.py -v"
+    },
+    "estimated_hours": 0.75
+  },
+  {
+    "id": "ECOM-004",
+    "type": "code",
+    "priority": "P0",
+    "phase": 1,
+    "description": "Implement Address model with TDD",
+    "dependencies": ["ECOM-001"],
+    "context_files": [
+      "src/checkout/models/address.py",
+      "tests/test_checkout/test_models/test_address.py"
+    ],
+    "instruction": "Write failing tests for Address model. Include name, street, city, state, postal_code, country. Add validation for required fields.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_checkout/test_models/test_address.py -v"
+    },
+    "estimated_hours": 0.5
+  },
+  {
+    "id": "ECOM-005",
+    "type": "code",
+    "priority": "P0",
+    "phase": 1,
+    "description": "Implement ShippingMethod enum and PaymentInfo model with TDD",
+    "dependencies": ["ECOM-001"],
+    "context_files": [
+      "src/checkout/models/shipping.py",
+      "src/checkout/models/payment.py",
+      "tests/test_checkout/test_models/test_shipping.py"
+    ],
+    "instruction": "Implement ShippingMethod enum with Standard/Express/Overnight options. Implement PaymentInfo model with masked card number and token.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_checkout/test_models/test_shipping.py -v"
+    },
+    "estimated_hours": 0.5
+  },
+  {
+    "id": "ECOM-006",
+    "type": "code",
+    "priority": "P0",
+    "phase": 1,
+    "description": "Implement Order model with TDD",
+    "dependencies": ["ECOM-003", "ECOM-004", "ECOM-005"],
+    "context_files": [
+      "src/checkout/models/order.py",
+      "tests/test_checkout/test_models/test_order.py"
+    ],
+    "instruction": "Write failing tests for Order model. Include cart_snapshot, shipping_address, shipping_method, tax, discount, total, status, timestamps.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_checkout/test_models/test_order.py -v"
+    },
+    "estimated_hours": 0.75
+  },
+  {
+    "id": "ECOM-007",
+    "type": "code",
+    "priority": "P0",
+    "phase": 1,
+    "description": "Implement custom exceptions with TDD",
+    "dependencies": ["ECOM-001"],
+    "context_files": [
+      "src/checkout/exceptions.py",
+      "tests/test_checkout/test_exceptions.py"
+    ],
+    "instruction": "Create ProductNotFoundError, InsufficientStockError, InvalidCartError, PaymentFailedError, InvalidAddressError.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_checkout/test_exceptions.py -v"
+    },
+    "estimated_hours": 0.25
+  },
+  {
+    "id": "ECOM-008",
+    "type": "code",
+    "priority": "P0",
+    "phase": 2,
+    "description": "Implement card validator (Luhn algorithm) with TDD",
+    "dependencies": ["ECOM-007"],
+    "context_files": [
+      "src/checkout/validators/card_validator.py",
+      "tests/test_checkout/test_validators/test_card_validator.py"
+    ],
+    "instruction": "Implement Luhn algorithm for credit card validation. Include test cases for valid and invalid card numbers.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_checkout/test_validators/test_card_validator.py -v"
+    },
+    "estimated_hours": 0.5
+  },
+  {
+    "id": "ECOM-009",
+    "type": "code",
+    "priority": "P0",
+    "phase": 2,
+    "description": "Implement address validator with TDD",
+    "dependencies": ["ECOM-004", "ECOM-007"],
+    "context_files": [
+      "src/checkout/validators/address_validator.py",
+      "tests/test_checkout/test_validators/test_address_validator.py"
+    ],
+    "instruction": "Implement address validation. Validate postal code format, required fields, state codes.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_checkout/test_validators/test_address_validator.py -v"
+    },
+    "estimated_hours": 0.5
+  },
+  {
+    "id": "ECOM-010",
+    "type": "code",
+    "priority": "P0",
+    "phase": 3,
+    "description": "Implement InventoryService with TDD",
+    "dependencies": ["ECOM-002", "ECOM-007"],
+    "context_files": [
+      "src/checkout/services/inventory_service.py",
+      "tests/test_checkout/test_services/test_inventory_service.py"
+    ],
+    "instruction": "Implement InventoryService with check_stock, reserve_stock, release_stock, reduce_stock methods. Use in-memory storage.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_checkout/test_services/test_inventory_service.py -v"
+    },
+    "estimated_hours": 0.75
+  },
+  {
+    "id": "ECOM-011",
+    "type": "code",
+    "priority": "P0",
+    "phase": 3,
+    "description": "Implement CartService with TDD",
+    "dependencies": ["ECOM-003", "ECOM-010"],
+    "context_files": [
+      "src/checkout/services/cart_service.py",
+      "tests/test_checkout/test_services/test_cart_service.py"
+    ],
+    "instruction": "Implement CartService with get_cart, add_item, update_item, remove_item, clear_cart. Validate stock availability.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_checkout/test_services/test_cart_service.py -v"
+    },
+    "estimated_hours": 1.0
+  },
+  {
+    "id": "ECOM-012",
+    "type": "code",
+    "priority": "P0",
+    "phase": 3,
+    "description": "Implement PaymentService with TDD",
+    "dependencies": ["ECOM-008", "ECOM-007"],
+    "context_files": [
+      "src/checkout/services/payment_service.py",
+      "tests/test_checkout/test_services/test_payment_service.py"
+    ],
+    "instruction": "Implement PaymentService with validate_card, tokenize_card, process_payment (mock). Include card validation using Luhn.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_checkout/test_services/test_payment_service.py -v"
+    },
+    "estimated_hours": 0.75
+  },
+  {
+    "id": "ECOM-013",
+    "type": "code",
+    "priority": "P1",
+    "phase": 3,
+    "description": "Implement TaxService with TDD",
+    "dependencies": ["ECOM-004", "ECOM-007"],
+    "context_files": [
+      "src/checkout/services/tax_service.py",
+      "tests/test_checkout/test_services/test_tax_service.py"
+    ],
+    "instruction": "Implement TaxService with calculate_tax, get_tax_rate. Include state-based tax rates for US states.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_checkout/test_services/test_tax_service.py -v"
+    },
+    "estimated_hours": 0.5
+  },
+  {
+    "id": "ECOM-014",
+    "type": "code",
+    "priority": "P0",
+    "phase": 4,
+    "description": "Implement CheckoutSession with TDD",
+    "dependencies": ["ECOM-011"],
+    "context_files": [
+      "src/checkout/checkout_session.py",
+      "tests/test_checkout/test_checkout_session.py"
+    ],
+    "instruction": "Implement CheckoutSession to manage checkout state across steps. Store cart_id, address, shipping_method, payment_info.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_checkout/test_checkout_session.py -v"
+    },
+    "estimated_hours": 0.75
+  },
+  {
+    "id": "ECOM-015",
+    "type": "code",
+    "priority": "P0",
+    "phase": 4,
+    "description": "Implement CheckoutService set_shipping_address with TDD",
+    "dependencies": ["ECOM-009", "ECOM-014"],
+    "context_files": [
+      "src/checkout/services/checkout_service.py",
+      "tests/test_checkout/test_services/test_checkout_service.py"
+    ],
+    "instruction": "Implement set_shipping_address in CheckoutService. Validate address and store in session.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_checkout/test_services/test_checkout_service.py::TestSetShippingAddress -v"
+    },
+    "estimated_hours": 0.5
+  },
+  {
+    "id": "ECOM-016",
+    "type": "code",
+    "priority": "P0",
+    "phase": 4,
+    "description": "Implement CheckoutService set_shipping_method with TDD",
+    "dependencies": ["ECOM-015"],
+    "context_files": [
+      "src/checkout/services/checkout_service.py",
+      "tests/test_checkout/test_services/test_checkout_service.py"
+    ],
+    "instruction": "Implement set_shipping_method in CheckoutService. Validate method and store in session.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_checkout/test_services/test_checkout_service.py::TestSetShippingMethod -v"
+    },
+    "estimated_hours": 0.5
+  },
+  {
+    "id": "ECOM-017",
+    "type": "code",
+    "priority": "P0",
+    "phase": 4,
+    "description": "Implement CheckoutService set_payment_info with TDD",
+    "dependencies": ["ECOM-012", "ECOM-014"],
+    "context_files": [
+      "src/checkout/services/checkout_service.py",
+      "tests/test_checkout/test_services/test_checkout_service.py"
+    ],
+    "instruction": "Implement set_payment_info in CheckoutService. Validate card, tokenize, store in session.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_checkout/test_services/test_checkout_service.py::TestSetPaymentInfo -v"
+    },
+    "estimated_hours": 0.5
+  },
+  {
+    "id": "ECOM-018",
+    "type": "code",
+    "priority": "P0",
+    "phase": 5,
+    "description": "Implement CheckoutService get_order_summary with TDD",
+    "dependencies": ["ECOM-016", "ECOM-017", "ECOM-013"],
+    "context_files": [
+      "src/checkout/services/checkout_service.py",
+      "tests/test_checkout/test_services/test_checkout_service.py"
+    ],
+    "instruction": "Implement get_order_summary. Calculate totals including items, shipping, tax, discount.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_checkout/test_services/test_checkout_service.py::TestGetOrderSummary -v"
+    },
+    "estimated_hours": 0.75
+  },
+  {
+    "id": "ECOM-019",
+    "type": "code",
+    "priority": "P0",
+    "phase": 5,
+    "description": "Implement CheckoutService place_order with TDD",
+    "dependencies": ["ECOM-018"],
+    "context_files": [
+      "src/checkout/services/checkout_service.py",
+      "tests/test_checkout/test_services/test_checkout_service.py"
+    ],
+    "instruction": "Implement place_order. Validate all data, process payment, create order, update inventory, clear cart. Handle failures with rollback.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_checkout/test_services/test_checkout_service.py::TestPlaceOrder -v"
+    },
+    "estimated_hours": 1.0
+  },
+  {
+    "id": "ECOM-020",
+    "type": "code",
+    "priority": "P1",
+    "phase": 5,
+    "description": "Implement payment failure handling with TDD",
+    "dependencies": ["ECOM-019"],
+    "context_files": [
+      "src/checkout/services/checkout_service.py",
+      "tests/test_checkout/test_services/test_checkout_service.py"
+    ],
+    "instruction": "Handle payment failure in place_order. Return appropriate error, do not create order, do not reduce inventory.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_checkout/test_services/test_checkout_service.py::TestPaymentFailure -v"
+    },
+    "estimated_hours": 0.5
+  },
+  {
+    "id": "ECOM-021",
+    "type": "code",
+    "priority": "P2",
+    "phase": 5,
+    "description": "Implement discount code functionality with TDD",
+    "dependencies": ["ECOM-018"],
+    "context_files": [
+      "src/checkout/models/discount.py",
+      "src/checkout/services/checkout_service.py",
+      "tests/test_checkout/test_services/test_checkout_service.py"
+    ],
+    "instruction": "Implement DiscountCode model and apply_discount_code in CheckoutService. Validate code, check expiry, apply to order summary.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/test_checkout/test_services/test_checkout_service.py::TestDiscountCode -v"
+    },
+    "estimated_hours": 0.75
+  },
+  {
+    "id": "ECOM-022",
+    "type": "verification",
+    "priority": "P0",
+    "phase": 6,
+    "description": "Run full test suite and verify coverage",
+    "dependencies": ["ECOM-019", "ECOM-020"],
+    "command": "pytest --cov=src/checkout --cov-report=term-missing -v",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest --cov=src/checkout --cov-fail-under=80"
+    },
+    "estimated_hours": 0.5
+  }
+]

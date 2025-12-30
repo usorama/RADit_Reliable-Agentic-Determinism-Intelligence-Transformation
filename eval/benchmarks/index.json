@@ -1,0 +1,296 @@
+{
+  "$schema": "./index.schema.json",
+  "version": "1.0.0",
+  "created_at": "2025-12-30T19:20:00Z",
+  "updated_at": "2025-12-30T19:20:00Z",
+  "description": "Golden benchmark suite for DAW agent evaluation",
+  "benchmarks": [
+    {
+      "id": "calculator",
+      "name": "Calculator",
+      "description": "Basic arithmetic calculator to validate TDD workflow and simple operations",
+      "complexity": "low",
+      "complexity_score": 2,
+      "category": "utility",
+      "prd_path": "calculator/prd.md",
+      "expected_path": "calculator/expected/",
+      "rubric_path": "calculator/rubric.yaml",
+      "metadata_path": "calculator/metadata.json",
+      "key_patterns_tested": [
+        "Basic arithmetic operations",
+        "Input validation",
+        "Error handling",
+        "TDD red-green-refactor cycle"
+      ],
+      "expected_metrics": {
+        "task_count_min": 6,
+        "task_count_max": 8,
+        "duration_seconds_max": 600,
+        "cost_usd_max": 0.50
+      },
+      "pass_criteria": {
+        "pass_at_1": true,
+        "similarity_threshold": 0.85,
+        "test_coverage_threshold": 0.80
+      },
+      "enabled": true
+    },
+    {
+      "id": "todo_app",
+      "name": "ToDo App",
+      "description": "CRUD application to validate state management and data persistence patterns",
+      "complexity": "low-medium",
+      "complexity_score": 4,
+      "category": "productivity",
+      "prd_path": "todo_app/prd.md",
+      "expected_path": "todo_app/expected/",
+      "rubric_path": "todo_app/rubric.yaml",
+      "metadata_path": "todo_app/metadata.json",
+      "key_patterns_tested": [
+        "CRUD operations",
+        "State management",
+        "Data persistence",
+        "List rendering",
+        "Form handling"
+      ],
+      "expected_metrics": {
+        "task_count_min": 12,
+        "task_count_max": 15,
+        "duration_seconds_max": 1200,
+        "cost_usd_max": 1.00
+      },
+      "pass_criteria": {
+        "pass_at_1": true,
+        "similarity_threshold": 0.85,
+        "test_coverage_threshold": 0.80
+      },
+      "enabled": true
+    },
+    {
+      "id": "ecommerce_checkout",
+      "name": "E-commerce Checkout",
+      "description": "Multi-step checkout flow to validate complex workflows and validation",
+      "complexity": "medium",
+      "complexity_score": 6,
+      "category": "commerce",
+      "prd_path": "ecommerce_checkout/prd.md",
+      "expected_path": "ecommerce_checkout/expected/",
+      "rubric_path": "ecommerce_checkout/rubric.yaml",
+      "metadata_path": "ecommerce_checkout/metadata.json",
+      "key_patterns_tested": [
+        "Multi-step form workflow",
+        "Cart management",
+        "Payment validation",
+        "Inventory integration",
+        "Error recovery",
+        "State persistence"
+      ],
+      "expected_metrics": {
+        "task_count_min": 18,
+        "task_count_max": 25,
+        "duration_seconds_max": 2100,
+        "cost_usd_max": 2.00
+      },
+      "pass_criteria": {
+        "pass_at_1": true,
+        "similarity_threshold": 0.85,
+        "test_coverage_threshold": 0.80
+      },
+      "enabled": true
+    },
+    {
+      "id": "rest_api_server",
+      "name": "REST API Server",
+      "description": "Backend API with authentication to validate endpoint routing and middleware patterns",
+      "complexity": "medium",
+      "complexity_score": 5,
+      "category": "backend",
+      "prd_path": "rest_api_server/prd.md",
+      "expected_path": "rest_api_server/expected/",
+      "rubric_path": "rest_api_server/rubric.yaml",
+      "metadata_path": "rest_api_server/metadata.json",
+      "key_patterns_tested": [
+        "RESTful endpoint design",
+        "Authentication middleware",
+        "Request validation",
+        "Error handling",
+        "Database integration"
+      ],
+      "expected_metrics": {
+        "task_count_min": 15,
+        "task_count_max": 20,
+        "duration_seconds_max": 1500,
+        "cost_usd_max": 1.50
+      },
+      "pass_criteria": {
+        "pass_at_1": true,
+        "similarity_threshold": 0.85,
+        "test_coverage_threshold": 0.80
+      },
+      "enabled": false
+    },
+    {
+      "id": "realtime_chat",
+      "name": "Real-time Chat",
+      "description": "WebSocket-based chat application to validate real-time communication patterns",
+      "complexity": "medium-high",
+      "complexity_score": 7,
+      "category": "communication",
+      "prd_path": "realtime_chat/prd.md",
+      "expected_path": "realtime_chat/expected/",
+      "rubric_path": "realtime_chat/rubric.yaml",
+      "metadata_path": "realtime_chat/metadata.json",
+      "key_patterns_tested": [
+        "WebSocket handling",
+        "Message queuing",
+        "Presence detection",
+        "Message persistence",
+        "Room management"
+      ],
+      "expected_metrics": {
+        "task_count_min": 20,
+        "task_count_max": 28,
+        "duration_seconds_max": 2400,
+        "cost_usd_max": 2.50
+      },
+      "pass_criteria": {
+        "pass_at_1": true,
+        "similarity_threshold": 0.85,
+        "test_coverage_threshold": 0.80
+      },
+      "enabled": false
+    },
+    {
+      "id": "data_pipeline",
+      "name": "Data Pipeline",
+      "description": "ETL pipeline to validate data processing and error recovery patterns",
+      "complexity": "high",
+      "complexity_score": 8,
+      "category": "data",
+      "prd_path": "data_pipeline/prd.md",
+      "expected_path": "data_pipeline/expected/",
+      "rubric_path": "data_pipeline/rubric.yaml",
+      "metadata_path": "data_pipeline/metadata.json",
+      "key_patterns_tested": [
+        "ETL patterns",
+        "Error recovery",
+        "Data validation",
+        "Batch processing",
+        "Logging and monitoring"
+      ],
+      "expected_metrics": {
+        "task_count_min": 22,
+        "task_count_max": 30,
+        "duration_seconds_max": 3000,
+        "cost_usd_max": 3.00
+      },
+      "pass_criteria": {
+        "pass_at_1": true,
+        "similarity_threshold": 0.85,
+        "test_coverage_threshold": 0.80
+      },
+      "enabled": false
+    }
+  ],
+  "scoring_rubrics": {
+    "global": {
+      "task_decomposition": {
+        "weight": 0.30,
+        "description": "Measures quality of PRD to task breakdown",
+        "criteria": [
+          {
+            "name": "task_count_accuracy",
+            "weight": 0.25,
+            "tolerance": 0.20,
+            "description": "Task count within +/- 20% of expected"
+          },
+          {
+            "name": "dependency_correctness",
+            "weight": 0.40,
+            "description": "All critical dependencies correctly identified"
+          },
+          {
+            "name": "priority_alignment",
+            "weight": 0.35,
+            "description": "P0/P1/P2 distribution matches expected"
+          }
+        ]
+      },
+      "code_quality": {
+        "weight": 0.40,
+        "description": "Measures quality of generated code",
+        "criteria": [
+          {
+            "name": "test_coverage",
+            "weight": 0.30,
+            "threshold": 0.80,
+            "description": ">= 80% test coverage on generated code"
+          },
+          {
+            "name": "lint_pass",
+            "weight": 0.25,
+            "threshold": 1.00,
+            "description": "0 linting errors"
+          },
+          {
+            "name": "type_safety",
+            "weight": 0.25,
+            "threshold": 1.00,
+            "description": "0 type errors"
+          },
+          {
+            "name": "pattern_adherence",
+            "weight": 0.20,
+            "description": "Follows expected architectural patterns"
+          }
+        ]
+      },
+      "similarity": {
+        "weight": 0.30,
+        "description": "Measures output similarity to golden references",
+        "criteria": [
+          {
+            "name": "semantic_similarity",
+            "weight": 0.50,
+            "threshold": 0.85,
+            "model": "text-embedding-3-small",
+            "description": "Embedding-based semantic similarity"
+          },
+          {
+            "name": "structural_similarity",
+            "weight": 0.50,
+            "threshold": 0.80,
+            "description": "AST-based structural comparison"
+          }
+        ]
+      }
+    }
+  },
+  "thresholds": {
+    "release_blocking": {
+      "pass_at_1": 0.85,
+      "task_completion_rate": 0.90
+    },
+    "warning": {
+      "pass_at_8": 0.60,
+      "retry_rate_max": 2.0
+    },
+    "advisory": {
+      "cost_per_task_max_usd": 0.50,
+      "time_to_complete_max_seconds": 300
+    },
+    "regression": {
+      "threshold": 0.05,
+      "require_approval_threshold": 0.10
+    }
+  },
+  "ci_config": {
+    "nightly_cron": "0 2 * * *",
+    "default_trials": 8,
+    "notification_channels": [
+      "slack:#agent-eval",
+      "linear:agent-team"
+    ],
+    "result_retention_days": 90
+  }
+}

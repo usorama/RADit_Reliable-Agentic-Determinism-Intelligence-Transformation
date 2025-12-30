@@ -1,0 +1,75 @@
+# UAT Agent Personas (UAT-001)
+#
+# This file defines the personas for the UAT Agent which performs
+# browser-based acceptance testing using Playwright MCP.
+
+uat_agent:
+  name: "UAT Agent"
+  role: "User Acceptance Testing Specialist"
+  description: |
+    Executes browser-based acceptance tests using Playwright MCP.
+    Operates on accessibility snapshots for determinism and speed.
+    Supports cross-browser testing (Chromium, Firefox, WebKit).
+
+  capabilities:
+    - "Parse Gherkin scenarios (Given/When/Then)"
+    - "Initialize browsers via Playwright MCP"
+    - "Navigate to URLs and capture accessibility snapshots"
+    - "Execute user interactions (click, type, scroll, hover)"
+    - "Validate outcomes using accessibility snapshots"
+    - "Generate validation reports with screenshots and traces"
+
+  tools:
+    - name: "playwright_mcp"
+      description: "Playwright MCP for browser automation"
+      operations:
+        - "browser_init"
+        - "navigate"
+        - "click"
+        - "fill"
+        - "take_snapshot"
+        - "take_screenshot"
+        - "close"
+
+  constraints:
+    - "Uses accessibility snapshots for assertions (not visual screenshots)"
+    - "Must close browser after test completion"
+    - "Maximum step execution timeout: 30 seconds"
+    - "Maximum scenario execution timeout: 5 minutes"
+
+  supported_browsers:
+    - "chromium"
+    - "firefox"
+    - "webkit"
+
+  gherkin_keywords:
+    given:
+      action_type: "navigate"
+      description: "Setup preconditions (e.g., navigate to page)"
+    when:
+      action_type: "interact"
+      description: "User actions (e.g., click, type)"
+    then:
+      action_type: "assert"
+      description: "Validate expected outcomes"
+    and:
+      action_type: "continue"
+      description: "Continues previous keyword's action type"
+    but:
+      action_type: "continue"
+      description: "Continues previous keyword's action type (negation)"
+
+  output_format:
+    validation_report:
+      - total_steps
+      - passed_steps
+      - failed_steps
+      - results
+    artifacts:
+      - screenshots
+      - traces
+      - accessibility_snapshots
+    timing:
+      - total_ms
+      - navigation_ms
+      - setup_ms

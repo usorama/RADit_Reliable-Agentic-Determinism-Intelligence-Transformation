@@ -1,0 +1,173 @@
+version: "1.0"
+benchmark_id: "ecommerce_checkout"
+description: "Scoring rubric for E-commerce Checkout benchmark evaluation"
+
+scoring:
+  task_decomposition:
+    weight: 0.30
+    description: "Measures quality of PRD to task breakdown"
+    criteria:
+      - name: task_count_accuracy
+        weight: 0.25
+        tolerance: 0.20
+        expected_range: [18, 25]
+        description: "Task count should be 18-25 tasks"
+
+      - name: dependency_correctness
+        weight: 0.40
+        description: "Critical dependencies correctly identified"
+        required_dependencies:
+          - from: "models"
+            to: "services"
+          - from: "validators"
+            to: "services"
+          - from: "cart_service"
+            to: "checkout_service"
+          - from: "payment_service"
+            to: "checkout_service"
+          - from: "inventory_service"
+            to: "cart_service"
+
+      - name: priority_alignment
+        weight: 0.35
+        description: "Priority distribution matches requirements"
+        expected_distribution:
+          P0: 17  # Core checkout flow
+          P1: 3   # Payment failure, tax
+          P2: 2   # Discount codes
+
+  code_quality:
+    weight: 0.40
+    description: "Measures quality of generated code"
+    criteria:
+      - name: test_coverage
+        weight: 0.30
+        threshold: 0.80
+
+      - name: lint_pass
+        weight: 0.25
+        threshold: 1.00
+
+      - name: type_safety
+        weight: 0.25
+        threshold: 1.00
+
+      - name: pattern_adherence
+        weight: 0.20
+        expected_patterns:
+          - "Pydantic models for data validation"
+          - "Service layer separation"
+          - "Validator classes for complex validation"
+          - "Custom exceptions for error handling"
+          - "Session state management"
+          - "Transaction-like rollback on failure"
+
+  similarity:
+    weight: 0.30
+    description: "Measures output similarity to golden references"
+    criteria:
+      - name: semantic_similarity
+        weight: 0.50
+        threshold: 0.85
+        model: "text-embedding-3-small"
+
+      - name: structural_similarity
+        weight: 0.50
+        threshold: 0.80
+
+pass_criteria:
+  required:
+    - task_decomposition_score: ">= 0.70"
+    - code_quality_score: ">= 0.80"
+    - all_tests_pass: true
+    - checkout_flow_works: true
+
+  optional:
+    - similarity_score: ">= 0.85"
+    - payment_failure_handled: true
+
+expected_outputs:
+  files:
+    - "src/checkout/__init__.py"
+    - "src/checkout/models/__init__.py"
+    - "src/checkout/models/product.py"
+    - "src/checkout/models/cart.py"
+    - "src/checkout/models/address.py"
+    - "src/checkout/models/shipping.py"
+    - "src/checkout/models/payment.py"
+    - "src/checkout/models/order.py"
+    - "src/checkout/services/__init__.py"
+    - "src/checkout/services/cart_service.py"
+    - "src/checkout/services/checkout_service.py"
+    - "src/checkout/services/payment_service.py"
+    - "src/checkout/services/inventory_service.py"
+    - "src/checkout/services/tax_service.py"
+    - "src/checkout/validators/__init__.py"
+    - "src/checkout/validators/card_validator.py"
+    - "src/checkout/validators/address_validator.py"
+    - "src/checkout/exceptions.py"
+    - "src/checkout/checkout_session.py"
+
+  classes:
+    models:
+      - name: "Product"
+        type: "BaseModel"
+      - name: "CartItem"
+        type: "BaseModel"
+      - name: "Cart"
+        type: "BaseModel"
+      - name: "Address"
+        type: "BaseModel"
+      - name: "ShippingMethod"
+        type: "Enum"
+      - name: "PaymentInfo"
+        type: "BaseModel"
+      - name: "Order"
+        type: "BaseModel"
+      - name: "OrderStatus"
+        type: "Enum"
+
+    services:
+      - name: "CartService"
+        methods: ["get_cart", "add_item", "update_item", "remove_item", "clear_cart"]
+      - name: "CheckoutService"
+        methods: ["set_shipping_address", "set_shipping_method", "set_payment_info", "get_order_summary", "place_order"]
+      - name: "PaymentService"
+        methods: ["validate_card", "tokenize_card", "process_payment"]
+      - name: "InventoryService"
+        methods: ["check_stock", "reduce_stock"]
+      - name: "TaxService"
+        methods: ["calculate_tax", "get_tax_rate"]
+
+    validators:
+      - name: "CardValidator"
+        methods: ["validate_luhn", "validate_expiry"]
+      - name: "AddressValidator"
+        methods: ["validate"]
+
+    exceptions:
+      - name: "ProductNotFoundError"
+      - name: "InsufficientStockError"
+      - name: "InvalidCartError"
+      - name: "PaymentFailedError"
+      - name: "InvalidAddressError"
+
+test_requirements:
+  minimum_test_count: 45
+  required_test_categories:
+    - "test_product_model"
+    - "test_cart_model"
+    - "test_cart_total_calculation"
+    - "test_address_validation"
+    - "test_luhn_algorithm"
+    - "test_card_expiry_validation"
+    - "test_cart_service_add_item"
+    - "test_cart_service_stock_validation"
+    - "test_checkout_service_shipping_address"
+    - "test_checkout_service_shipping_method"
+    - "test_checkout_service_payment"
+    - "test_checkout_service_order_summary"
+    - "test_checkout_service_place_order"
+    - "test_payment_failure_handling"
+    - "test_inventory_reduction"
+    - "test_tax_calculation"
