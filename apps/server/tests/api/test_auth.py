@@ -136,7 +136,7 @@ class TestClerkConfig:
 
     def test_config_with_required_fields(self) -> None:
         """Config should accept required fields."""
-        from daw_agents.auth.clerk import ClerkConfig
+        from daw_server.auth.clerk import ClerkConfig
 
         config = ClerkConfig(
             secret_key="sk_test_abc123",
@@ -149,7 +149,7 @@ class TestClerkConfig:
 
     def test_config_with_authorized_parties(self) -> None:
         """Config should support authorized parties for azp claim validation."""
-        from daw_agents.auth.clerk import ClerkConfig
+        from daw_server.auth.clerk import ClerkConfig
 
         config = ClerkConfig(
             secret_key="sk_test_abc123",
@@ -165,7 +165,7 @@ class TestClerkUser:
 
     def test_user_model_with_all_fields(self) -> None:
         """User model should hold all user information."""
-        from daw_agents.auth.clerk import ClerkUser
+        from daw_server.auth.clerk import ClerkUser
 
         user = ClerkUser(
             user_id="user_123",
@@ -180,7 +180,7 @@ class TestClerkUser:
 
     def test_user_model_with_optional_fields(self) -> None:
         """User model should work with minimal required fields."""
-        from daw_agents.auth.clerk import ClerkUser
+        from daw_server.auth.clerk import ClerkUser
 
         user = ClerkUser(user_id="user_123", claims={})
         assert user.user_id == "user_123"
@@ -200,7 +200,7 @@ class TestClerkJWTVerifier:
         create_test_token: Any,
     ) -> None:
         """Should successfully verify a valid JWT token."""
-        from daw_agents.auth.clerk import ClerkConfig, ClerkJWTVerifier
+        from daw_server.auth.clerk import ClerkConfig, ClerkJWTVerifier
 
         config = ClerkConfig(
             secret_key="sk_test_abc",
@@ -230,8 +230,8 @@ class TestClerkJWTVerifier:
         create_test_token: Any,
     ) -> None:
         """Should raise exception for expired token."""
-        from daw_agents.auth.clerk import ClerkConfig, ClerkJWTVerifier
-        from daw_agents.auth.exceptions import TokenExpiredError
+        from daw_server.auth.clerk import ClerkConfig, ClerkJWTVerifier
+        from daw_server.auth.exceptions import TokenExpiredError
 
         config = ClerkConfig(
             secret_key="sk_test_abc",
@@ -264,8 +264,8 @@ class TestClerkJWTVerifier:
         from cryptography.hazmat.primitives import serialization
         from cryptography.hazmat.primitives.asymmetric import rsa
 
-        from daw_agents.auth.clerk import ClerkConfig, ClerkJWTVerifier
-        from daw_agents.auth.exceptions import InvalidTokenError
+        from daw_server.auth.clerk import ClerkConfig, ClerkJWTVerifier
+        from daw_server.auth.exceptions import InvalidTokenError
 
         different_private_key = rsa.generate_private_key(
             public_exponent=65537,
@@ -308,8 +308,8 @@ class TestClerkJWTVerifier:
         create_test_token: Any,
     ) -> None:
         """Should raise exception when azp claim doesn't match authorized parties."""
-        from daw_agents.auth.clerk import ClerkConfig, ClerkJWTVerifier
-        from daw_agents.auth.exceptions import UnauthorizedPartyError
+        from daw_server.auth.clerk import ClerkConfig, ClerkJWTVerifier
+        from daw_server.auth.exceptions import UnauthorizedPartyError
 
         config = ClerkConfig(
             secret_key="sk_test_abc",
@@ -336,7 +336,7 @@ class TestClerkJWTVerifier:
         create_test_token: Any,
     ) -> None:
         """Should cache JWKS and not fetch on every request."""
-        from daw_agents.auth.clerk import ClerkConfig, ClerkJWTVerifier
+        from daw_server.auth.clerk import ClerkConfig, ClerkJWTVerifier
 
         config = ClerkConfig(
             secret_key="sk_test_abc",
@@ -369,7 +369,7 @@ class TestClerkJWTVerifier:
         create_test_token: Any,
     ) -> None:
         """Should refetch JWKS when cache expires."""
-        from daw_agents.auth.clerk import ClerkConfig, ClerkJWTVerifier
+        from daw_server.auth.clerk import ClerkConfig, ClerkJWTVerifier
 
         config = ClerkConfig(
             secret_key="sk_test_abc",
@@ -403,8 +403,8 @@ class TestClerkAuthMiddleware:
 
     def test_missing_auth_header_raises_401(self) -> None:
         """Should return 401 when Authorization header is missing."""
-        from daw_agents.auth.clerk import ClerkConfig
-        from daw_agents.auth.middleware import ClerkAuthMiddleware
+        from daw_server.auth.clerk import ClerkConfig
+        from daw_server.auth.middleware import ClerkAuthMiddleware
 
         config = ClerkConfig(
             secret_key="sk_test_abc",
@@ -427,8 +427,8 @@ class TestClerkAuthMiddleware:
 
     def test_invalid_bearer_format_raises_401(self) -> None:
         """Should return 401 when Authorization header format is invalid."""
-        from daw_agents.auth.clerk import ClerkConfig
-        from daw_agents.auth.middleware import ClerkAuthMiddleware
+        from daw_server.auth.clerk import ClerkConfig
+        from daw_server.auth.middleware import ClerkAuthMiddleware
 
         config = ClerkConfig(
             secret_key="sk_test_abc",
@@ -456,8 +456,8 @@ class TestClerkAuthMiddleware:
         create_test_token: Any,
     ) -> None:
         """Should allow access with valid token."""
-        from daw_agents.auth.clerk import ClerkConfig
-        from daw_agents.auth.middleware import ClerkAuthMiddleware
+        from daw_server.auth.clerk import ClerkConfig
+        from daw_server.auth.middleware import ClerkAuthMiddleware
 
         config = ClerkConfig(
             secret_key="sk_test_abc",
@@ -491,8 +491,8 @@ class TestClerkAuthMiddleware:
 
     def test_health_endpoint_not_protected(self) -> None:
         """Health endpoint should not require authentication."""
-        from daw_agents.auth.clerk import ClerkConfig
-        from daw_agents.auth.middleware import ClerkAuthMiddleware
+        from daw_server.auth.clerk import ClerkConfig
+        from daw_server.auth.middleware import ClerkAuthMiddleware
 
         config = ClerkConfig(
             secret_key="sk_test_abc",
@@ -537,8 +537,8 @@ class TestGetCurrentUser:
         create_test_token: Any,
     ) -> None:
         """Should extract user from verified JWT in request."""
-        from daw_agents.auth.clerk import ClerkConfig, ClerkUser
-        from daw_agents.auth.dependencies import get_current_user
+        from daw_server.auth.clerk import ClerkConfig, ClerkUser
+        from daw_server.auth.dependencies import get_current_user
 
         config = ClerkConfig(
             secret_key="sk_test_abc",
@@ -577,8 +577,8 @@ class TestGetCurrentUser:
     @pytest.mark.asyncio
     async def test_missing_token_raises_401(self) -> None:
         """Should raise 401 when token is missing."""
-        from daw_agents.auth.clerk import ClerkConfig, ClerkUser
-        from daw_agents.auth.dependencies import get_current_user
+        from daw_server.auth.clerk import ClerkConfig, ClerkUser
+        from daw_server.auth.dependencies import get_current_user
 
         config = ClerkConfig(
             secret_key="sk_test_abc",
@@ -604,8 +604,8 @@ class TestOptionalCurrentUser:
     @pytest.mark.asyncio
     async def test_returns_none_without_token(self) -> None:
         """Should return None when no token is provided."""
-        from daw_agents.auth.clerk import ClerkConfig, ClerkUser
-        from daw_agents.auth.dependencies import optional_current_user
+        from daw_server.auth.clerk import ClerkConfig, ClerkUser
+        from daw_server.auth.dependencies import optional_current_user
 
         config = ClerkConfig(
             secret_key="sk_test_abc",
@@ -635,8 +635,8 @@ class TestOptionalCurrentUser:
         create_test_token: Any,
     ) -> None:
         """Should return user when valid token is provided."""
-        from daw_agents.auth.clerk import ClerkConfig, ClerkUser
-        from daw_agents.auth.dependencies import optional_current_user
+        from daw_server.auth.clerk import ClerkConfig, ClerkUser
+        from daw_server.auth.dependencies import optional_current_user
 
         config = ClerkConfig(
             secret_key="sk_test_abc",

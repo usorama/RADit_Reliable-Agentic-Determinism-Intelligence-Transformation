@@ -134,7 +134,7 @@ def sample_workflow_id() -> str:
 @pytest.fixture
 def mock_clerk_config() -> Any:
     """Create mock Clerk configuration."""
-    from daw_agents.auth.clerk import ClerkConfig
+    from daw_server.auth.clerk import ClerkConfig
 
     return ClerkConfig(
         secret_key="sk_test_abc123",
@@ -154,14 +154,14 @@ class TestChatRequestSchema:
 
     def test_chat_request_with_required_fields(self) -> None:
         """ChatRequest should accept required fields."""
-        from daw_agents.api.schemas import ChatRequest
+        from daw_server.api.schemas import ChatRequest
 
         request = ChatRequest(message="Build a todo app with React")
         assert request.message == "Build a todo app with React"
 
     def test_chat_request_with_optional_context(self) -> None:
         """ChatRequest should support optional context field."""
-        from daw_agents.api.schemas import ChatRequest
+        from daw_server.api.schemas import ChatRequest
 
         request = ChatRequest(
             message="Build a todo app",
@@ -172,7 +172,7 @@ class TestChatRequestSchema:
 
     def test_chat_request_with_optional_workflow_id(self) -> None:
         """ChatRequest should support optional workflow_id for continuing conversations."""
-        from daw_agents.api.schemas import ChatRequest
+        from daw_server.api.schemas import ChatRequest
 
         workflow_id = str(uuid.uuid4())
         request = ChatRequest(
@@ -185,7 +185,7 @@ class TestChatRequestSchema:
         """ChatRequest should reject empty messages."""
         from pydantic import ValidationError
 
-        from daw_agents.api.schemas import ChatRequest
+        from daw_server.api.schemas import ChatRequest
 
         with pytest.raises(ValidationError):
             ChatRequest(message="")
@@ -196,7 +196,7 @@ class TestChatResponseSchema:
 
     def test_chat_response_with_all_fields(self) -> None:
         """ChatResponse should hold response data."""
-        from daw_agents.api.schemas import ChatResponse
+        from daw_server.api.schemas import ChatResponse
 
         workflow_id = str(uuid.uuid4())
         response = ChatResponse(
@@ -212,7 +212,7 @@ class TestChatResponseSchema:
 
     def test_chat_response_status_enum(self) -> None:
         """ChatResponse status should be a valid enum value."""
-        from daw_agents.api.schemas import ChatResponse, WorkflowStatusEnum
+        from daw_server.api.schemas import ChatResponse, WorkflowStatusEnum
 
         response = ChatResponse(
             workflow_id=str(uuid.uuid4()),
@@ -227,7 +227,7 @@ class TestWorkflowStatusSchema:
 
     def test_workflow_status_with_all_fields(self) -> None:
         """WorkflowStatus should hold workflow state data."""
-        from daw_agents.api.schemas import WorkflowStatus
+        from daw_server.api.schemas import WorkflowStatus
 
         workflow_id = str(uuid.uuid4())
         status = WorkflowStatus(
@@ -250,7 +250,7 @@ class TestWorkflowStatusSchema:
 
     def test_workflow_status_with_error(self) -> None:
         """WorkflowStatus should support error field."""
-        from daw_agents.api.schemas import WorkflowStatus
+        from daw_server.api.schemas import WorkflowStatus
 
         status = WorkflowStatus(
             id=str(uuid.uuid4()),
@@ -269,7 +269,7 @@ class TestApprovalRequestSchema:
 
     def test_approval_request_approve(self) -> None:
         """ApprovalRequest should support approval action."""
-        from daw_agents.api.schemas import ApprovalAction, ApprovalRequest
+        from daw_server.api.schemas import ApprovalAction, ApprovalRequest
 
         request = ApprovalRequest(
             action=ApprovalAction.APPROVE,
@@ -280,7 +280,7 @@ class TestApprovalRequestSchema:
 
     def test_approval_request_reject(self) -> None:
         """ApprovalRequest should support rejection action."""
-        from daw_agents.api.schemas import ApprovalAction, ApprovalRequest
+        from daw_server.api.schemas import ApprovalAction, ApprovalRequest
 
         request = ApprovalRequest(
             action=ApprovalAction.REJECT,
@@ -290,7 +290,7 @@ class TestApprovalRequestSchema:
 
     def test_approval_request_modify(self) -> None:
         """ApprovalRequest should support modify action with changes."""
-        from daw_agents.api.schemas import ApprovalAction, ApprovalRequest
+        from daw_server.api.schemas import ApprovalAction, ApprovalRequest
 
         request = ApprovalRequest(
             action=ApprovalAction.MODIFY,
@@ -306,7 +306,7 @@ class TestApprovalResponseSchema:
 
     def test_approval_response_success(self) -> None:
         """ApprovalResponse should indicate success."""
-        from daw_agents.api.schemas import ApprovalResponse
+        from daw_server.api.schemas import ApprovalResponse
 
         response = ApprovalResponse(
             success=True,
@@ -332,7 +332,7 @@ class TestChatEndpoint:
         mock_clerk_config: Any,
     ) -> None:
         """POST /api/chat should return 401 without auth."""
-        from daw_agents.api.routes import create_router
+        from daw_server.api.routes import create_router
 
         app = FastAPI()
         router = create_router(mock_clerk_config)
@@ -354,7 +354,7 @@ class TestChatEndpoint:
         create_test_token: Any,
     ) -> None:
         """POST /api/chat should create workflow and return response."""
-        from daw_agents.api.routes import create_router
+        from daw_server.api.routes import create_router
 
         app = FastAPI()
         router = create_router(mock_clerk_config)
@@ -391,7 +391,7 @@ class TestChatEndpoint:
         sample_workflow_id: str,
     ) -> None:
         """POST /api/chat should continue existing workflow when workflow_id provided."""
-        from daw_agents.api.routes import create_router
+        from daw_server.api.routes import create_router
 
         app = FastAPI()
         router = create_router(mock_clerk_config)
@@ -427,7 +427,7 @@ class TestChatEndpoint:
         create_test_token: Any,
     ) -> None:
         """POST /api/chat should validate request body."""
-        from daw_agents.api.routes import create_router
+        from daw_server.api.routes import create_router
 
         app = FastAPI()
         router = create_router(mock_clerk_config)
@@ -466,7 +466,7 @@ class TestGetWorkflowEndpoint:
         sample_workflow_id: str,
     ) -> None:
         """GET /api/workflow/{id} should return 401 without auth."""
-        from daw_agents.api.routes import create_router
+        from daw_server.api.routes import create_router
 
         app = FastAPI()
         router = create_router(mock_clerk_config)
@@ -486,7 +486,7 @@ class TestGetWorkflowEndpoint:
         sample_workflow_id: str,
     ) -> None:
         """GET /api/workflow/{id} should return workflow status."""
-        from daw_agents.api.routes import create_router
+        from daw_server.api.routes import create_router
 
         app = FastAPI()
         router = create_router(mock_clerk_config)
@@ -522,7 +522,7 @@ class TestGetWorkflowEndpoint:
         create_test_token: Any,
     ) -> None:
         """GET /api/workflow/{id} should return 404 for non-existent workflow."""
-        from daw_agents.api.routes import create_router
+        from daw_server.api.routes import create_router
 
         app = FastAPI()
         router = create_router(mock_clerk_config)
@@ -554,7 +554,7 @@ class TestGetWorkflowEndpoint:
         create_test_token: Any,
     ) -> None:
         """GET /api/workflow/{id} should validate UUID format."""
-        from daw_agents.api.routes import create_router
+        from daw_server.api.routes import create_router
 
         app = FastAPI()
         router = create_router(mock_clerk_config)
@@ -592,7 +592,7 @@ class TestApproveWorkflowEndpoint:
         sample_workflow_id: str,
     ) -> None:
         """POST /api/workflow/{id}/approve should return 401 without auth."""
-        from daw_agents.api.routes import create_router
+        from daw_server.api.routes import create_router
 
         app = FastAPI()
         router = create_router(mock_clerk_config)
@@ -615,7 +615,7 @@ class TestApproveWorkflowEndpoint:
         sample_workflow_id: str,
     ) -> None:
         """POST /api/workflow/{id}/approve should approve workflow."""
-        from daw_agents.api.routes import create_router
+        from daw_server.api.routes import create_router
 
         app = FastAPI()
         router = create_router(mock_clerk_config)
@@ -652,7 +652,7 @@ class TestApproveWorkflowEndpoint:
         sample_workflow_id: str,
     ) -> None:
         """POST /api/workflow/{id}/approve should support rejection."""
-        from daw_agents.api.routes import create_router
+        from daw_server.api.routes import create_router
 
         app = FastAPI()
         router = create_router(mock_clerk_config)
@@ -691,7 +691,7 @@ class TestDeleteWorkflowEndpoint:
         sample_workflow_id: str,
     ) -> None:
         """DELETE /api/workflow/{id} should return 401 without auth."""
-        from daw_agents.api.routes import create_router
+        from daw_server.api.routes import create_router
 
         app = FastAPI()
         router = create_router(mock_clerk_config)
@@ -711,7 +711,7 @@ class TestDeleteWorkflowEndpoint:
         sample_workflow_id: str,
     ) -> None:
         """DELETE /api/workflow/{id} should cancel/delete workflow."""
-        from daw_agents.api.routes import create_router
+        from daw_server.api.routes import create_router
 
         app = FastAPI()
         router = create_router(mock_clerk_config)
@@ -743,7 +743,7 @@ class TestDeleteWorkflowEndpoint:
         create_test_token: Any,
     ) -> None:
         """DELETE /api/workflow/{id} should return 404 for non-existent workflow."""
-        from daw_agents.api.routes import create_router
+        from daw_server.api.routes import create_router
 
         app = FastAPI()
         router = create_router(mock_clerk_config)
@@ -785,7 +785,7 @@ class TestWebSocketTraceEndpoint:
         sample_workflow_id: str,
     ) -> None:
         """WebSocket /ws/trace/{id} should establish connection with valid auth."""
-        from daw_agents.api.routes import (
+        from daw_server.api.routes import (
             WorkflowManager,
             create_router,
             create_trace_websocket_router,
@@ -837,7 +837,7 @@ class TestWebSocketTraceEndpoint:
         sample_workflow_id: str,
     ) -> None:
         """WebSocket /ws/trace/{id} should reject invalid auth."""
-        from daw_agents.api.routes import create_trace_websocket_router
+        from daw_server.api.routes import create_trace_websocket_router
 
         app = FastAPI()
         ws_router = create_trace_websocket_router(mock_clerk_config)
@@ -865,7 +865,7 @@ class TestOpenAPIDocumentation:
         mock_clerk_config: Any,
     ) -> None:
         """App should generate OpenAPI schema."""
-        from daw_agents.api.routes import create_router
+        from daw_server.api.routes import create_router
 
         app = FastAPI(title="DAW API", version="1.0.0")
         router = create_router(mock_clerk_config)
@@ -884,7 +884,7 @@ class TestOpenAPIDocumentation:
         mock_clerk_config: Any,
     ) -> None:
         """OpenAPI schema should include all API endpoints."""
-        from daw_agents.api.routes import create_router
+        from daw_server.api.routes import create_router
 
         app = FastAPI(title="DAW API", version="1.0.0")
         router = create_router(mock_clerk_config)
@@ -903,7 +903,7 @@ class TestOpenAPIDocumentation:
         mock_clerk_config: Any,
     ) -> None:
         """OpenAPI schema should include security schemes."""
-        from daw_agents.api.routes import create_router
+        from daw_server.api.routes import create_router
 
         app = FastAPI(title="DAW API", version="1.0.0")
         router = create_router(mock_clerk_config)
@@ -936,7 +936,7 @@ class TestErrorHandling:
         create_test_token: Any,
     ) -> None:
         """Invalid JSON should return 422."""
-        from daw_agents.api.routes import create_router
+        from daw_server.api.routes import create_router
 
         app = FastAPI()
         router = create_router(mock_clerk_config)
@@ -971,7 +971,7 @@ class TestErrorHandling:
         create_test_token: Any,
     ) -> None:
         """Internal server errors should return 500."""
-        from daw_agents.api.routes import create_router
+        from daw_server.api.routes import create_router
 
         app = FastAPI()
         router = create_router(mock_clerk_config)
@@ -1017,7 +1017,7 @@ class TestWorkflowOwnership:
         sample_workflow_id: str,
     ) -> None:
         """User should not be able to access another user's workflow."""
-        from daw_agents.api.routes import create_router
+        from daw_server.api.routes import create_router
 
         app = FastAPI()
         router = create_router(mock_clerk_config)
@@ -1066,7 +1066,7 @@ class TestRouterConfiguration:
         """create_router should return a FastAPI APIRouter."""
         from fastapi import APIRouter
 
-        from daw_agents.api.routes import create_router
+        from daw_server.api.routes import create_router
 
         router = create_router(mock_clerk_config)
         assert isinstance(router, APIRouter)
@@ -1076,7 +1076,7 @@ class TestRouterConfiguration:
         mock_clerk_config: Any,
     ) -> None:
         """Router should support custom prefixes."""
-        from daw_agents.api.routes import create_router
+        from daw_server.api.routes import create_router
 
         app = FastAPI()
         router = create_router(mock_clerk_config)
@@ -1099,7 +1099,7 @@ class TestWorkflowManager:
 
     def test_create_workflow(self) -> None:
         """WorkflowManager should create workflows."""
-        from daw_agents.api.routes import WorkflowManager
+        from daw_server.api.routes import WorkflowManager
 
         WorkflowManager.clear_all()
         workflow = WorkflowManager.create_workflow(
@@ -1116,7 +1116,7 @@ class TestWorkflowManager:
 
     def test_get_workflow(self) -> None:
         """WorkflowManager should retrieve workflows by ID."""
-        from daw_agents.api.routes import WorkflowManager
+        from daw_server.api.routes import WorkflowManager
 
         WorkflowManager.clear_all()
         created = WorkflowManager.create_workflow(
@@ -1131,7 +1131,7 @@ class TestWorkflowManager:
 
     def test_get_nonexistent_workflow(self) -> None:
         """WorkflowManager should return None for nonexistent workflows."""
-        from daw_agents.api.routes import WorkflowManager
+        from daw_server.api.routes import WorkflowManager
 
         WorkflowManager.clear_all()
         result = WorkflowManager.get_workflow("nonexistent-id")
@@ -1139,7 +1139,7 @@ class TestWorkflowManager:
 
     def test_update_workflow(self) -> None:
         """WorkflowManager should update workflow fields."""
-        from daw_agents.api.routes import WorkflowManager
+        from daw_server.api.routes import WorkflowManager
 
         WorkflowManager.clear_all()
         workflow = WorkflowManager.create_workflow(
@@ -1159,7 +1159,7 @@ class TestWorkflowManager:
 
     def test_update_nonexistent_workflow(self) -> None:
         """WorkflowManager should return None when updating nonexistent workflow."""
-        from daw_agents.api.routes import WorkflowManager
+        from daw_server.api.routes import WorkflowManager
 
         WorkflowManager.clear_all()
         result = WorkflowManager.update_workflow("nonexistent-id", {"status": "done"})
@@ -1167,7 +1167,7 @@ class TestWorkflowManager:
 
     def test_delete_workflow(self) -> None:
         """WorkflowManager should delete workflows."""
-        from daw_agents.api.routes import WorkflowManager
+        from daw_server.api.routes import WorkflowManager
 
         WorkflowManager.clear_all()
         workflow = WorkflowManager.create_workflow(
@@ -1185,7 +1185,7 @@ class TestWorkflowManager:
 
     def test_delete_nonexistent_workflow(self) -> None:
         """WorkflowManager should return False when deleting nonexistent workflow."""
-        from daw_agents.api.routes import WorkflowManager
+        from daw_server.api.routes import WorkflowManager
 
         WorkflowManager.clear_all()
         result = WorkflowManager.delete_workflow("nonexistent-id")
@@ -1193,7 +1193,7 @@ class TestWorkflowManager:
 
     def test_user_owns_workflow(self) -> None:
         """WorkflowManager should check workflow ownership."""
-        from daw_agents.api.routes import WorkflowManager
+        from daw_server.api.routes import WorkflowManager
 
         WorkflowManager.clear_all()
         workflow = WorkflowManager.create_workflow(
@@ -1208,7 +1208,7 @@ class TestWorkflowManager:
 
     def test_clear_all(self) -> None:
         """WorkflowManager should clear all workflows."""
-        from daw_agents.api.routes import WorkflowManager
+        from daw_server.api.routes import WorkflowManager
 
         WorkflowManager.clear_all()
         WorkflowManager.create_workflow(user_id="user1", message="Workflow 1")
@@ -1237,7 +1237,7 @@ class TestAdditionalCoverage:
         create_test_token: Any,
     ) -> None:
         """POST /api/chat should handle context parameter."""
-        from daw_agents.api.routes import WorkflowManager, create_router
+        from daw_server.api.routes import WorkflowManager, create_router
 
         WorkflowManager.clear_all()
         app = FastAPI()
@@ -1276,7 +1276,7 @@ class TestAdditionalCoverage:
         create_test_token: Any,
     ) -> None:
         """POST /api/workflow/{id}/approve should handle modify action."""
-        from daw_agents.api.routes import WorkflowManager, create_router
+        from daw_server.api.routes import WorkflowManager, create_router
 
         WorkflowManager.clear_all()
         app = FastAPI()
@@ -1323,7 +1323,7 @@ class TestAdditionalCoverage:
         create_test_token: Any,
     ) -> None:
         """GET /api/workflow/{id} should return workflow after creation."""
-        from daw_agents.api.routes import WorkflowManager, create_router
+        from daw_server.api.routes import WorkflowManager, create_router
 
         WorkflowManager.clear_all()
         app = FastAPI()
@@ -1365,7 +1365,7 @@ class TestAdditionalCoverage:
         create_test_token: Any,
     ) -> None:
         """DELETE /api/workflow/{id} should delete existing workflow."""
-        from daw_agents.api.routes import WorkflowManager, create_router
+        from daw_server.api.routes import WorkflowManager, create_router
 
         WorkflowManager.clear_all()
         app = FastAPI()
@@ -1406,7 +1406,7 @@ class TestAdditionalCoverage:
         create_test_token: Any,
     ) -> None:
         """User should not be able to approve another user's workflow."""
-        from daw_agents.api.routes import WorkflowManager, create_router
+        from daw_server.api.routes import WorkflowManager, create_router
 
         WorkflowManager.clear_all()
         app = FastAPI()
@@ -1455,7 +1455,7 @@ class TestAdditionalCoverage:
         create_test_token: Any,
     ) -> None:
         """User should not be able to delete another user's workflow."""
-        from daw_agents.api.routes import WorkflowManager, create_router
+        from daw_server.api.routes import WorkflowManager, create_router
 
         WorkflowManager.clear_all()
         app = FastAPI()

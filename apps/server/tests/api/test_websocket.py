@@ -31,7 +31,7 @@ class TestAgentStreamEventModel:
 
     def test_event_with_required_fields(self) -> None:
         """Event should accept required fields."""
-        from daw_agents.api.websocket import AgentStreamEvent, EventType
+        from daw_server.api.websocket import AgentStreamEvent, EventType
 
         event = AgentStreamEvent(
             event_type=EventType.STATE_CHANGE,
@@ -45,7 +45,7 @@ class TestAgentStreamEventModel:
 
     def test_event_with_custom_timestamp(self) -> None:
         """Event should accept custom timestamp."""
-        from daw_agents.api.websocket import AgentStreamEvent, EventType
+        from daw_server.api.websocket import AgentStreamEvent, EventType
 
         custom_time = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
         event = AgentStreamEvent(
@@ -58,7 +58,7 @@ class TestAgentStreamEventModel:
 
     def test_event_serialization(self) -> None:
         """Event should serialize to JSON properly."""
-        from daw_agents.api.websocket import AgentStreamEvent, EventType
+        from daw_server.api.websocket import AgentStreamEvent, EventType
 
         event = AgentStreamEvent(
             event_type=EventType.TOOL_CALL,
@@ -76,7 +76,7 @@ class TestEventType:
 
     def test_event_types_defined(self) -> None:
         """EventType should have all required types."""
-        from daw_agents.api.websocket import EventType
+        from daw_server.api.websocket import EventType
 
         assert EventType.STATE_CHANGE is not None
         assert EventType.THOUGHT is not None
@@ -87,7 +87,7 @@ class TestEventType:
 
     def test_event_type_values(self) -> None:
         """EventType values should be strings."""
-        from daw_agents.api.websocket import EventType
+        from daw_server.api.websocket import EventType
 
         assert EventType.STATE_CHANGE.value == "STATE_CHANGE"
         assert EventType.THOUGHT.value == "THOUGHT"
@@ -100,14 +100,14 @@ class TestWebSocketManagerInit:
 
     def test_manager_creation(self) -> None:
         """Manager should initialize with empty connections."""
-        from daw_agents.api.websocket import WebSocketManager
+        from daw_server.api.websocket import WebSocketManager
 
         manager = WebSocketManager()
         assert manager._connections == {}
 
     def test_manager_with_max_connections(self) -> None:
         """Manager should support max connections per workflow."""
-        from daw_agents.api.websocket import WebSocketManager
+        from daw_server.api.websocket import WebSocketManager
 
         manager = WebSocketManager(max_connections_per_workflow=10)
         assert manager._max_connections_per_workflow == 10
@@ -119,7 +119,7 @@ class TestWebSocketManagerConnections:
     @pytest.mark.asyncio
     async def test_connect_adds_client(self) -> None:
         """Connect should add client to workflow connections."""
-        from daw_agents.api.websocket import WebSocketManager
+        from daw_server.api.websocket import WebSocketManager
 
         manager = WebSocketManager()
         mock_ws = AsyncMock()
@@ -134,7 +134,7 @@ class TestWebSocketManagerConnections:
     @pytest.mark.asyncio
     async def test_disconnect_removes_client(self) -> None:
         """Disconnect should remove client from workflow connections."""
-        from daw_agents.api.websocket import WebSocketManager
+        from daw_server.api.websocket import WebSocketManager
 
         manager = WebSocketManager()
         mock_ws = AsyncMock()
@@ -148,7 +148,7 @@ class TestWebSocketManagerConnections:
     @pytest.mark.asyncio
     async def test_disconnect_nonexistent_workflow_safe(self) -> None:
         """Disconnect should handle nonexistent workflow gracefully."""
-        from daw_agents.api.websocket import WebSocketManager
+        from daw_server.api.websocket import WebSocketManager
 
         manager = WebSocketManager()
         mock_ws = AsyncMock()
@@ -159,7 +159,7 @@ class TestWebSocketManagerConnections:
     @pytest.mark.asyncio
     async def test_multiple_clients_per_workflow(self) -> None:
         """Manager should support multiple clients for same workflow."""
-        from daw_agents.api.websocket import WebSocketManager
+        from daw_server.api.websocket import WebSocketManager
 
         manager = WebSocketManager()
         mock_ws1 = AsyncMock()
@@ -177,7 +177,7 @@ class TestWebSocketManagerConnections:
     @pytest.mark.asyncio
     async def test_max_connections_limit(self) -> None:
         """Manager should enforce max connections per workflow."""
-        from daw_agents.api.websocket import (
+        from daw_server.api.websocket import (
             MaxConnectionsExceededError,
             WebSocketManager,
         )
@@ -198,7 +198,7 @@ class TestWebSocketManagerConnections:
 
     def test_get_connection_count(self) -> None:
         """Manager should return connection count for workflow."""
-        from daw_agents.api.websocket import WebSocketManager
+        from daw_server.api.websocket import WebSocketManager
 
         manager = WebSocketManager()
         assert manager.get_connection_count("wf_123") == 0
@@ -210,7 +210,7 @@ class TestWebSocketManagerBroadcast:
     @pytest.mark.asyncio
     async def test_broadcast_to_all_clients(self) -> None:
         """Broadcast should send message to all clients of a workflow."""
-        from daw_agents.api.websocket import (
+        from daw_server.api.websocket import (
             AgentStreamEvent,
             EventType,
             WebSocketManager,
@@ -241,7 +241,7 @@ class TestWebSocketManagerBroadcast:
     @pytest.mark.asyncio
     async def test_broadcast_to_nonexistent_workflow(self) -> None:
         """Broadcast to nonexistent workflow should not raise."""
-        from daw_agents.api.websocket import (
+        from daw_server.api.websocket import (
             AgentStreamEvent,
             EventType,
             WebSocketManager,
@@ -260,7 +260,7 @@ class TestWebSocketManagerBroadcast:
     @pytest.mark.asyncio
     async def test_broadcast_handles_disconnected_client(self) -> None:
         """Broadcast should handle and remove disconnected clients."""
-        from daw_agents.api.websocket import (
+        from daw_server.api.websocket import (
             AgentStreamEvent,
             EventType,
             WebSocketManager,
@@ -296,7 +296,7 @@ class TestAgentStreamCallback:
 
     def test_callback_creation(self) -> None:
         """Callback should initialize with manager and workflow_id."""
-        from daw_agents.api.websocket import AgentStreamCallback, WebSocketManager
+        from daw_server.api.websocket import AgentStreamCallback, WebSocketManager
 
         manager = WebSocketManager()
         callback = AgentStreamCallback(manager, "wf_123")
@@ -307,7 +307,7 @@ class TestAgentStreamCallback:
     @pytest.mark.asyncio
     async def test_on_chain_start_emits_event(self) -> None:
         """on_chain_start should emit STATE_CHANGE event."""
-        from daw_agents.api.websocket import (
+        from daw_server.api.websocket import (
             AgentStreamCallback,
             EventType,
             WebSocketManager,
@@ -331,7 +331,7 @@ class TestAgentStreamCallback:
     @pytest.mark.asyncio
     async def test_on_tool_start_emits_event(self) -> None:
         """on_tool_start should emit TOOL_CALL event."""
-        from daw_agents.api.websocket import (
+        from daw_server.api.websocket import (
             AgentStreamCallback,
             EventType,
             WebSocketManager,
@@ -355,7 +355,7 @@ class TestAgentStreamCallback:
     @pytest.mark.asyncio
     async def test_on_llm_start_emits_thought(self) -> None:
         """on_llm_start should emit THOUGHT event."""
-        from daw_agents.api.websocket import (
+        from daw_server.api.websocket import (
             AgentStreamCallback,
             EventType,
             WebSocketManager,
@@ -378,7 +378,7 @@ class TestAgentStreamCallback:
     @pytest.mark.asyncio
     async def test_on_chain_error_emits_error(self) -> None:
         """on_chain_error should emit ERROR event."""
-        from daw_agents.api.websocket import (
+        from daw_server.api.websocket import (
             AgentStreamCallback,
             EventType,
             WebSocketManager,
@@ -402,7 +402,7 @@ class TestWebSocketEndpoint:
 
     def test_websocket_endpoint_exists(self) -> None:
         """WebSocket endpoint should be registered."""
-        from daw_agents.api.websocket import create_websocket_router
+        from daw_server.api.websocket import create_websocket_router
 
         router = create_websocket_router()
         routes = [route.path for route in router.routes]
@@ -411,7 +411,7 @@ class TestWebSocketEndpoint:
     @pytest.mark.asyncio
     async def test_websocket_connection_lifecycle(self) -> None:
         """Test full WebSocket connection lifecycle."""
-        from daw_agents.api.websocket import (
+        from daw_server.api.websocket import (
             WebSocketManager,
             create_websocket_router,
         )
@@ -430,7 +430,7 @@ class TestWebSocketEndpoint:
     @pytest.mark.asyncio
     async def test_websocket_auth_from_query_param(self) -> None:
         """WebSocket should accept auth token from query param."""
-        from daw_agents.api.websocket import (
+        from daw_server.api.websocket import (
             WebSocketManager,
             create_websocket_router,
         )
@@ -454,7 +454,7 @@ class TestReconnectionConfig:
 
     def test_reconnection_config_creation(self) -> None:
         """ReconnectionConfig should have default values."""
-        from daw_agents.api.websocket import ReconnectionConfig
+        from daw_server.api.websocket import ReconnectionConfig
 
         config = ReconnectionConfig()
         assert config.initial_delay_ms == 1000
@@ -464,7 +464,7 @@ class TestReconnectionConfig:
 
     def test_reconnection_config_custom_values(self) -> None:
         """ReconnectionConfig should accept custom values."""
-        from daw_agents.api.websocket import ReconnectionConfig
+        from daw_server.api.websocket import ReconnectionConfig
 
         config = ReconnectionConfig(
             initial_delay_ms=500,
@@ -479,7 +479,7 @@ class TestReconnectionConfig:
 
     def test_calculate_delay_exponential_backoff(self) -> None:
         """ReconnectionConfig should calculate exponential backoff."""
-        from daw_agents.api.websocket import ReconnectionConfig
+        from daw_server.api.websocket import ReconnectionConfig
 
         config = ReconnectionConfig(
             initial_delay_ms=1000,
@@ -494,7 +494,7 @@ class TestReconnectionConfig:
 
     def test_calculate_delay_caps_at_max(self) -> None:
         """ReconnectionConfig delay should cap at max_delay_ms."""
-        from daw_agents.api.websocket import ReconnectionConfig
+        from daw_server.api.websocket import ReconnectionConfig
 
         config = ReconnectionConfig(
             initial_delay_ms=1000,
@@ -510,7 +510,7 @@ class TestMessageQueue:
 
     def test_message_queue_creation(self) -> None:
         """MessageQueue should initialize with max size."""
-        from daw_agents.api.websocket import MessageQueue
+        from daw_server.api.websocket import MessageQueue
 
         queue = MessageQueue(max_size=100)
         assert queue._max_size == 100
@@ -518,7 +518,7 @@ class TestMessageQueue:
 
     def test_message_queue_add_and_get(self) -> None:
         """MessageQueue should store and retrieve messages."""
-        from daw_agents.api.websocket import (
+        from daw_server.api.websocket import (
             AgentStreamEvent,
             EventType,
             MessageQueue,
@@ -540,7 +540,7 @@ class TestMessageQueue:
 
     def test_message_queue_clears_after_get_all(self) -> None:
         """MessageQueue should clear after get_all."""
-        from daw_agents.api.websocket import (
+        from daw_server.api.websocket import (
             AgentStreamEvent,
             EventType,
             MessageQueue,
@@ -559,7 +559,7 @@ class TestMessageQueue:
 
     def test_message_queue_evicts_old_when_full(self) -> None:
         """MessageQueue should evict oldest messages when full."""
-        from daw_agents.api.websocket import (
+        from daw_server.api.websocket import (
             AgentStreamEvent,
             EventType,
             MessageQueue,
@@ -588,7 +588,7 @@ class TestWebSocketManagerWithQueue:
     @pytest.mark.asyncio
     async def test_manager_queues_messages_for_disconnected(self) -> None:
         """Manager should queue messages for recently disconnected clients."""
-        from daw_agents.api.websocket import (
+        from daw_server.api.websocket import (
             AgentStreamEvent,
             EventType,
             WebSocketManager,
@@ -626,7 +626,7 @@ class TestWebSocketExceptions:
 
     def test_max_connections_exceeded_error(self) -> None:
         """MaxConnectionsExceededError should have proper message."""
-        from daw_agents.api.websocket import MaxConnectionsExceededError
+        from daw_server.api.websocket import MaxConnectionsExceededError
 
         error = MaxConnectionsExceededError("wf_123", max_connections=10)
         assert "wf_123" in str(error)
@@ -634,7 +634,7 @@ class TestWebSocketExceptions:
 
     def test_websocket_auth_error(self) -> None:
         """WebSocketAuthError should have proper message."""
-        from daw_agents.api.websocket import WebSocketAuthError
+        from daw_server.api.websocket import WebSocketAuthError
 
         error = WebSocketAuthError("Invalid token")
         assert "Invalid token" in str(error)
@@ -646,7 +646,7 @@ class TestIntegrationWebSocketFlow:
     @pytest.mark.asyncio
     async def test_full_workflow_event_stream(self) -> None:
         """Test streaming events through full workflow."""
-        from daw_agents.api.websocket import (
+        from daw_server.api.websocket import (
             AgentStreamCallback,
             AgentStreamEvent,
             EventType,
@@ -681,7 +681,7 @@ class TestIntegrationWebSocketFlow:
     @pytest.mark.asyncio
     async def test_multiple_workflows_isolated(self) -> None:
         """Events for one workflow should not reach other workflow's clients."""
-        from daw_agents.api.websocket import (
+        from daw_server.api.websocket import (
             AgentStreamEvent,
             EventType,
             WebSocketManager,
