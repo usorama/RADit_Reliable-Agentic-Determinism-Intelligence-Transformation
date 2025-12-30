@@ -795,7 +795,10 @@
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/workers/test_celery.py"
-    }
+    },
+    "status": "completed",
+    "started_at": "2025-12-30T21:00:00Z",
+    "completed_at": "2025-12-30T21:45:00Z"
   },
   {
     "id": "EVAL-001",
