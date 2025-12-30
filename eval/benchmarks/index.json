@@ -2,9 +2,42 @@
   "$schema": "./index.schema.json",
   "version": "1.0.0",
   "created_at": "2025-12-30T19:20:00Z",
-  "updated_at": "2025-12-30T19:20:00Z",
+  "updated_at": "2025-12-30T20:00:00Z",
   "description": "Golden benchmark suite for DAW agent evaluation",
   "benchmarks": [
+    {
+      "id": "settings-page",
+      "name": "Settings Page",
+      "description": "React settings page component with theme toggle to validate frontend code generation (FUNC-002 dogfood)",
+      "complexity": "low",
+      "complexity_score": 3,
+      "category": "frontend",
+      "prd_path": "settings-page/prd.md",
+      "expected_path": "settings-page/expected/",
+      "rubric_path": "settings-page/rubric.yaml",
+      "metadata_path": "settings-page/metadata.json",
+      "key_patterns_tested": [
+        "React functional component",
+        "TypeScript strict mode",
+        "React hooks (useState, useEffect, useCallback)",
+        "Tailwind CSS styling",
+        "localStorage persistence",
+        "Accessibility (a11y)",
+        "React Testing Library"
+      ],
+      "expected_metrics": {
+        "task_count_min": 5,
+        "task_count_max": 8,
+        "duration_seconds_max": 900,
+        "cost_usd_max": 0.75
+      },
+      "pass_criteria": {
+        "pass_at_1": true,
+        "similarity_threshold": 0.85,
+        "test_coverage_threshold": 0.80
+      },
+      "enabled": true
+    },
     {
       "id": "calculator",
       "name": "Calculator",

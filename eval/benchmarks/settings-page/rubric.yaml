@@ -1,0 +1,199 @@
+version: "1.0"
+benchmark_id: "settings-page"
+description: "Scoring rubric for Settings Page benchmark evaluation"
+
+scoring:
+  task_decomposition:
+    weight: 0.30
+    description: "Measures quality of PRD to task breakdown"
+    criteria:
+      - name: task_count_accuracy
+        weight: 0.25
+        tolerance: 0.20
+        expected_range: [5, 8]
+        description: "Task count should be 5-8 tasks for frontend component"
+        scoring:
+          full_credit: "5-8 tasks"
+          partial_credit: "4 or 9 tasks (within tolerance)"
+          no_credit: "<4 or >9 tasks"
+
+      - name: dependency_correctness
+        weight: 0.40
+        description: "Critical dependencies correctly identified"
+        required_dependencies:
+          - from: "component_structure"
+            to: "theme_toggle"
+          - from: "theme_toggle"
+            to: "persistence"
+          - from: "component_structure"
+            to: "accessibility"
+        scoring:
+          full_credit: "All critical dependencies present"
+          partial_credit: "Most dependencies present"
+          no_credit: "Missing critical dependencies"
+
+      - name: priority_alignment
+        weight: 0.35
+        description: "Priority distribution matches requirements"
+        expected_distribution:
+          P0: 2  # Settings page + theme toggle
+          P1: 2  # User preferences + persistence
+          P2: 1  # Accessibility enhancements
+        scoring:
+          full_credit: "Distribution within 1 task difference"
+          partial_credit: "Distribution within 2 task difference"
+          no_credit: "Distribution off by more than 2 tasks"
+
+  code_quality:
+    weight: 0.40
+    description: "Measures quality of generated React/TypeScript code"
+    criteria:
+      - name: test_coverage
+        weight: 0.25
+        threshold: 0.80
+        description: ">= 80% test coverage on generated component"
+        scoring:
+          full_credit: ">= 80% coverage"
+          partial_credit: ">= 70% coverage"
+          no_credit: "< 70% coverage"
+
+      - name: typescript_strict
+        weight: 0.25
+        threshold: 1.00
+        description: "0 TypeScript errors in strict mode"
+        scoring:
+          full_credit: "0 errors"
+          partial_credit: "1-2 minor type issues"
+          no_credit: ">2 type errors or any 'any' types"
+
+      - name: lint_pass
+        weight: 0.20
+        threshold: 1.00
+        description: "0 ESLint errors"
+        scoring:
+          full_credit: "0 errors"
+          partial_credit: "1-3 minor warnings"
+          no_credit: ">3 issues or any errors"
+
+      - name: react_patterns
+        weight: 0.30
+        description: "Follows React best practices"
+        expected_patterns:
+          - "Functional component with TypeScript"
+          - "Proper hook usage (useState, useEffect, useCallback)"
+          - "Props interface with JSDoc"
+          - "Accessible form controls"
+          - "Event handler naming (handle*, on*)"
+        scoring:
+          full_credit: "All patterns followed"
+          partial_credit: "4/5 patterns followed"
+          no_credit: "Less than 4 patterns followed"
+
+  similarity:
+    weight: 0.30
+    description: "Measures output similarity to golden references"
+    criteria:
+      - name: semantic_similarity
+        weight: 0.40
+        threshold: 0.85
+        model: "text-embedding-3-small"
+        description: "Component logic and structure similarity"
+        scoring:
+          full_credit: ">= 0.85 similarity"
+          partial_credit: ">= 0.75 similarity"
+          no_credit: "< 0.75 similarity"
+
+      - name: structural_similarity
+        weight: 0.35
+        threshold: 0.80
+        description: "Component API and props similarity"
+        comparison_points:
+          - "Component name and export"
+          - "Props interface shape"
+          - "State management approach"
+          - "Event handlers signature"
+        scoring:
+          full_credit: ">= 0.80 structural match"
+          partial_credit: ">= 0.70 structural match"
+          no_credit: "< 0.70 structural match"
+
+      - name: accessibility_compliance
+        weight: 0.25
+        threshold: 0.90
+        description: "Accessibility features match expected"
+        required_features:
+          - "aria-label on interactive elements"
+          - "keyboard event handlers"
+          - "focus management"
+          - "semantic HTML structure"
+        scoring:
+          full_credit: "All accessibility features present"
+          partial_credit: "3/4 features present"
+          no_credit: "Less than 3 features present"
+
+pass_criteria:
+  required:
+    - task_decomposition_score: ">= 0.70"
+    - code_quality_score: ">= 0.80"
+    - all_tests_pass: true
+    - typescript_strict: true
+
+  optional:
+    - similarity_score: ">= 0.85"
+    - accessibility_score: ">= 0.90"
+    - time_under_budget: true
+
+expected_outputs:
+  files:
+    - "src/components/Settings.tsx"
+    - "tests/Settings.test.tsx"
+
+  components:
+    Settings:
+      props:
+        - name: "onThemeChange"
+          type: "(theme: 'light' | 'dark') => void"
+          optional: true
+        - name: "initialTheme"
+          type: "'light' | 'dark'"
+          optional: true
+        - name: "className"
+          type: "string"
+          optional: true
+
+  hooks_used:
+    - "useState"
+    - "useEffect"
+    - "useCallback"
+
+  data_testids:
+    - "settings-page"
+    - "theme-toggle-button"
+    - "save-confirmation"
+    - "notifications-checkbox"
+
+test_requirements:
+  minimum_test_count: 15
+  required_test_categories:
+    - "test_renders_settings_page"
+    - "test_renders_theme_toggle"
+    - "test_toggle_theme_click"
+    - "test_calls_onThemeChange"
+    - "test_respects_initialTheme"
+    - "test_saves_to_localStorage"
+    - "test_loads_from_localStorage"
+    - "test_handles_storage_errors"
+    - "test_keyboard_accessibility"
+    - "test_aria_attributes"
+    - "test_save_confirmation_appears"
+    - "test_custom_className"
+
+frontend_specific:
+  framework: "React 18+"
+  styling: "Tailwind CSS"
+  testing_library: "React Testing Library + Jest"
+  typescript_version: "5.0+"
+  required_imports:
+    - "react"
+    - "@testing-library/react"
+    - "@testing-library/user-event"
