@@ -1512,7 +1512,8 @@
       "command": "pytest tests/functional/test_dogfood_calculator.py -v"
     },
     "estimated_hours": 6,
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2025-12-30T23:30:00Z"
   },
   {
     "id": "FUNC-002",
@@ -1531,7 +1532,8 @@
       "command": "pytest tests/functional/test_dogfood_settings.py -v"
     },
     "estimated_hours": 8,
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2025-12-30T23:45:00Z"
   },
   {
     "id": "FUNC-003",
