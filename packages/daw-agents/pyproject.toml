@@ -75,4 +75,6 @@ select = ["E", "F", "W", "I", "N", "B", "UP"]
 ignore = [
     "E501",  # Line too long
     "B008",  # Allow function calls in defaults (required for FastAPI Depends pattern)
+    "UP017",  # datetime.UTC requires Python 3.11+
+    "B905",  # strict= in zip() requires Python 3.10+
 ]

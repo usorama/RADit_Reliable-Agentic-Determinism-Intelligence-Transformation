@@ -1,0 +1,2 @@
+Create a calculator app that supports basic arithmetic operations (add, subtract, multiply, divide).
+The app should have a clean user interface and validate inputs.

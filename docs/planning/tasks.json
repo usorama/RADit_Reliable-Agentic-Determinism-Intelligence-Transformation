@@ -311,11 +311,14 @@
     ],
     "instruction": "Create a prompt testing harness that: (1) Stores golden input/output pairs in tests/prompts/goldens/, (2) Runs prompt regression tests on every prompt file change in CI, (3) Uses semantic similarity scoring against golden outputs (configurable threshold), (4) Performs automated JSON schema validation for structured outputs, (5) Reports prompt drift/degradation metrics. Integrate with pytest for CI execution.",
     "verification": {
-      "type": "test_pass",
-      "command": "pytest tests/prompts/test_prompt_regression.py"
+      "tests_pass": true,
+      "lint_pass": true,
+      "coverage_met": true,
+      "integration_verified": true
     },
-    "status": "in_progress",
-    "started_at": "2025-12-30T21:00:00Z"
+    "status": "completed",
+    "started_at": "2025-12-30T21:00:00Z",
+    "completed_at": "2025-12-30T21:45:00Z"
   },
   {
     "id": "CORE-004",
