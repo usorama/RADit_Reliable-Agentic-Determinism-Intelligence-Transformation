@@ -2,7 +2,7 @@
 
 **Project**: RADit - Reliable Agentic Determinism Intelligence Transformation
 **AKA**: DAW - Deterministic Agentic Workbench
-**Last Updated**: 2025-12-30
+**Last Updated**: 2025-12-31
 
 ---
 
@@ -133,14 +133,27 @@ CORE-001 → CORE-002 → MODEL-001 → PLANNER-001 → EXECUTOR-001 → VALIDAT
 
 | Document | Location | Purpose |
 |----------|----------|---------|
-| Task Definitions | `docs/planning/tasks.json` | 50 tasks with deps, phases |
-| PRD | `docs/planning/prd/` | Functional requirements FR-01 to FR-06 |
-| Architecture | `docs/planning/architecture/` | Tech stack, patterns, deployment |
+| Task Definitions | `docs/planning/tasks.json` | 52 tasks with deps, phases |
+| PRD | `docs/planning/prd/` | Functional requirements FR-01 to FR-07 |
+| Architecture | `docs/planning/architecture/` | Tech stack, patterns, self-evolution |
 | Agent Specs | `agents.md` | Agent personas, tools, constraints |
-| Definition of Done | `docs/planning/stories/definition_of_done.md` | 34 stories, 291 DoD items |
+| Definition of Done | `docs/planning/stories/definition_of_done.md` | 38 stories, 320 DoD items |
 | TDD Workflow | `docs/planning/tdd_workflow.md` | Mandatory implementation workflow |
 | Execution Plan | `docs/planning/agent_execution_plan.md` | Parallel agent scheduling |
 | Analysis Report | `docs/planning/task_reprioritization_analysis.md` | Gap analysis, dependency fixes |
+| **Codebase Map** | `docs/codebase_map.json` | **Live code inventory - CONSULT BEFORE IMPLEMENTING** |
+| Codebase Schema | `docs/codebase_map.schema.json` | JSON schema for codebase map |
+
+---
+
+## Codebase Map
+
+**File**: `docs/codebase_map.json` | **Schema**: `docs/codebase_map.schema.json`
+
+- **BEFORE implementing**: Read the map to check for existing classes/functions/types
+- **AFTER implementing**: Run `python scripts/gather_codebase_map.py`
+
+Prevents duplicate code and technical debt. See `agents.md` for agent-specific guidance.
 
 ---
 
@@ -207,6 +220,57 @@ if not test_fails(test_file):
     raise TDDViolation("Test must fail before implementation!")
 ```
 
+### Experience Logger Pattern (FR-07.1)
+```python
+# Store task completion experiences in Neo4j (EVOLVE-001)
+from daw_agents.evolution import ExperienceLogger
+
+logger = ExperienceLogger(neo4j_connector)
+await logger.log_success(
+    task_id="CORE-003",
+    task_type=TaskType.CODING,
+    prompt_version="executor_v1.2",
+    model_used="claude-sonnet-4-20250514",
+    tokens_used=5000,
+    cost_usd=0.045,
+    duration_ms=12500
+)
+```
+
+### Reflection Hook Pattern (FR-07.2)
+```python
+# Trigger post-task learning asynchronously (EVOLVE-002)
+from daw_agents.evolution import ReflectionHook
+
+reflection = ReflectionHook(experience_logger, model_router)
+# Non-blocking - main workflow continues immediately
+asyncio.create_task(reflection.reflect(
+    experience_id=exp.id,
+    depth="standard"  # quick | standard | deep
+))
+```
+
+---
+
+## Self-Evolution Foundation (Epic 11)
+
+The system establishes data foundation for autonomous improvement:
+
+| Component | Task | Purpose | Location |
+|-----------|------|---------|----------|
+| Experience Logger | EVOLVE-001 | Store task outcomes in Neo4j | `evolution/experience_logger.py` |
+| Reflection Hook | EVOLVE-002 | Extract learnings after tasks | `evolution/reflection.py` |
+| Skill Library | EVOLVE-003 | Extract reusable patterns (Phase 2) | Future |
+| Prompt Optimizer | EVOLVE-005 | Improve prompts via DSPy (Phase 3) | Future |
+
+### Neo4j Experience Schema
+```cypher
+(:Experience {task_type, success, prompt_version, model_used, tokens_used, cost_usd})
+  -[:USED_SKILL]->(:Skill {name, pattern, success_rate})
+  -[:PRODUCED]->(:Artifact {type, path})
+  -[:REFLECTED_AS]->(:Insight {what_worked, lesson_learned})
+```
+
 ---
 
 ## Environment Setup
@@ -254,14 +318,16 @@ Both local dev and E2B connect to VPS Neo4j over public internet.
 When starting a new session:
 1. Read `PROGRESS.md` for current state
 2. Read `docs/planning/tasks.json` for task details
-3. Check which tasks are `in_progress` or ready to start
-4. Continue from where previous session left off
+3. Read `docs/codebase_map.json` for code inventory
+4. Check which tasks are `in_progress` or ready to start
+5. Continue from where previous session left off
 
 When ending a session:
 1. Update `tasks.json` with current status
 2. Update `PROGRESS.md` with what was done
-3. Note any blockers or issues
-4. Commit progress
+3. Run `python scripts/gather_codebase_map.py` to update codebase map
+4. Note any blockers or issues
+5. Commit progress (including updated codebase_map.json)
 
 ---
 

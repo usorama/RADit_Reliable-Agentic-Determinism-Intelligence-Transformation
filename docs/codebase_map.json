@@ -1,0 +1,781 @@
+{
+  "$schema": "./codebase_map.schema.json",
+  "meta": {
+    "version": "1.0.0",
+    "generated_at": "2025-12-30T23:00:00Z",
+    "project_name": "RADit - Reliable Agentic Determinism Intelligence Transformation",
+    "description": "AI agent workbench enforcing deterministic SDLC through TDD, multi-agent orchestration, and MCP integration",
+    "repository": "https://github.com/umasankr/RADit"
+  },
+  "packages": {
+    "daw-agents": {
+      "name": "daw-agents",
+      "language": "python",
+      "path": "packages/daw-agents",
+      "description": "Python backend with FastAPI, LangGraph agents, and MCP integration",
+      "domains": {
+        "agents": {
+          "name": "agents",
+          "path": "src/daw_agents/agents",
+          "description": "LangGraph-based AI agents (Planner, Developer, Validator, Healer)",
+          "modules": [
+            {
+              "name": "__init__.py",
+              "path": "src/daw_agents/agents/__init__.py",
+              "description": "Agents module root",
+              "exports": []
+            },
+            {
+              "name": "planner/__init__.py",
+              "path": "src/daw_agents/agents/planner/__init__.py",
+              "description": "Planner agent exports",
+              "exports": ["TaskmasterAgent"]
+            },
+            {
+              "name": "planner/taskmaster.py",
+              "path": "src/daw_agents/agents/planner/taskmaster.py",
+              "description": "Taskmaster agent for PRD generation via Interview/Roundtable workflow",
+              "classes": [
+                {
+                  "name": "TaskmasterAgent",
+                  "line": 45,
+                  "description": "Main Planner agent implementing Interview -> Roundtable -> GeneratePRD workflow",
+                  "methods": [
+                    {"name": "__init__", "line": 75, "visibility": "public", "async": false},
+                    {"name": "_build_graph", "line": 95, "visibility": "private", "async": false, "return_type": "StateGraph"},
+                    {"name": "run", "line": 130, "visibility": "public", "async": true, "return_type": "dict"},
+                    {"name": "interview", "line": 150, "visibility": "public", "async": true},
+                    {"name": "roundtable", "line": 175, "visibility": "public", "async": true},
+                    {"name": "generate_prd", "line": 200, "visibility": "public", "async": true}
+                  ]
+                }
+              ],
+              "types": [
+                {
+                  "name": "PlannerState",
+                  "kind": "typed_dict",
+                  "line": 30,
+                  "description": "LangGraph state for Planner workflow"
+                }
+              ],
+              "imports": [
+                {"module": "langgraph.graph", "names": ["StateGraph", "END", "START"]},
+                {"module": "daw_agents.models.router", "names": ["ModelRouter", "TaskType"]},
+                {"module": "daw_agents.memory.neo4j", "names": ["Neo4jClient"]}
+              ]
+            },
+            {
+              "name": "developer/__init__.py",
+              "path": "src/daw_agents/agents/developer/__init__.py",
+              "description": "Developer/Executor agent exports",
+              "exports": []
+            },
+            {
+              "name": "developer/state.py",
+              "path": "src/daw_agents/agents/developer/state.py",
+              "description": "State definitions for Developer agent",
+              "types": [
+                {
+                  "name": "DeveloperState",
+                  "kind": "typed_dict",
+                  "description": "LangGraph state for Developer Red-Green-Refactor workflow"
+                }
+              ]
+            },
+            {
+              "name": "developer/models.py",
+              "path": "src/daw_agents/agents/developer/models.py",
+              "description": "Pydantic models for Developer agent",
+              "classes": []
+            },
+            {
+              "name": "validator/__init__.py",
+              "path": "src/daw_agents/agents/validator/__init__.py",
+              "description": "Validator agent exports",
+              "exports": ["ValidatorAgent", "ValidationResult"]
+            },
+            {
+              "name": "validator/agent.py",
+              "path": "src/daw_agents/agents/validator/agent.py",
+              "description": "Validator Agent - DISTINCT from Sandbox, uses different model for cross-validation",
+              "classes": [
+                {
+                  "name": "ValidatorAgent",
+                  "line": 43,
+                  "description": "Validator Agent for code review using LangGraph workflow",
+                  "bases": [],
+                  "methods": [
+                    {"name": "__init__", "line": 73, "visibility": "public", "async": false},
+                    {"name": "_build_graph", "line": 97, "visibility": "private", "async": false, "return_type": "StateGraph"},
+                    {"name": "configure_mcp", "line": 136, "visibility": "public", "async": false},
+                    {"name": "validate", "line": 145, "visibility": "public", "async": true, "return_type": "ValidationResult"},
+                    {"name": "check_security", "line": 196, "visibility": "public", "async": true, "return_type": "list[dict]"},
+                    {"name": "check_style", "line": 213, "visibility": "public", "async": true, "return_type": "list[dict]"}
+                  ],
+                  "properties": [
+                    {"name": "router", "type": "ModelRouter"},
+                    {"name": "task_type", "type": "TaskType"},
+                    {"name": "max_retries", "type": "int"},
+                    {"name": "mcp_client", "type": "MCPClient | None"},
+                    {"name": "graph", "type": "CompiledGraph"}
+                  ]
+                }
+              ],
+              "imports": [
+                {"module": "langgraph.graph", "names": ["StateGraph", "END", "START"]},
+                {"module": "daw_agents.models.router", "names": ["ModelRouter", "TaskType"]},
+                {"module": "daw_agents.mcp.client", "names": ["MCPClient"]},
+                {"module": "daw_agents.agents.validator.models", "names": ["ValidationResult"]},
+                {"module": "daw_agents.agents.validator.state", "names": ["ValidationState"]},
+                {"module": "daw_agents.agents.validator.nodes", "names": ["run_tests_node", "security_scan_node", "policy_check_node", "generate_report_node", "route_decision"]}
+              ]
+            },
+            {
+              "name": "validator/models.py",
+              "path": "src/daw_agents/agents/validator/models.py",
+              "description": "Pydantic models for Validator agent",
+              "classes": [
+                {
+                  "name": "ValidationResult",
+                  "kind": "pydantic_model",
+                  "description": "Result of validation workflow",
+                  "properties": [
+                    {"name": "status", "type": "str"},
+                    {"name": "passed_tests", "type": "bool"},
+                    {"name": "passed_security", "type": "bool"},
+                    {"name": "passed_style", "type": "bool"},
+                    {"name": "feedback", "type": "str"},
+                    {"name": "suggestions", "type": "list[str]"}
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "validator/state.py",
+              "path": "src/daw_agents/agents/validator/state.py",
+              "description": "LangGraph state for Validator workflow",
+              "types": [
+                {
+                  "name": "ValidationState",
+                  "kind": "typed_dict",
+                  "description": "State for validation workflow nodes"
+                }
+              ]
+            },
+            {
+              "name": "validator/nodes.py",
+              "path": "src/daw_agents/agents/validator/nodes.py",
+              "description": "LangGraph nodes for Validator workflow",
+              "functions": [
+                {"name": "run_tests_node", "async": true, "description": "Execute test suite"},
+                {"name": "security_scan_node", "async": true, "description": "Run SAST security scanning"},
+                {"name": "policy_check_node", "async": true, "description": "Check code style/linting"},
+                {"name": "generate_report_node", "async": true, "description": "Generate validation report"},
+                {"name": "route_decision", "async": false, "description": "Decide next step: approve/retry/escalate"},
+                {"name": "run_security_scan", "async": true, "description": "Internal security scan implementation"},
+                {"name": "run_linter", "async": true, "description": "Internal linter implementation"}
+              ]
+            },
+            {
+              "name": "healer/__init__.py",
+              "path": "src/daw_agents/agents/healer/__init__.py",
+              "description": "Healer agent exports - auto-fix failed operations",
+              "exports": []
+            }
+          ]
+        },
+        "models": {
+          "name": "models",
+          "path": "src/daw_agents/models",
+          "description": "LLM model routing and configuration",
+          "modules": [
+            {
+              "name": "__init__.py",
+              "path": "src/daw_agents/models/__init__.py",
+              "description": "Models module exports",
+              "exports": ["ModelRouter", "TaskType", "ModelConfig"]
+            },
+            {
+              "name": "router.py",
+              "path": "src/daw_agents/models/router.py",
+              "description": "Task-based model routing with fallback logic and Helicone integration",
+              "classes": [
+                {
+                  "name": "ModelRouter",
+                  "line": 54,
+                  "description": "Routes LLM requests to appropriate models based on task type",
+                  "methods": [
+                    {"name": "__init__", "line": 78, "visibility": "public", "async": false},
+                    {"name": "_validate_cross_validation_principle", "line": 91, "visibility": "private", "async": false, "description": "Ensures validator uses different model than executor"},
+                    {"name": "get_model_for_task", "line": 109, "visibility": "public", "async": false, "return_type": "str"},
+                    {"name": "get_config_for_task", "line": 120, "visibility": "public", "async": false, "return_type": "ModelConfig"},
+                    {"name": "_build_request_params", "line": 131, "visibility": "private", "async": false, "return_type": "dict"},
+                    {"name": "route", "line": 195, "visibility": "public", "async": true, "return_type": "str", "description": "Route request with primary/fallback logic"},
+                    {"name": "route_with_retry", "line": 268, "visibility": "public", "async": true, "return_type": "str", "description": "Route with additional retry logic"}
+                  ]
+                }
+              ],
+              "types": [
+                {
+                  "name": "TaskType",
+                  "kind": "enum",
+                  "line": 38,
+                  "description": "Task types for model routing: PLANNING, CODING, VALIDATION, FAST",
+                  "members": [
+                    {"name": "PLANNING", "value": "planning"},
+                    {"name": "CODING", "value": "coding"},
+                    {"name": "VALIDATION", "value": "validation"},
+                    {"name": "FAST", "value": "fast"}
+                  ]
+                }
+              ],
+              "imports": [
+                {"module": "litellm", "names": ["acompletion"]},
+                {"module": "daw_agents.models.providers", "names": ["ModelConfig", "get_default_configs", "get_helicone_config"]}
+              ]
+            },
+            {
+              "name": "providers.py",
+              "path": "src/daw_agents/models/providers.py",
+              "description": "Model provider configuration and defaults",
+              "classes": [
+                {
+                  "name": "ModelConfig",
+                  "kind": "pydantic_model",
+                  "description": "Configuration for a model including primary, fallback, and settings"
+                },
+                {
+                  "name": "HeliconeConfig",
+                  "kind": "pydantic_model",
+                  "description": "Configuration for Helicone observability proxy"
+                }
+              ],
+              "functions": [
+                {"name": "get_default_configs", "async": false, "return_type": "dict[TaskType, ModelConfig]"},
+                {"name": "get_helicone_config", "async": false, "return_type": "HeliconeConfig"}
+              ]
+            }
+          ]
+        },
+        "mcp": {
+          "name": "mcp",
+          "path": "src/daw_agents/mcp",
+          "description": "Model Context Protocol client and tool integration",
+          "modules": [
+            {
+              "name": "__init__.py",
+              "path": "src/daw_agents/mcp/__init__.py",
+              "description": "MCP module exports",
+              "exports": ["MCPClient", "MCPClientManager", "MCPTool", "MCPToolResult"]
+            },
+            {
+              "name": "client.py",
+              "path": "src/daw_agents/mcp/client.py",
+              "description": "MCP client for JSON-RPC tool discovery and execution",
+              "classes": [
+                {
+                  "name": "MCPTool",
+                  "line": 35,
+                  "kind": "pydantic_model",
+                  "description": "Represents a tool exposed by an MCP server"
+                },
+                {
+                  "name": "MCPToolResult",
+                  "line": 49,
+                  "kind": "pydantic_model",
+                  "description": "Result of tool execution"
+                },
+                {
+                  "name": "JSONRPCError",
+                  "line": 63,
+                  "kind": "pydantic_model",
+                  "description": "JSON-RPC 2.0 error object"
+                },
+                {
+                  "name": "MCPClient",
+                  "line": 82,
+                  "description": "Client for interacting with MCP servers using JSON-RPC 2.0",
+                  "methods": [
+                    {"name": "__init__", "line": 107, "visibility": "public", "async": false},
+                    {"name": "__aenter__", "line": 126, "visibility": "public", "async": true},
+                    {"name": "__aexit__", "line": 131, "visibility": "public", "async": true},
+                    {"name": "_next_request_id", "line": 140, "visibility": "private", "async": false},
+                    {"name": "_build_request", "line": 149, "visibility": "private", "async": false},
+                    {"name": "_send_request", "line": 172, "visibility": "private", "async": true},
+                    {"name": "discover_tools", "line": 213, "visibility": "public", "async": true, "return_type": "list[MCPTool]"},
+                    {"name": "call_tool", "line": 262, "visibility": "public", "async": true, "return_type": "MCPToolResult"},
+                    {"name": "close", "line": 365, "visibility": "public", "async": true}
+                  ]
+                },
+                {
+                  "name": "MCPClientManager",
+                  "line": 381,
+                  "description": "Manages multiple MCP server connections",
+                  "methods": [
+                    {"name": "__init__", "line": 397, "visibility": "public", "async": false},
+                    {"name": "add_server", "line": 402, "visibility": "public", "async": false},
+                    {"name": "get_client", "line": 412, "visibility": "public", "async": true, "return_type": "MCPClient"},
+                    {"name": "close_all", "line": 436, "visibility": "public", "async": true}
+                  ]
+                }
+              ],
+              "imports": [
+                {"module": "httpx"},
+                {"module": "pydantic", "names": ["BaseModel", "Field"]}
+              ]
+            }
+          ]
+        },
+        "auth": {
+          "name": "auth",
+          "path": "src/daw_agents/auth",
+          "description": "Clerk authentication integration",
+          "modules": [
+            {
+              "name": "__init__.py",
+              "path": "src/daw_agents/auth/__init__.py",
+              "exports": ["ClerkAuthMiddleware", "get_current_user", "ClerkTokenVerifier"]
+            },
+            {
+              "name": "clerk.py",
+              "path": "src/daw_agents/auth/clerk.py",
+              "description": "Clerk JWT verification",
+              "classes": [
+                {
+                  "name": "ClerkTokenVerifier",
+                  "description": "Verifies JWT tokens against Clerk JWKS"
+                }
+              ]
+            },
+            {
+              "name": "middleware.py",
+              "path": "src/daw_agents/auth/middleware.py",
+              "description": "FastAPI authentication middleware",
+              "classes": [
+                {
+                  "name": "ClerkAuthMiddleware",
+                  "description": "FastAPI middleware for Clerk authentication"
+                }
+              ]
+            },
+            {
+              "name": "dependencies.py",
+              "path": "src/daw_agents/auth/dependencies.py",
+              "description": "FastAPI dependencies for auth",
+              "functions": [
+                {"name": "get_current_user", "async": true, "description": "Dependency to get authenticated user"}
+              ]
+            },
+            {
+              "name": "exceptions.py",
+              "path": "src/daw_agents/auth/exceptions.py",
+              "description": "Authentication exceptions",
+              "classes": [
+                {"name": "AuthenticationError", "description": "Base auth exception"},
+                {"name": "TokenExpiredError", "description": "JWT token expired"},
+                {"name": "InvalidTokenError", "description": "Invalid JWT token"}
+              ]
+            }
+          ]
+        },
+        "memory": {
+          "name": "memory",
+          "path": "src/daw_agents/memory",
+          "description": "Neo4j knowledge graph integration",
+          "modules": [
+            {
+              "name": "__init__.py",
+              "path": "src/daw_agents/memory/__init__.py",
+              "exports": ["Neo4jClient"]
+            },
+            {
+              "name": "neo4j.py",
+              "path": "src/daw_agents/memory/neo4j.py",
+              "description": "Neo4j connector singleton for conversation and knowledge persistence",
+              "classes": [
+                {
+                  "name": "Neo4jClient",
+                  "description": "Singleton Neo4j client for graph operations",
+                  "methods": [
+                    {"name": "__init__", "visibility": "public", "async": false},
+                    {"name": "connect", "visibility": "public", "async": true},
+                    {"name": "close", "visibility": "public", "async": true},
+                    {"name": "execute_query", "visibility": "public", "async": true},
+                    {"name": "store_conversation", "visibility": "public", "async": true},
+                    {"name": "get_similar_errors", "visibility": "public", "async": true, "description": "RAG for error resolution"}
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "sandbox": {
+          "name": "sandbox",
+          "path": "src/daw_agents/sandbox",
+          "description": "E2B sandbox wrapper for secure code execution",
+          "modules": [
+            {
+              "name": "__init__.py",
+              "path": "src/daw_agents/sandbox/__init__.py",
+              "exports": ["E2BSandbox", "SandboxConfig"]
+            },
+            {
+              "name": "e2b.py",
+              "path": "src/daw_agents/sandbox/e2b.py",
+              "description": "E2B SDK wrapper with timeout, resource limits, and cleanup",
+              "classes": [
+                {
+                  "name": "SandboxConfig",
+                  "kind": "pydantic_model",
+                  "description": "Configuration for sandbox execution"
+                },
+                {
+                  "name": "E2BSandbox",
+                  "description": "Wrapper around E2B SDK for secure code execution",
+                  "methods": [
+                    {"name": "__init__", "visibility": "public", "async": false},
+                    {"name": "__aenter__", "visibility": "public", "async": true},
+                    {"name": "__aexit__", "visibility": "public", "async": true},
+                    {"name": "execute", "visibility": "public", "async": true, "description": "Execute code in sandbox"},
+                    {"name": "cleanup", "visibility": "public", "async": true}
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "tdd": {
+          "name": "tdd",
+          "path": "src/daw_agents/tdd",
+          "description": "TDD enforcement logic - Red-Green-Refactor guard",
+          "modules": [
+            {
+              "name": "__init__.py",
+              "path": "src/daw_agents/tdd/__init__.py",
+              "exports": ["TDDGuard", "TDDViolation"]
+            },
+            {
+              "name": "guard.py",
+              "path": "src/daw_agents/tdd/guard.py",
+              "description": "Enforces test-first development - blocks writes until test exists and fails",
+              "classes": [
+                {
+                  "name": "TDDGuard",
+                  "description": "Guards against TDD violations",
+                  "methods": [
+                    {"name": "check_test_exists", "visibility": "public", "async": false, "return_type": "bool"},
+                    {"name": "check_test_fails", "visibility": "public", "async": true, "return_type": "bool"},
+                    {"name": "validate_before_implementation", "visibility": "public", "async": true, "description": "Main validation entry point"}
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "exceptions.py",
+              "path": "src/daw_agents/tdd/exceptions.py",
+              "description": "TDD-related exceptions",
+              "classes": [
+                {"name": "TDDViolation", "description": "Raised when TDD workflow is violated"},
+                {"name": "TestNotFoundError", "description": "Test file not found"},
+                {"name": "TestNotFailingError", "description": "Test must fail before implementation"}
+              ]
+            }
+          ]
+        },
+        "context": {
+          "name": "context",
+          "path": "src/daw_agents/context",
+          "description": "Context window management and compaction",
+          "modules": [
+            {
+              "name": "__init__.py",
+              "path": "src/daw_agents/context/__init__.py",
+              "exports": ["ContextCompactor"]
+            },
+            {
+              "name": "compaction.py",
+              "path": "src/daw_agents/context/compaction.py",
+              "description": "Summarizes conversation history to fit context window (<4000 tokens from 1000+ messages)",
+              "classes": [
+                {
+                  "name": "ContextCompactor",
+                  "description": "Compacts conversation history using summarization",
+                  "methods": [
+                    {"name": "compact", "visibility": "public", "async": true, "return_type": "str"},
+                    {"name": "estimate_tokens", "visibility": "public", "async": false, "return_type": "int"}
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "ops": {
+          "name": "ops",
+          "path": "src/daw_agents/ops",
+          "description": "Observability and operations",
+          "modules": [
+            {
+              "name": "__init__.py",
+              "path": "src/daw_agents/ops/__init__.py",
+              "exports": ["HeliconeProxy"]
+            },
+            {
+              "name": "helicone.py",
+              "path": "src/daw_agents/ops/helicone.py",
+              "description": "Helicone observability proxy for cost tracking and caching",
+              "classes": [
+                {
+                  "name": "HeliconeProxy",
+                  "description": "Wraps LLM calls to route through Helicone",
+                  "methods": [
+                    {"name": "wrap_completion", "visibility": "public", "async": true},
+                    {"name": "get_cost_metrics", "visibility": "public", "async": true}
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "config": {
+          "name": "config",
+          "path": "src/daw_agents/config",
+          "description": "Configuration management",
+          "modules": [
+            {
+              "name": "__init__.py",
+              "path": "src/daw_agents/config/__init__.py",
+              "exports": ["RedisConfig", "get_redis_config"]
+            },
+            {
+              "name": "redis.py",
+              "path": "src/daw_agents/config/redis.py",
+              "description": "Redis configuration for Celery broker and LangGraph checkpoints",
+              "classes": [
+                {
+                  "name": "RedisConfig",
+                  "kind": "pydantic_model",
+                  "description": "Redis connection configuration"
+                }
+              ],
+              "functions": [
+                {"name": "get_redis_config", "async": false, "return_type": "RedisConfig"}
+              ]
+            }
+          ]
+        },
+        "api": {
+          "name": "api",
+          "path": "src/daw_agents/api",
+          "description": "FastAPI routes and schemas (planned)",
+          "modules": [
+            {
+              "name": "__init__.py",
+              "path": "src/daw_agents/api/__init__.py",
+              "exports": []
+            }
+          ]
+        },
+        "schemas": {
+          "name": "schemas",
+          "path": "src/daw_agents/schemas",
+          "description": "Pydantic schemas for API and data models (planned)",
+          "modules": [
+            {
+              "name": "__init__.py",
+              "path": "src/daw_agents/schemas/__init__.py",
+              "exports": []
+            }
+          ]
+        },
+        "workflow": {
+          "name": "workflow",
+          "path": "src/daw_agents/workflow",
+          "description": "Main workflow orchestrator (planned)",
+          "modules": [
+            {
+              "name": "__init__.py",
+              "path": "src/daw_agents/workflow/__init__.py",
+              "exports": []
+            }
+          ]
+        }
+      }
+    },
+    "daw-frontend": {
+      "name": "daw-frontend",
+      "language": "typescript",
+      "path": "packages/daw-frontend",
+      "description": "Next.js frontend with React, TypeScript, and Tailwind",
+      "domains": {
+        "app": {
+          "name": "app",
+          "path": "src/app",
+          "description": "Next.js App Router pages",
+          "modules": [
+            {
+              "name": "layout.tsx",
+              "path": "src/app/layout.tsx",
+              "description": "Root layout component"
+            },
+            {
+              "name": "page.tsx",
+              "path": "src/app/page.tsx",
+              "description": "Home page component"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "capabilities": [
+    {
+      "name": "Planning & Requirements",
+      "description": "AI-assisted product requirements gathering and PRD generation",
+      "features": [
+        {
+          "name": "Taskmaster Interview",
+          "description": "Interactive PRD generation through AI-guided interview",
+          "status": "completed",
+          "task_ids": ["PLANNER-001"],
+          "entry_points": ["packages/daw-agents/src/daw_agents/agents/planner/taskmaster.py"]
+        },
+        {
+          "name": "Roundtable Critique",
+          "description": "Multi-persona critique of concepts (CTO, UX, Security)",
+          "status": "in_progress",
+          "task_ids": ["PLANNER-002"],
+          "entry_points": ["packages/daw-agents/src/agents/planner/personas.py"]
+        },
+        {
+          "name": "Complexity Analysis",
+          "description": "Pre-implementation complexity scoring and risk assessment",
+          "status": "in_progress",
+          "task_ids": ["COMPLEXITY-001"],
+          "entry_points": ["packages/daw-agents/src/agents/planner/complexity_analyzer.py"]
+        }
+      ]
+    },
+    {
+      "name": "Code Development",
+      "description": "TDD-enforced code generation and iteration",
+      "features": [
+        {
+          "name": "TDD Guard",
+          "description": "Enforces test-first development workflow",
+          "status": "completed",
+          "task_ids": ["CORE-005"],
+          "entry_points": ["packages/daw-agents/src/daw_agents/tdd/guard.py"]
+        },
+        {
+          "name": "Developer Agent",
+          "description": "Red-Green-Refactor loop implementation",
+          "status": "in_progress",
+          "task_ids": ["EXECUTOR-001"],
+          "entry_points": ["packages/daw-agents/src/agents/developer/graph.py"]
+        }
+      ]
+    },
+    {
+      "name": "Validation & Quality",
+      "description": "Multi-model code validation and security scanning",
+      "features": [
+        {
+          "name": "Validator Agent",
+          "description": "LangGraph-based code review with different model than Executor",
+          "status": "completed",
+          "task_ids": ["VALIDATOR-001"],
+          "entry_points": ["packages/daw-agents/src/daw_agents/agents/validator/agent.py"]
+        },
+        {
+          "name": "Ensemble Validation",
+          "description": "Multi-model consensus for critical validations",
+          "status": "in_progress",
+          "task_ids": ["VALIDATOR-002"],
+          "entry_points": ["packages/daw-agents/src/agents/validator/ensemble.py"]
+        }
+      ]
+    },
+    {
+      "name": "Execution Environment",
+      "description": "Secure code execution and sandbox management",
+      "features": [
+        {
+          "name": "E2B Sandbox",
+          "description": "Isolated code execution with resource limits",
+          "status": "completed",
+          "task_ids": ["CORE-004"],
+          "entry_points": ["packages/daw-agents/src/daw_agents/sandbox/e2b.py"]
+        }
+      ]
+    },
+    {
+      "name": "Model Routing",
+      "description": "Intelligent model selection based on task type",
+      "features": [
+        {
+          "name": "Task-Based Router",
+          "description": "Routes to appropriate model (o1/opus for planning, sonnet for coding, etc.)",
+          "status": "completed",
+          "task_ids": ["MODEL-001"],
+          "entry_points": ["packages/daw-agents/src/daw_agents/models/router.py"]
+        }
+      ]
+    },
+    {
+      "name": "MCP Integration",
+      "description": "Model Context Protocol for tool access",
+      "features": [
+        {
+          "name": "MCP Client",
+          "description": "JSON-RPC client for MCP server communication",
+          "status": "completed",
+          "task_ids": ["CORE-003"],
+          "entry_points": ["packages/daw-agents/src/daw_agents/mcp/client.py"]
+        }
+      ]
+    }
+  ],
+  "integration_points": {
+    "apis": [],
+    "mcp_tools": [],
+    "events": [],
+    "langgraph_workflows": [
+      {
+        "name": "ValidatorWorkflow",
+        "description": "Validation pipeline: tests -> security -> style -> report -> decision",
+        "file": "packages/daw-agents/src/daw_agents/agents/validator/agent.py",
+        "state_class": "ValidationState",
+        "nodes": [
+          {"name": "run_tests", "handler": "run_tests_node"},
+          {"name": "security_scan", "handler": "security_scan_node"},
+          {"name": "policy_check", "handler": "policy_check_node"},
+          {"name": "generate_report", "handler": "generate_report_node"}
+        ],
+        "edges": [
+          {"from": "START", "to": "run_tests"},
+          {"from": "run_tests", "to": "security_scan"},
+          {"from": "security_scan", "to": "policy_check"},
+          {"from": "policy_check", "to": "generate_report"},
+          {"from": "generate_report", "to": "END", "condition": "route_decision"}
+        ]
+      },
+      {
+        "name": "TaskmasterWorkflow",
+        "description": "PRD generation: interview -> roundtable -> generate_prd",
+        "file": "packages/daw-agents/src/daw_agents/agents/planner/taskmaster.py",
+        "state_class": "PlannerState",
+        "nodes": [
+          {"name": "interview", "handler": "interview_node"},
+          {"name": "roundtable", "handler": "roundtable_node"},
+          {"name": "generate_prd", "handler": "generate_prd_node"}
+        ],
+        "edges": [
+          {"from": "START", "to": "interview"},
+          {"from": "interview", "to": "roundtable"},
+          {"from": "roundtable", "to": "generate_prd"},
+          {"from": "generate_prd", "to": "END"}
+        ]
+      }
+    ]
+  }
+}

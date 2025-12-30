@@ -1,0 +1,416 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://radit.dev/schemas/codebase_map.schema.json",
+  "title": "RADit Codebase Map Schema",
+  "description": "Schema for tracking codebase elements to prevent technical debt and enable intelligent context for AI agents",
+  "version": "1.0.0",
+  "type": "object",
+  "required": ["meta", "packages"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "description": "Metadata about the codebase map",
+      "required": ["version", "generated_at", "project_name"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "Schema version for compatibility checking"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When this map was last generated/updated"
+        },
+        "project_name": {
+          "type": "string",
+          "description": "Name of the project"
+        },
+        "description": {
+          "type": "string",
+          "description": "Brief project description"
+        },
+        "repository": {
+          "type": "string",
+          "description": "Git repository URL"
+        }
+      }
+    },
+    "packages": {
+      "type": "object",
+      "description": "Top-level packages in the monorepo",
+      "additionalProperties": {
+        "$ref": "#/definitions/Package"
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "description": "High-level business capabilities provided by the system",
+      "items": {
+        "$ref": "#/definitions/Capability"
+      }
+    },
+    "integration_points": {
+      "type": "object",
+      "description": "Cross-cutting integration points",
+      "properties": {
+        "apis": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/API" }
+        },
+        "mcp_tools": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/MCPTool" }
+        },
+        "events": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Event" }
+        },
+        "langgraph_workflows": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/LangGraphWorkflow" }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Package": {
+      "type": "object",
+      "description": "A package in the monorepo (e.g., daw-agents, daw-frontend)",
+      "required": ["name", "language", "path"],
+      "properties": {
+        "name": { "type": "string" },
+        "language": { "enum": ["python", "typescript", "mixed"] },
+        "path": { "type": "string", "description": "Relative path from repo root" },
+        "description": { "type": "string" },
+        "domains": {
+          "type": "object",
+          "description": "Logical domains within the package",
+          "additionalProperties": { "$ref": "#/definitions/Domain" }
+        }
+      }
+    },
+    "Domain": {
+      "type": "object",
+      "description": "A logical domain/namespace (e.g., agents, models, auth)",
+      "required": ["name", "path"],
+      "properties": {
+        "name": { "type": "string" },
+        "path": { "type": "string" },
+        "description": { "type": "string" },
+        "modules": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Module" }
+        }
+      }
+    },
+    "Module": {
+      "type": "object",
+      "description": "A source file (Python .py or TypeScript .ts/.tsx)",
+      "required": ["name", "path"],
+      "properties": {
+        "name": { "type": "string" },
+        "path": { "type": "string" },
+        "description": { "type": "string" },
+        "classes": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Class" }
+        },
+        "functions": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Function" }
+        },
+        "types": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/TypeDefinition" }
+        },
+        "constants": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Constant" }
+        },
+        "imports": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Import" }
+        },
+        "exports": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "Class": {
+      "type": "object",
+      "description": "A class definition",
+      "required": ["name", "line"],
+      "properties": {
+        "name": { "type": "string" },
+        "line": { "type": "integer", "description": "Line number where defined" },
+        "description": { "type": "string" },
+        "bases": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Parent classes"
+        },
+        "decorators": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "methods": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Method" }
+        },
+        "properties": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Property" }
+        },
+        "class_variables": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Variable" }
+        }
+      }
+    },
+    "Function": {
+      "type": "object",
+      "description": "A standalone function definition",
+      "required": ["name", "line"],
+      "properties": {
+        "name": { "type": "string" },
+        "line": { "type": "integer" },
+        "description": { "type": "string" },
+        "async": { "type": "boolean" },
+        "decorators": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "parameters": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Parameter" }
+        },
+        "return_type": { "type": "string" },
+        "raises": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "Method": {
+      "type": "object",
+      "description": "A method within a class",
+      "required": ["name", "line"],
+      "properties": {
+        "name": { "type": "string" },
+        "line": { "type": "integer" },
+        "description": { "type": "string" },
+        "visibility": { "enum": ["public", "protected", "private"] },
+        "async": { "type": "boolean" },
+        "static": { "type": "boolean" },
+        "class_method": { "type": "boolean" },
+        "decorators": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "parameters": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Parameter" }
+        },
+        "return_type": { "type": "string" }
+      }
+    },
+    "Property": {
+      "type": "object",
+      "description": "A property (with getter/setter) or instance attribute",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "line": { "type": "integer" },
+        "type": { "type": "string" },
+        "description": { "type": "string" },
+        "has_getter": { "type": "boolean" },
+        "has_setter": { "type": "boolean" }
+      }
+    },
+    "Variable": {
+      "type": "object",
+      "description": "A class variable or module-level variable",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "line": { "type": "integer" },
+        "type": { "type": "string" },
+        "description": { "type": "string" },
+        "value": { "type": "string", "description": "String representation of default value" }
+      }
+    },
+    "Parameter": {
+      "type": "object",
+      "description": "A function/method parameter",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "default": { "type": "string" },
+        "optional": { "type": "boolean" }
+      }
+    },
+    "TypeDefinition": {
+      "type": "object",
+      "description": "A type alias, interface, enum, or TypedDict",
+      "required": ["name", "kind"],
+      "properties": {
+        "name": { "type": "string" },
+        "kind": { "enum": ["enum", "type_alias", "interface", "typed_dict", "protocol", "dataclass", "pydantic_model"] },
+        "line": { "type": "integer" },
+        "description": { "type": "string" },
+        "members": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "type": { "type": "string" },
+              "value": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "Constant": {
+      "type": "object",
+      "description": "A constant value",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "line": { "type": "integer" },
+        "type": { "type": "string" },
+        "value": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "Import": {
+      "type": "object",
+      "description": "An import statement",
+      "required": ["module"],
+      "properties": {
+        "module": { "type": "string", "description": "The module being imported" },
+        "names": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Specific names imported (for 'from X import Y')"
+        },
+        "alias": { "type": "string" },
+        "is_relative": { "type": "boolean" }
+      }
+    },
+    "Capability": {
+      "type": "object",
+      "description": "A high-level business capability",
+      "required": ["name", "features"],
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "features": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Feature" }
+        }
+      }
+    },
+    "Feature": {
+      "type": "object",
+      "description": "A user-facing feature within a capability",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "enum": ["planned", "in_progress", "completed", "deprecated"] },
+        "task_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Related task IDs from tasks.json"
+        },
+        "entry_points": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "File paths that implement this feature"
+        }
+      }
+    },
+    "API": {
+      "type": "object",
+      "description": "A REST or WebSocket API endpoint",
+      "required": ["path", "method"],
+      "properties": {
+        "path": { "type": "string" },
+        "method": { "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "WS"] },
+        "description": { "type": "string" },
+        "handler": { "type": "string", "description": "File:line of handler" },
+        "request_schema": { "type": "string" },
+        "response_schema": { "type": "string" },
+        "auth_required": { "type": "boolean" }
+      }
+    },
+    "MCPTool": {
+      "type": "object",
+      "description": "An MCP tool exposed by the system",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "input_schema": { "type": "string" },
+        "handler": { "type": "string", "description": "File:line of implementation" },
+        "allowed_roles": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "Event": {
+      "type": "object",
+      "description": "An event emitted or consumed by the system",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "payload_schema": { "type": "string" },
+        "producers": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "consumers": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "LangGraphWorkflow": {
+      "type": "object",
+      "description": "A LangGraph state machine workflow",
+      "required": ["name", "nodes"],
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "file": { "type": "string" },
+        "state_class": { "type": "string" },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "handler": { "type": "string" }
+            }
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "from": { "type": "string" },
+              "to": { "type": "string" },
+              "condition": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
