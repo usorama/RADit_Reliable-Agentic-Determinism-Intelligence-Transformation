@@ -2,6 +2,20 @@
 
 This document defines the specific "Persona," "Model," "Tools," and "Workflow" for each agent in the **Deterministic Agentic Workbench**.
 
+---
+
+## Execution Plan Reference
+
+For parallel agent execution strategy, see: `docs/planning/agent_execution_plan.md`
+
+**Key Points:**
+- 10 execution waves with up to 8 concurrent agents
+- Critical path: ~33.5 hours (irreducible)
+- Total with parallelization: ~41 hours
+- TDD workflow mandatory: `docs/planning/tdd_workflow.md`
+
+---
+
 ## 1. The Planner Agent ("The Taskmaster")
 **Role**: Senior Product Manager & Architect
 **Model**: High-Reasoning (e.g., `o1`, `claude-3-5-sonnet`)
