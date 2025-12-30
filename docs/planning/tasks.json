@@ -9,7 +9,9 @@
     "verification": {
       "type": "file_exists",
       "path": "packages/daw-agents"
-    }
+    },
+    "status": "completed",
+    "completed_at": "2025-12-30T16:42:00Z"
   },
   {
     "id": "INFRA-001",
@@ -28,7 +30,9 @@
     "verification": {
       "type": "file_exists",
       "path": "docker-compose.yml"
-    }
+    },
+    "status": "completed",
+    "completed_at": "2025-12-30T11:19:07Z"
   },
   {
     "id": "INFRA-002",
@@ -47,7 +51,9 @@
     "verification": {
       "type": "test_pass",
       "command": "docker-compose up -d redis && python -c 'import redis; r=redis.Redis(); r.ping()'"
-    }
+    },
+    "status": "completed",
+    "completed_at": "2025-12-30T17:00:00Z"
   },
   {
     "id": "PROMPT-GOV-001",
@@ -63,7 +69,9 @@
     "verification": {
       "type": "file_exists",
       "path": "packages/daw-agents/prompts/planner"
-    }
+    },
+    "status": "completed",
+    "completed_at": "2025-12-30T17:15:00Z"
   },
   {
     "id": "CORE-002",
@@ -108,7 +116,9 @@
     "verification": {
       "type": "file_exists",
       "path": "packages/daw-agents/.env"
-    }
+    },
+    "status": "completed",
+    "completed_at": "2025-12-30T17:30:00Z"
   },
   {
     "id": "DB-001",

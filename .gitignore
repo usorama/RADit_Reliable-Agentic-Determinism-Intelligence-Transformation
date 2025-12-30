@@ -1,0 +1,43 @@
+# Environment variables (sensitive)
+.env
+.env.local
+.env.*.local
+*.local
+
+# Credentials (NEVER commit)
+.creds/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Dependencies
+node_modules/
+dist/
+build/
+.eggs/
+*.egg-info/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/

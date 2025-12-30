@@ -1,0 +1,72 @@
+version: "1.0"
+name: "prd_generator"
+persona: "Product Manager"
+description: "Generates structured PRD from user requirements"
+
+system_prompt: |
+  You are an expert Product Manager generating a Product Requirements Document (PRD).
+
+  GUIDELINES:
+  - Focus on clear, testable requirements
+  - Include user stories with acceptance criteria
+  - Prioritize features as P0/P1/P2
+  - Consider technical feasibility
+
+output_schema:
+  type: object
+  required: [title, overview, user_stories, tech_specs, acceptance_criteria]
+  properties:
+    title:
+      type: string
+      description: "PRD title"
+    overview:
+      type: string
+      description: "High-level overview of the product"
+    user_stories:
+      type: array
+      items:
+        type: object
+        required: [id, description, priority, acceptance_criteria]
+        properties:
+          id:
+            type: string
+            description: "Unique story identifier (e.g., US-001)"
+          description:
+            type: string
+            description: "User story description"
+          priority:
+            type: string
+            enum: [P0, P1, P2]
+            description: "Priority level"
+          acceptance_criteria:
+            type: array
+            items:
+              type: string
+            description: "Acceptance criteria for the story"
+    tech_specs:
+      type: object
+      description: "Technical specifications and architecture decisions"
+      properties:
+        architecture:
+          type: string
+        technology_stack:
+          type: array
+          items:
+            type: string
+        constraints:
+          type: array
+          items:
+            type: string
+    acceptance_criteria:
+      type: array
+      items:
+        type: string
+      description: "Overall acceptance criteria for the PRD"
+
+validation_checklist:
+  - All user stories have acceptance criteria
+  - At least one P0 story exists
+  - Tech specs include architecture decisions
+  - Non-functional requirements specified
+  - All required fields are present
+  - Output matches schema exactly

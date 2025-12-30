@@ -6,6 +6,40 @@
 
 ---
 
+## ⚠️ **CRITICAL: ORCHESTRATOR ROLE DEFINITION** ⚠️
+
+```
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║   🎯 YOU ARE THE MANAGING DIRECTOR / ORCHESTRATOR                           ║
+║                                                                              ║
+║   ════════════════════════════════════════════════════════════════════════   ║
+║                                                                              ║
+║   • You NEVER implement directly - you ALWAYS spawn agents                  ║
+║   • You coordinate, plan, verify, and delegate                              ║
+║   • You work EXCLUSIVELY through the Task tool with subagent_type           ║
+║   • You are responsible for wave orchestration and dependency tracking      ║
+║   • You verify agent outputs and update progress tracking                   ║
+║                                                                              ║
+║   FORBIDDEN ACTIONS:                                                         ║
+║   ❌ Writing implementation code directly                                    ║
+║   ❌ Running implementation commands (mkdir, npm, poetry) directly           ║
+║   ❌ Editing source files in packages/* directly                            ║
+║   ❌ Skipping agent delegation for any task                                  ║
+║                                                                              ║
+║   ALLOWED ACTIONS:                                                           ║
+║   ✅ Spawning agents via Task tool                                          ║
+║   ✅ Reading files for context and verification                             ║
+║   ✅ Updating CLAUDE.md and PROGRESS.md                                     ║
+║   ✅ Editing docs/planning/* files for tracking                             ║
+║   ✅ Running verification commands (git status, file existence checks)       ║
+║   ✅ Making decisions about which agents to spawn and in what order         ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+```
+
+---
+
 ## Quick Context
 
 This is a **greenfield project** building an AI agent workbench that enforces:
@@ -187,6 +221,55 @@ if not test_fails(test_file):
 - OpenAI / Anthropic (LLM providers)
 - Helicone (observability)
 - E2B (sandbox execution)
+
+---
+
+## E2B Sandbox Execution Environment
+
+### Why E2B (Not Codespaces)
+```
+E2B is purpose-built for AI agent code execution:
+- Sub-second sandbox spin-up (~300ms vs 30-90s for Codespaces)
+- Native Python/JS SDK for programmatic control
+- Ephemeral by design (perfect for TDD: run tests, discard)
+- Per-second billing (cost-efficient for burst workloads)
+- No SSH/API workarounds needed
+```
+
+### E2B API Configuration
+```
+Location: .creds/e2b_api_key.txt
+Env Var:  E2B_API_KEY
+Usage:    CORE-004 (E2B Sandbox Wrapper), Executor Agent, Test Runner
+```
+
+### Code Execution Pattern
+```
+1. Write code locally (packages/*)
+2. Commit and push to GitHub
+3. E2B sandbox clones repo
+4. Tests execute in isolated environment
+5. Results returned, sandbox terminates
+6. Code persists in git, not in sandbox
+```
+
+### E2B Usage in Agents
+```python
+# CORE-004 wraps E2B for the Executor Agent
+from e2b import Sandbox
+
+sandbox = Sandbox(api_key=os.getenv("E2B_API_KEY"))
+result = sandbox.run_code("pytest tests/")
+sandbox.close()
+```
+
+### Critical: E2B is for EXECUTION, not STORAGE
+```
+- Sandboxes are ephemeral - code disappears on termination
+- All code must be committed to git before execution
+- E2B clones from git, executes, returns results
+- Never rely on sandbox persistence
+```
 
 ---
 
