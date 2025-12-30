@@ -106,3 +106,49 @@ User personas defined in `uat/personas.yaml`:
 -   UAT results integrated with deployment quality gates
 -   P0 journey failures **block** production deployment
 -   P1 journey failures generate warnings, require explicit approval
+
+## FR-07: Self-Evolution Foundation (Learning Layer)
+
+The system must establish foundations for autonomous improvement over time, transitioning from purely reactive (Monitor-Diagnose-Heal) to proactive learning patterns.
+
+### FR-07.1 Experience Logger
+Store structured records of task executions in Neo4j for future learning:
+-   **FR-07.1.1 Experience Schema**: Each task completion creates an Experience node with:
+    -   `task_type` (planning, coding, validation)
+    -   `task_id` (reference to original task)
+    -   `success` (boolean outcome)
+    -   `prompt_version` (which prompt template was used)
+    -   `model_used` (which LLM executed the task)
+    -   `tokens_used`, `cost_usd`, `duration_ms` (resource metrics)
+    -   `retries` (how many attempts before success/failure)
+-   **FR-07.1.2 Skill Relationships**: Link experiences to discovered patterns:
+    -   `(:Experience)-[:USED_SKILL]->(:Skill)` - code patterns that worked
+    -   `(:Experience)-[:PRODUCED]->(:Artifact)` - outputs generated
+-   **FR-07.1.3 Success Rate Tracking**: Calculate and store success rates per:
+    -   Task type + model combination
+    -   Prompt version
+    -   Time period (detect degradation over time)
+-   **FR-07.1.4 RAG Retrieval**: Query similar past experiences when starting new tasks
+
+### FR-07.2 Reflection Hook
+Proactive learning after task completion (not just on failure):
+-   **FR-07.2.1 Post-Task Reflection**: After successful completion, trigger reflection:
+    -   "What worked well in this task?"
+    -   "What patterns should be remembered?"
+    -   "What could be improved next time?"
+-   **FR-07.2.2 Insight Storage**: Store reflection insights as Neo4j nodes:
+    -   `(:Experience)-[:REFLECTED_AS]->(:Insight)`
+    -   Insights include `what_worked`, `what_failed`, `lesson_learned`
+-   **FR-07.2.3 Configurable Depth**: Three reflection modes:
+    -   `quick` - Minimal overhead, key metrics only
+    -   `standard` - LLM-generated insights (default)
+    -   `deep` - Multi-model consensus on lessons learned
+-   **FR-07.2.4 Non-Blocking**: Reflection executes asynchronously to avoid slowing main workflow
+
+### FR-07.3 Future Evolution Hooks (Placeholder)
+Reserved for Phase 2+ self-evolution capabilities:
+-   **FR-07.3.1 Skill Library**: Extract and store reusable code patterns (Voyager pattern)
+-   **FR-07.3.2 Prompt Optimization**: DSPy-style automatic prompt improvement
+-   **FR-07.3.3 Constitutional Safety**: RLAIF constraints for safe self-modification
+
+**Note**: FR-07.1 and FR-07.2 establish the data foundation. FR-07.3 capabilities require this foundation and are planned for post-MVP implementation.

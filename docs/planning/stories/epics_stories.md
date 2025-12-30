@@ -181,3 +181,27 @@
     -   *AC*: Before task generation, system produces `complexity_analysis.json` with: feature cognitive load scores (1-10), dependency graph with risk ratings, recommended model tier per task, architectural bottleneck warnings. Analysis MUST complete before task generation proceeds.
     -   *Task Ref*: COMPLEXITY-001
     -   *Gap Ref*: Gap 2 (Research Paper Lines 105-107)
+
+---
+
+## Epic 11: Self-Evolution Foundation (Learning Layer)
+**Goal**: Establish the data foundation for autonomous improvement, transitioning from purely reactive (Monitor-Diagnose-Heal) to proactive learning patterns. This addresses the self-evolution gap identified in the 2025-12-30 analysis.
+
+-   **Story 11.1**: [AI] Implement Experience Logger for Neo4j.
+    -   *AC*: Every task completion creates an Experience node in Neo4j with: task_type, task_id, success, prompt_version, model_used, tokens_used, cost_usd, duration_ms, retries, timestamp. Relationships: (:Experience)-[:USED_SKILL]->(:Skill) for patterns, (:Experience)-[:PRODUCED]->(:Artifact) for outputs. Success rates queryable per task type, model, prompt version, time window.
+    -   *Task Ref*: EVOLVE-001
+    -   *FR Ref*: FR-07.1 (Experience Logger)
+-   **Story 11.2**: [AI] Implement Reflection Hook for Post-Task Learning.
+    -   *AC*: After task completion, ReflectionHook triggers asynchronously. Uses LLM to analyze: "What worked?", "What patterns to remember?", "What to improve?". Stores (:Insight) nodes linked to (:Experience). Three depth modes: quick (metrics only), standard (LLM reflection), deep (multi-model consensus). Non-blocking execution.
+    -   *Task Ref*: EVOLVE-002
+    -   *FR Ref*: FR-07.2 (Reflection Hook)
+-   **Story 11.3**: [Future] Skill Library Integration (Placeholder).
+    -   *AC*: Reserved for Phase 2. Will extract reusable code patterns from successful experiences (Voyager pattern).
+    -   *Task Ref*: EVOLVE-003 (not yet in tasks.json)
+    -   *FR Ref*: FR-07.3.1 (Skill Library)
+-   **Story 11.4**: [Future] Prompt Optimization (Placeholder).
+    -   *AC*: Reserved for Phase 3. Will implement DSPy-style automatic prompt improvement based on experience success metrics.
+    -   *Task Ref*: EVOLVE-005 (not yet in tasks.json)
+    -   *FR Ref*: FR-07.3.2 (Prompt Optimization)
+
+**Design Principle**: Stories 11.1 and 11.2 create the data foundation (experiences, insights) that Stories 11.3 and 11.4 will consume for skill extraction and prompt optimization.

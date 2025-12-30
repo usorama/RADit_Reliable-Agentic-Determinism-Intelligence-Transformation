@@ -1,7 +1,8 @@
 # Agent-Parallelism Execution Plan
 
-**Version**: 1.0
+**Version**: 1.1
 **Created**: 2025-12-30
+**Updated**: 2025-12-31
 **Purpose**: Define dependency-aware parallel agent execution strategy for DAW implementation
 
 ---
@@ -105,15 +106,18 @@ Phase 3 (After CORE-002 completes):
 
 **Max Concurrent Agents**: 4
 
-### Wave 4: Core Agents (Hour 5-11)
+### Wave 4: Core Agents + Evolution Foundation (Hour 5-11)
 | Agent ID | Task | Duration | Dependencies | Parallel Slots |
 |----------|------|----------|--------------|----------------|
 | A1 | CORE-004 | 3hr | CORE-002 | 1 |
 | A2 | CORE-005 | 2hr | CORE-002 | 1 |
 | A3 | CORE-006 | 3hr | CORE-002, DB-001 | 1 |
 | A4 | OPS-001 | 2hr | CORE-002 | 1 |
+| A5 | **EVOLVE-001** | 3hr | CORE-006, DB-001 | 2 |
 
-**Max Concurrent Agents**: 4
+**Max Concurrent Agents**: 5
+
+> **New**: EVOLVE-001 (Experience Logger) runs after CORE-006 completes, establishing the self-learning data foundation (FR-07.1).
 
 ### Wave 5: Planner (Hour 9-15)
 | Agent ID | Task | Duration | Dependencies | Parallel Slots |
@@ -157,7 +161,7 @@ Phase 3 (After CORE-002 completes):
 
 **Max Concurrent Agents**: 6
 
-### Wave 9: Eval & Operations (Hour 29-37)
+### Wave 9: Eval & Operations + Reflection (Hour 29-37)
 | Agent ID | Task | Duration | Dependencies | Parallel Slots |
 |----------|------|----------|--------------|----------------|
 | A1 | EVAL-001 | 3hr | PLANNER-001, EXECUTOR-001 | 1 |
@@ -168,8 +172,11 @@ Phase 3 (After CORE-002 completes):
 | A6 | UAT-003 | 3hr | UAT-001 | 3 |
 | A7 | DRIFT-001 | 4hr | OPS-001, EXECUTOR-001 | 2 |
 | A8 | DRIFT-002 | 3hr | DRIFT-001 | 3 |
+| A9 | **EVOLVE-002** | 2hr | DRIFT-001, EVOLVE-001 | 3 |
 
-**Max Concurrent Agents**: 6
+**Max Concurrent Agents**: 7
+
+> **New**: EVOLVE-002 (Reflection Hook) runs after DRIFT-001 completes, enabling proactive learning after task completion (FR-07.2).
 
 ### Wave 10: Orchestrator (Hour 33-41)
 | Agent ID | Task | Duration | Dependencies | Parallel Slots |
@@ -194,9 +201,10 @@ Hour 33   ├── Wave 10: Orchestrator ───────────┤
 Hour 41   └── COMPLETE ────────────────────────┘
 ```
 
-**Total Elapsed Time**: ~41 hours (with full parallelization)
+**Total Elapsed Time**: ~42 hours (with full parallelization)
 **Critical Path Time**: ~33.5 hours (irreducible)
-**Parallelization Savings**: ~24 hours vs single-threaded (~65hr)
+**Parallelization Savings**: ~25 hours vs single-threaded (~67hr)
+**Self-Evolution Tasks**: 2 (EVOLVE-001, EVOLVE-002) - adds ~5 hours parallelized
 
 ---
 

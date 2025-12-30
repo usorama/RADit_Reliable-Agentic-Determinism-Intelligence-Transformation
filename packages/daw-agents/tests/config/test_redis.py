@@ -20,7 +20,7 @@ class TestRedisConfig:
 
     def test_redis_config_default_values(self):
         """Test RedisConfig initializes with default values."""
-        from config.redis import RedisConfig
+        from daw_agents.config.redis import RedisConfig
 
         config = RedisConfig()
         assert config.host == "localhost"
@@ -31,7 +31,7 @@ class TestRedisConfig:
 
     def test_redis_config_from_env_variables(self):
         """Test RedisConfig loads from environment variables."""
-        from config.redis import RedisConfig
+        from daw_agents.config.redis import RedisConfig
 
         with patch.dict(
             os.environ,
@@ -48,7 +48,7 @@ class TestRedisConfig:
 
     def test_celery_broker_url_without_password(self):
         """Test Celery broker URL generation without password."""
-        from config.redis import RedisConfig
+        from daw_agents.config.redis import RedisConfig
 
         config = RedisConfig(host="localhost", port=6379, password=None)
         expected_url = "redis://localhost:6379/0"
@@ -56,7 +56,7 @@ class TestRedisConfig:
 
     def test_celery_broker_url_with_password(self):
         """Test Celery broker URL generation with password."""
-        from config.redis import RedisConfig
+        from daw_agents.config.redis import RedisConfig
 
         config = RedisConfig(
             host="redis.example.com", port=6379, password="secretpass"
@@ -66,14 +66,14 @@ class TestRedisConfig:
 
     def test_celery_broker_url_uses_db_0(self):
         """Test Celery broker URL uses database 0."""
-        from config.redis import RedisConfig
+        from daw_agents.config.redis import RedisConfig
 
         config = RedisConfig()
         assert config.celery_broker_url.endswith("/0")
 
     def test_langgraph_url_without_password(self):
         """Test LangGraph checkpoint URL generation without password."""
-        from config.redis import RedisConfig
+        from daw_agents.config.redis import RedisConfig
 
         config = RedisConfig(host="localhost", port=6379, password=None)
         expected_url = "redis://localhost:6379/1"
@@ -81,7 +81,7 @@ class TestRedisConfig:
 
     def test_langgraph_url_with_password(self):
         """Test LangGraph checkpoint URL generation with password."""
-        from config.redis import RedisConfig
+        from daw_agents.config.redis import RedisConfig
 
         config = RedisConfig(
             host="redis.example.com", port=6379, password="secretpass"
@@ -91,14 +91,14 @@ class TestRedisConfig:
 
     def test_langgraph_url_uses_db_1(self):
         """Test LangGraph checkpoint URL uses database 1."""
-        from config.redis import RedisConfig
+        from daw_agents.config.redis import RedisConfig
 
         config = RedisConfig()
         assert config.langgraph_url.endswith("/1")
 
     def test_separate_databases_for_celery_and_langgraph(self):
         """Test Celery and LangGraph use different databases."""
-        from config.redis import RedisConfig
+        from daw_agents.config.redis import RedisConfig
 
         config = RedisConfig()
         celery_db = config.celery_broker_url.split("/")[-1]
@@ -114,7 +114,7 @@ class TestRedisClientFactory:
     @pytest.mark.asyncio
     async def test_get_async_redis_client_creates_connection(self):
         """Test get_async_redis_client creates async Redis connection."""
-        from config.redis import get_async_redis_client
+        from daw_agents.config.redis import get_async_redis_client
 
         client = await get_async_redis_client(db=0)
         assert client is not None
@@ -124,7 +124,7 @@ class TestRedisClientFactory:
     @pytest.mark.asyncio
     async def test_async_redis_client_uses_decode_responses(self):
         """Test async Redis client decodes responses to strings."""
-        from config.redis import get_async_redis_client
+        from daw_agents.config.redis import get_async_redis_client
 
         client = await get_async_redis_client(db=0)
         # Just verify client was created with decode_responses=True
@@ -134,7 +134,7 @@ class TestRedisClientFactory:
 
     def test_get_redis_client_creates_connection(self):
         """Test get_redis_client creates sync Redis connection."""
-        from config.redis import get_redis_client
+        from daw_agents.config.redis import get_redis_client
 
         # This test requires a real Redis instance or mock
         # For now, we just verify the function exists and can be called
@@ -148,7 +148,7 @@ class TestRedisClientFactory:
 
     def test_get_redis_client_uses_decode_responses(self):
         """Test sync Redis client decodes responses to strings."""
-        from config.redis import get_redis_client
+        from daw_agents.config.redis import get_redis_client
 
         # Just verify function signature and that it can be instantiated
         try:
@@ -165,7 +165,7 @@ class TestRedisConfigIntegration:
 
     def test_config_usable_in_celery_context(self):
         """Test RedisConfig can be used to configure Celery broker."""
-        from config.redis import RedisConfig
+        from daw_agents.config.redis import RedisConfig
 
         config = RedisConfig(
             host="redis.local", port=6379, password="celery-secret"
@@ -179,7 +179,7 @@ class TestRedisConfigIntegration:
 
     def test_config_usable_in_langgraph_context(self):
         """Test RedisConfig can be used for LangGraph checkpoints."""
-        from config.redis import RedisConfig
+        from daw_agents.config.redis import RedisConfig
 
         config = RedisConfig(
             host="redis.local", port=6379, password="langgraph-secret"
@@ -193,7 +193,7 @@ class TestRedisConfigIntegration:
 
     def test_dual_purpose_architecture(self):
         """Test Redis serves both Celery and LangGraph purposes."""
-        from config.redis import RedisConfig
+        from daw_agents.config.redis import RedisConfig
 
         config = RedisConfig()
 

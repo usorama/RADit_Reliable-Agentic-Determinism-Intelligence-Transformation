@@ -227,7 +227,10 @@
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/mcp/test_gateway_auth.py"
-    }
+    },
+    "status": "completed",
+    "started_at": "2025-12-31T00:30:00Z",
+    "completed_at": "2025-12-31T01:00:00Z"
   },
   {
     "id": "MCP-SEC-002",
@@ -314,13 +317,16 @@
       "CORE-002"
     ],
     "context_files": [
-      "packages/daw-agents/src/sandbox/e2b_wrapper.py"
+      "packages/daw-agents/src/daw_agents/sandbox/e2b.py"
     ],
     "instruction": "Create a wrapper around E2B SDK. Must enforce strict timeout, CPU/RAM limits, and network allowlist capabilities. Ensure sandbox cleanup on completion/error.",
     "verification": {
       "type": "test_pass",
-      "command": "pytest packages/daw-agents/tests/test_sandbox.py"
-    }
+      "command": "pytest packages/daw-agents/tests/sandbox/test_e2b.py"
+    },
+    "status": "completed",
+    "started_at": "2025-12-30T20:00:00Z",
+    "completed_at": "2025-12-30T20:45:00Z"
   },
   {
     "id": "CORE-005",
@@ -332,13 +338,17 @@
       "CORE-002"
     ],
     "context_files": [
-      "packages/daw-agents/src/workflow/tdd_guard.py"
+      "packages/daw-agents/src/tdd/guard.py",
+      "packages/daw-agents/src/tdd/exceptions.py"
     ],
     "instruction": "Create a logic module that checks for the existence of a failing test file before allowing 'Implementation' tools to be called. Must block writes to src/ until tests/ file exists and fails.",
     "verification": {
       "type": "test_pass",
-      "command": "pytest packages/daw-agents/tests/test_tdd_guard.py"
-    }
+      "command": "pytest packages/daw-agents/tests/tdd/test_guard.py"
+    },
+    "status": "completed",
+    "started_at": "2025-12-30T20:00:00Z",
+    "completed_at": "2025-12-30T20:30:00Z"
   },
   {
     "id": "CORE-006",
@@ -351,13 +361,16 @@
       "DB-001"
     ],
     "context_files": [
-      "packages/daw-agents/src/memory/compactor.py"
+      "packages/daw-agents/src/daw_agents/context/compaction.py"
     ],
     "instruction": "Create a module that summarizes conversation history and relevant graph nodes into a concise 'System Prompt' string. Must produce < 4000 tokens from 1000+ message history.",
     "verification": {
       "type": "test_pass",
-      "command": "pytest packages/daw-agents/tests/test_compactor.py"
-    }
+      "command": "pytest packages/daw-agents/tests/context/test_compaction.py"
+    },
+    "status": "completed",
+    "started_at": "2025-12-30T21:30:00Z",
+    "completed_at": "2025-12-30T22:15:00Z"
   },
   {
     "id": "OPS-001",
@@ -374,8 +387,11 @@
     "instruction": "Wrap OpenAI/LiteLLM client calls to route through Helicone proxy for cost tracking. Attach request metadata (user_id, project_id, agent_type). Enable caching with configurable TTL.",
     "verification": {
       "type": "test_pass",
-      "command": "pytest packages/daw-agents/tests/test_ops.py"
-    }
+      "command": "pytest packages/daw-agents/tests/ops/test_helicone.py"
+    },
+    "status": "completed",
+    "started_at": "2025-12-30T20:00:00Z",
+    "completed_at": "2025-12-30T20:30:00Z"
   },
   {
     "id": "PLANNER-001",
@@ -390,13 +406,16 @@
       "MODEL-001"
     ],
     "context_files": [
-      "packages/daw-agents/src/agents/planner/graph.py"
+      "packages/daw-agents/src/daw_agents/agents/planner/taskmaster.py"
     ],
     "instruction": "Implement LangGraph state machine. States: [Interview, Roundtable, GeneratePRD]. Configurable personas. Use MODEL-001 router for model selection. Persist conversation to Neo4j.",
     "verification": {
       "type": "test_pass",
-      "command": "pytest packages/daw-agents/tests/agents/planner/test_graph.py"
-    }
+      "command": "pytest packages/daw-agents/tests/agents/planner/test_taskmaster.py"
+    },
+    "status": "completed",
+    "started_at": "2025-12-30T20:45:00Z",
+    "completed_at": "2025-12-30T21:30:00Z"
   },
   {
     "id": "PLANNER-002",
@@ -414,7 +433,10 @@
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/agents/planner/test_personas.py"
-    }
+    },
+    "status": "completed",
+    "started_at": "2025-12-30T23:00:00Z",
+    "completed_at": "2025-12-30T23:45:00Z"
   },
   {
     "id": "COMPLEXITY-001",
@@ -434,7 +456,10 @@
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/agents/planner/test_complexity_analyzer.py"
-    }
+    },
+    "status": "completed",
+    "started_at": "2025-12-30T23:30:00Z",
+    "completed_at": "2025-12-31T00:00:00Z"
   },
   {
     "id": "TASK-DECOMP-001",
@@ -494,7 +519,10 @@
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/agents/developer/test_graph.py"
-    }
+    },
+    "status": "completed",
+    "started_at": "2025-12-30T22:30:00Z",
+    "completed_at": "2025-12-30T23:15:00Z"
   },
   {
     "id": "OPS-002",
@@ -547,15 +575,19 @@
       "CORE-003"
     ],
     "context_files": [
-      "packages/daw-agents/src/agents/validator/graph.py",
-      "packages/daw-agents/src/agents/validator/tools.py",
-      "packages/daw-agents/src/agents/validator/prompts/validator_v1.yaml"
+      "packages/daw-agents/src/agents/validator/agent.py",
+      "packages/daw-agents/src/agents/validator/nodes.py",
+      "packages/daw-agents/src/agents/validator/models.py",
+      "packages/daw-agents/src/agents/validator/state.py"
     ],
     "instruction": "Implement a Validator Agent as a LangGraph workflow DISTINCT from the sandbox execution environment. The Validator Agent must: (1) Run on a DIFFERENT model than Executor via MODEL-001 router (e.g., if Executor uses Claude, Validator uses GPT-4o), (2) Execute test suites and interpret results intelligently, (3) Run SAST security scans via tool integration, (4) Perform SCA vulnerability scanning, (5) Validate against organizational policies, (6) Generate actionable improvement suggestions (not just pass/fail), (7) Implement retry logic routing fixable failures back to Executor (max 3 retries), (8) Escalate critical/unfixable issues to human reviewers. States: [run_tests, security_scan, policy_check, generate_report, route_decision]. CRITICAL: Validator is architecturally SEPARATE from Sandbox (CORE-004). See FR-04.2 in PRD and Section 6 in Architecture.",
     "verification": {
       "type": "test_pass",
-      "command": "pytest packages/daw-agents/tests/agents/validator/test_graph.py"
-    }
+      "command": "pytest packages/daw-agents/tests/agents/validator/test_validator.py"
+    },
+    "status": "completed",
+    "started_at": "2025-12-30T20:00:00Z",
+    "completed_at": "2025-12-30T20:30:00Z"
   },
   {
     "id": "VALIDATOR-002",
@@ -573,7 +605,10 @@
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/agents/validator/test_ensemble.py"
-    }
+    },
+    "status": "completed",
+    "started_at": "2025-12-30T22:30:00Z",
+    "completed_at": "2025-12-30T23:00:00Z"
   },
   {
     "id": "POLICY-001",
@@ -911,6 +946,46 @@
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/workflow/test_orchestrator.py"
+    }
+  },
+  {
+    "id": "EVOLVE-001",
+    "type": "code",
+    "priority": "P1",
+    "phase": 3,
+    "description": "Implement Experience Logger for Self-Learning Foundation",
+    "dependencies": [
+      "CORE-006",
+      "DB-001"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/daw_agents/evolution/experience_logger.py",
+      "packages/daw-agents/src/daw_agents/evolution/schemas.py"
+    ],
+    "instruction": "Implement Experience Logger that stores successful task completions in Neo4j for future learning. Schema: Experience node with task_type, task_id, success, prompt_version, model_used, tokens_used, cost_usd, duration_ms, retries, timestamp. Create relationships: (:Experience)-[:USED_SKILL]->(:Skill) for code patterns, (:Experience)-[:PRODUCED]->(:Artifact) for outputs. Include: (1) ExperienceLogger class with log_success(), log_failure() methods, (2) query_similar_experiences() for RAG retrieval, (3) calculate_success_rate() per task type/model combination, (4) Neo4j Cypher queries for experience storage and retrieval. This is the foundation for self-learning capabilities per FR-07.1.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/evolution/test_experience_logger.py"
+    }
+  },
+  {
+    "id": "EVOLVE-002",
+    "type": "code",
+    "priority": "P1",
+    "phase": 8,
+    "description": "Implement Reflection Hook for Post-Task Learning",
+    "dependencies": [
+      "DRIFT-001",
+      "EVOLVE-001"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/daw_agents/evolution/reflection.py",
+      "packages/daw-agents/src/daw_agents/ops/drift_detector.py"
+    ],
+    "instruction": "Implement Reflection Hook that triggers after successful task completion to extract learnings. Extends the Monitor Agent (DRIFT-001) with proactive reflection capabilities. Features: (1) ReflectionHook class that registers as LangGraph callback, (2) Triggers after task completion (not just on failure), (3) Uses LLM to analyze: 'What worked well?', 'What patterns should be remembered?', 'What could be improved?', (4) Stores insights as (:Insight) nodes linked to (:Experience), (5) Configurable reflection depth (quick/standard/deep), (6) Async execution to avoid blocking main workflow. This implements proactive learning per FR-07.2, transforming reactive Monitor-Diagnose-Heal into proactive reflection.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/evolution/test_reflection.py"
     }
   }
 ]

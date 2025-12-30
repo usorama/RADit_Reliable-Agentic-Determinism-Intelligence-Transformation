@@ -1139,6 +1139,109 @@ Before individual story completion, the MVP must achieve:
 
 ---
 
+## Epic 11: Self-Evolution Foundation (Learning Layer)
+
+### Story 11.1: [AI] Implement Experience Logger for Neo4j
+**Task Ref**: EVOLVE-001
+**FR Ref**: FR-07.1 (Experience Logger)
+
+**Definition of Done**:
+- [ ] Experience node schema implemented in Neo4j (id, task_type, task_id, success, prompt_version, model_used, tokens_used, cost_usd, duration_ms, retries, timestamp)
+- [ ] Skill relationship implemented: `(:Experience)-[:USED_SKILL]->(:Skill)`
+- [ ] Artifact relationship implemented: `(:Experience)-[:PRODUCED]->(:Artifact)`
+- [ ] `ExperienceLogger.log_success()` method functional
+- [ ] `ExperienceLogger.log_failure()` method functional
+- [ ] `ExperienceLogger.query_similar_experiences()` method functional
+- [ ] `ExperienceLogger.get_success_rate()` method functional with filters (task_type, model, prompt_version, time_window)
+- [ ] Pydantic schemas defined for Experience, Skill, Artifact, Insight
+- [ ] Cypher queries module with parameterized queries
+- [ ] Unit tests for all ExperienceLogger methods
+- [ ] Integration tests with Neo4j (VPS connection)
+- [ ] Test coverage >= 85% for evolution module
+- [ ] No blocking impact on main workflow performance
+
+**Success Metrics**:
+| Metric | Target | Measurement Method |
+|--------|--------|-------------------|
+| Experience logging latency | < 100ms | Timer on log_success/log_failure |
+| Query latency | < 200ms | Timer on query_similar_experiences |
+| Storage overhead | < 1KB per experience | Neo4j node size monitoring |
+| Success rate accuracy | 100% | Verify calculations against manual count |
+| Schema compliance | 100% | Pydantic validation on all writes |
+| Test coverage | >= 85% | pytest-cov for evolution module |
+
+**Acceptance Criteria** (Testable - Given/When/Then):
+- **Given** a task completes successfully, **When** log_success() is called, **Then** Experience node exists in Neo4j with all required fields
+- **Given** a task fails, **When** log_failure() is called, **Then** Experience node exists with error_type and error_message
+- **Given** 10 experiences logged for task_type="coding", **When** get_success_rate(task_type="coding") is called, **Then** correct percentage is returned
+- **Given** experiences with skills logged, **When** query_similar_experiences() is called, **Then** experiences with matching skills are returned first
+- **Given** main workflow running, **When** experience logging occurs, **Then** workflow latency increases by < 5%
+
+---
+
+### Story 11.2: [AI] Implement Reflection Hook for Post-Task Learning
+**Task Ref**: EVOLVE-002
+**FR Ref**: FR-07.2 (Reflection Hook)
+
+**Definition of Done**:
+- [ ] ReflectionHook class implemented with LangGraph integration
+- [ ] `reflect()` method functional (async, non-blocking)
+- [ ] Three reflection depth modes implemented: quick, standard, deep
+- [ ] Insight node schema implemented: what_worked, what_failed, lesson_learned
+- [ ] Relationship implemented: `(:Experience)-[:REFLECTED_AS]->(:Insight)`
+- [ ] Integration with ModelRouter for LLM reflection calls
+- [ ] Reflection prompt template in prompts/ directory
+- [ ] Non-blocking execution verified (main workflow continues)
+- [ ] Unit tests for ReflectionHook methods
+- [ ] Integration test with LangGraph orchestrator
+- [ ] Test coverage >= 85% for reflection module
+- [ ] Configurable depth selection (quick/standard/deep)
+
+**Success Metrics**:
+| Metric | Target | Measurement Method |
+|--------|--------|-------------------|
+| Quick reflection latency | < 100ms | Timer on quick mode |
+| Standard reflection latency | < 3 seconds | Timer on standard mode |
+| Deep reflection latency | < 15 seconds | Timer on deep mode |
+| Main workflow impact | 0% (async) | Verify non-blocking execution |
+| Insight quality (manual) | >= 80% actionable | Sample 20 insights, rate quality |
+| Reflection trigger rate | 100% of completions | Count reflections vs completions |
+
+**Acceptance Criteria** (Testable - Given/When/Then):
+- **Given** task completes, **When** ReflectionHook.reflect() is called, **Then** execution is non-blocking (main workflow continues immediately)
+- **Given** depth="quick", **When** reflection runs, **Then** only metrics are logged (no LLM call)
+- **Given** depth="standard", **When** reflection runs, **Then** LLM generates insight with what_worked, what_failed, lesson_learned
+- **Given** depth="deep", **When** reflection runs, **Then** multi-model consensus is used for insight
+- **Given** reflection completes, **When** Neo4j is queried, **Then** Insight node exists linked to Experience
+
+---
+
+### Story 11.3: [Future] Skill Library Integration (Placeholder)
+**Task Ref**: EVOLVE-003 (not yet in tasks.json)
+**FR Ref**: FR-07.3.1 (Skill Library)
+**Status**: Reserved for Phase 2
+
+**Definition of Done** (Placeholder - to be detailed in Phase 2):
+- [ ] Skill extraction from successful experiences (Voyager pattern)
+- [ ] Skill storage with success_rate and usage_count
+- [ ] Skill retrieval for similar tasks
+- [ ] Skill versioning and deprecation
+
+---
+
+### Story 11.4: [Future] Prompt Optimization (Placeholder)
+**Task Ref**: EVOLVE-005 (not yet in tasks.json)
+**FR Ref**: FR-07.3.2 (Prompt Optimization)
+**Status**: Reserved for Phase 3
+
+**Definition of Done** (Placeholder - to be detailed in Phase 3):
+- [ ] DSPy-style automatic prompt improvement
+- [ ] A/B testing infrastructure for prompts
+- [ ] Success metric correlation with prompt versions
+- [ ] Constitutional safety constraints for self-modification
+
+---
+
 ## Summary Statistics
 
 | Epic | Stories | Total DoD Items | Total Metrics |
@@ -1153,7 +1256,8 @@ Before individual story completion, the MVP must achieve:
 | Epic 8: Deployment Policy | 2 | 18 | 12 |
 | Epic 9: UAT Automation | 3 | 24 | 18 |
 | Epic 10: Eval Protocol | 3 | 24 | 18 |
-| **TOTAL** | **34** | **291** | **204** |
+| Epic 11: Self-Evolution | 4 | 29 | 12 |
+| **TOTAL** | **38** | **320** | **216** |
 
 ---
 
@@ -1172,8 +1276,11 @@ Before individual story completion, the MVP must achieve:
 | Playwright | Browser automation | 9.1, 9.2, 9.3 |
 | Applitools | Visual regression | 9.3 |
 | DeepEval/Braintrust | Agent evaluation | 10.2, 10.3 |
+| Neo4j | Graph database for experiences | 11.1, 11.2 |
+| asyncio | Non-blocking execution | 11.2 |
 
 ---
 
 *Document generated: 2025-12-30*
+*Updated: 2025-12-31 - Added Epic 11: Self-Evolution Foundation*
 *Next review: Before Sprint 1 kickoff*
