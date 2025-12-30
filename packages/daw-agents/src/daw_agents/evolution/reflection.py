@@ -34,9 +34,7 @@ from pydantic import BaseModel, Field
 from daw_agents.evolution.schemas import Experience, Insight
 
 if TYPE_CHECKING:
-    from daw_agents.evolution.experience_logger import ExperienceLogger
-    from daw_agents.memory.neo4j import Neo4jConnector
-    from daw_agents.models.router import ModelRouter
+    pass
 
 logger = logging.getLogger(__name__)
 
