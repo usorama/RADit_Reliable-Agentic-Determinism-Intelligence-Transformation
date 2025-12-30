@@ -1085,7 +1085,9 @@
     "verification": {
       "type": "file_exists",
       "path": "apps/web"
-    }
+    },
+    "status": "completed",
+    "completed_at": "2025-12-30T21:51:00Z"
   },
   {
     "id": "REFACTOR-002",
@@ -1103,7 +1105,9 @@
     "verification": {
       "type": "test_pass",
       "command": "cd apps/web && pnpm typecheck && pnpm build"
-    }
+    },
+    "status": "completed",
+    "completed_at": "2025-12-30T21:58:00Z"
   },
   {
     "id": "REFACTOR-003",
@@ -1121,7 +1125,9 @@
     "verification": {
       "type": "test_pass",
       "command": "cd apps/server && poetry install && pytest tests/"
-    }
+    },
+    "status": "completed",
+    "completed_at": "2025-12-30T22:04:00Z"
   },
   {
     "id": "REFACTOR-004",
@@ -1139,7 +1145,9 @@
     "verification": {
       "type": "test_pass",
       "command": "cd packages/daw-agents && poetry install && pytest tests/agents/"
-    }
+    },
+    "status": "completed",
+    "completed_at": "2025-12-30T22:10:00Z"
   },
   {
     "id": "REFACTOR-005",
@@ -1156,7 +1164,9 @@
     "verification": {
       "type": "test_pass",
       "command": "cd packages/daw-mcp && poetry install && pytest tests/"
-    }
+    },
+    "status": "completed",
+    "completed_at": "2025-12-30T22:02:00Z"
   },
   {
     "id": "REFACTOR-006",
@@ -1193,6 +1203,8 @@
     "verification": {
       "type": "test_pass",
       "command": "docker-compose up -d && sleep 30 && curl -f http://localhost:3000/health && curl -f http://localhost:8000/health"
-    }
+    },
+    "status": "completed",
+    "completed_at": "2025-12-30T22:15:00Z"
   }
 ]
