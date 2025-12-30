@@ -27,49 +27,111 @@ jobs:
           python-version: '3.11'
 
       - name: Validate codebase map
+        id: validate
         run: |
           set -e
 
-          # Check map exists
+          MAP_MISSING="false"
+          MAP_STALE="false"
+
+          # Check if map exists
           if [ ! -f docs/codebase_map.json ]; then
-            echo "::error::docs/codebase_map.json is missing from repository"
-            exit 1
+            echo "Map is missing, generating fresh copy..."
+            MAP_MISSING="true"
+            COMMITTED_HASH="missing"
+          else
+            COMMITTED_HASH=$(sha256sum docs/codebase_map.json | cut -d' ' -f1)
+            echo "Committed map hash: $COMMITTED_HASH"
           fi
 
-          # Store committed map hash
-          COMMITTED_HASH=$(sha256sum docs/codebase_map.json | cut -d' ' -f1)
-          echo "Committed map hash: $COMMITTED_HASH"
-
-          # Regenerate map
+          # Always regenerate map
           python scripts/gather_codebase_map.py
           echo "Map regenerated successfully"
 
-          # Compare hashes
+          # Get fresh hash
           FRESH_HASH=$(sha256sum docs/codebase_map.json | cut -d' ' -f1)
           echo "Fresh map hash: $FRESH_HASH"
 
-          if [ "$COMMITTED_HASH" != "$FRESH_HASH" ]; then
-            echo ""
-            echo "::group::Codebase Map Diff"
-            git diff docs/codebase_map.json || true
-            echo "::endgroup::"
-            echo ""
-            echo "::error file=docs/codebase_map.json::Codebase map is out of sync with actual code"
-            echo ""
-            echo "CODEBASE MAP VALIDATION FAILED"
-            echo "==============================="
-            echo ""
-            echo "The committed docs/codebase_map.json does not match the actual codebase."
-            echo ""
-            echo "TO FIX:"
-            echo "  1. Run: python scripts/gather_codebase_map.py"
-            echo "  2. Commit the updated docs/codebase_map.json"
-            echo "  3. Push again"
-            echo ""
-            echo "OR: Install the pre-commit hook to auto-update:"
-            echo "    ./scripts/setup-hooks.sh"
-            echo ""
-            exit 1
+          # Compare
+          if [ "$MAP_MISSING" = "true" ]; then
+            echo "map_status=missing" >> $GITHUB_OUTPUT
+          elif [ "$COMMITTED_HASH" != "$FRESH_HASH" ]; then
+            echo "map_status=stale" >> $GITHUB_OUTPUT
+            MAP_STALE="true"
+          else
+            echo "map_status=valid" >> $GITHUB_OUTPUT
           fi
 
+      - name: Upload generated map as artifact
+        if: steps.validate.outputs.map_status != 'valid'
+        uses: actions/upload-artifact@v4
+        with:
+          name: codebase_map_generated
+          path: docs/codebase_map.json
+          retention-days: 7
+
+      - name: Show diff for stale map
+        if: steps.validate.outputs.map_status == 'stale'
+        run: |
+          echo "::group::Codebase Map Diff"
+          git diff docs/codebase_map.json || true
+          echo "::endgroup::"
+
+      - name: Report missing map
+        if: steps.validate.outputs.map_status == 'missing'
+        run: |
+          echo ""
+          echo "::error file=docs/codebase_map.json::Codebase map is missing from repository"
+          echo ""
+          echo "CODEBASE MAP MISSING"
+          echo "===================="
+          echo ""
+          echo "docs/codebase_map.json was not found in the repository."
+          echo "A fresh map has been generated and uploaded as an artifact."
+          echo ""
+          echo "TO FIX (Option 1 - Download artifact):"
+          echo "  1. Download 'codebase_map_generated' artifact from this workflow run"
+          echo "  2. Place it at docs/codebase_map.json"
+          echo "  3. Commit and push"
+          echo ""
+          echo "TO FIX (Option 2 - Generate locally):"
+          echo "  1. Run: python scripts/gather_codebase_map.py"
+          echo "  2. Commit docs/codebase_map.json"
+          echo "  3. Push again"
+          echo ""
+          echo "RECOMMENDED: Install pre-commit hook to auto-generate:"
+          echo "  ./scripts/setup-hooks.sh"
+          echo ""
+          exit 1
+
+      - name: Report stale map
+        if: steps.validate.outputs.map_status == 'stale'
+        run: |
+          echo ""
+          echo "::error file=docs/codebase_map.json::Codebase map is out of sync with actual code"
+          echo ""
+          echo "CODEBASE MAP STALE"
+          echo "=================="
+          echo ""
+          echo "The committed docs/codebase_map.json does not match the actual codebase."
+          echo "A fresh map has been generated and uploaded as an artifact."
+          echo ""
+          echo "TO FIX (Option 1 - Download artifact):"
+          echo "  1. Download 'codebase_map_generated' artifact from this workflow run"
+          echo "  2. Replace docs/codebase_map.json with downloaded file"
+          echo "  3. Commit and push"
+          echo ""
+          echo "TO FIX (Option 2 - Generate locally):"
+          echo "  1. Run: python scripts/gather_codebase_map.py"
+          echo "  2. Commit the updated docs/codebase_map.json"
+          echo "  3. Push again"
+          echo ""
+          echo "RECOMMENDED: Install pre-commit hook to auto-update:"
+          echo "  ./scripts/setup-hooks.sh"
+          echo ""
+          exit 1
+
+      - name: Success
+        if: steps.validate.outputs.map_status == 'valid'
+        run: |
           echo "Codebase map is in sync with actual code"
