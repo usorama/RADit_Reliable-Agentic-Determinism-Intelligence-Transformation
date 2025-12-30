@@ -691,7 +691,9 @@
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/api/test_routes.py"
-    }
+    },
+    "status": "completed",
+    "completed_at": "2025-12-30T14:00:00Z"
   },
   {
     "id": "STREAMING-001",
