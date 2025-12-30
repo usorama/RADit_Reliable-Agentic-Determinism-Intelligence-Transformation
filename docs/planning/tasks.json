@@ -845,16 +845,17 @@
       "VALIDATOR-001"
     ],
     "context_files": [
-      "packages/daw-agents/src/eval/harness.py",
-      "packages/daw-agents/src/eval/metrics.py"
+      "packages/daw-agents/src/daw_agents/eval/harness.py",
+      "packages/daw-agents/src/daw_agents/eval/metrics.py"
     ],
     "instruction": "Implement eval harness using DeepEval or Braintrust framework. Track metrics: pass@1 (first attempt success) >= 85% release blocking; Task Completion Rate >= 90% release blocking; pass^8 (8-trial consistency) >= 60% warning; Cost per Task < $0.50 avg advisory. Integrate with CI for nightly runs. Performance regression > 5% triggers alert. Store timestamped results in eval_results/. See test_strategy.md Section 4.",
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/eval/test_harness.py"
     },
-    "status": "in_progress",
-    "started_at": "2025-12-30T22:00:00Z"
+    "status": "completed",
+    "started_at": "2025-12-30T22:00:00Z",
+    "completed_at": "2025-12-30T23:00:00Z"
   },
   {
     "id": "EVAL-003",
