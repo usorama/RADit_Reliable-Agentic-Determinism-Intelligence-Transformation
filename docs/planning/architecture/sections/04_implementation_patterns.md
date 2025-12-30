@@ -26,8 +26,13 @@ A self-healing operational loop:
 ## Consistency Rules
 
 ### Code Organization
--   **Agents**: Defined in `packages/daw-agents`. Each agent has a `graph.py` (workflow), `prompts.yaml` (instructions), and `tools.py` (capabilities).
--   **Schema First**: All agent interactions are typed using `Pydantic` models.
+-   **Agents**: Defined in `packages/daw-agents/src/daw_agents/agents/{agent_name}/`. Each agent module contains:
+    -   `agent.py` - Main agent class and LangGraph workflow definition
+    -   `nodes.py` - Individual workflow node implementations
+    -   `state.py` - TypedDict state definitions for the workflow
+    -   `models.py` - Agent-specific Pydantic models (optional)
+-   **Prompts**: Stored separately in `packages/daw-agents/prompts/{agent_name}/` with semantic versioning (e.g., `prd_generator_v1.0.yaml`)
+-   **Schema First**: All agent interactions are typed using `Pydantic` models in `packages/daw-agents/src/daw_agents/schemas/`.
 
 ### Error Handling
 -   **Agent Level**: If an agent tool call fails, the `ToolNode` catches the exception and feeds the error message back to the agent for a "Self-Correction" attempt (max 3 retries).
@@ -97,13 +102,16 @@ The Validator Agent is architecturally distinct from the Sandbox:
 
 ### Validator Agent Architecture
 ```
-packages/daw-agents/validator/
-├── graph.py              # LangGraph validation workflow
-├── tools.py              # Test runner, SAST, SCA integrations
-├── prompts/
-│   └── validator_v1.yaml # Validation persona and checklists
-└── schemas/
-    └── validation_result.py  # Pydantic models for results
+packages/daw-agents/
+├── src/daw_agents/agents/validator/
+│   ├── __init__.py           # Agent exports
+│   ├── agent.py              # Main ValidatorAgent class with LangGraph workflow
+│   ├── nodes.py              # Workflow nodes (run_tests, security_scan, etc.)
+│   ├── state.py              # ValidatorState TypedDict
+│   ├── models.py             # ValidationResult, Finding models
+│   └── ensemble.py           # Multi-model validation ensemble
+└── prompts/validator/
+    └── validator_v1.yaml     # Validation persona and checklists
 ```
 
 ### Validation Workflow (LangGraph)
@@ -184,12 +192,13 @@ CREATE (:Experience {
 
 #### Experience Logger Architecture
 ```
-packages/daw-agents/evolution/
+packages/daw-agents/src/daw_agents/evolution/
 ├── __init__.py
 ├── experience_logger.py    # ExperienceLogger class
+├── reflection.py           # ReflectionHook for post-task learning
 ├── schemas.py              # Pydantic models for Experience, Skill, Insight
-├── queries.py              # Neo4j Cypher queries
-└── metrics.py              # Success rate calculations
+├── queries.py              # Neo4j Cypher queries (if separate)
+└── metrics.py              # Success rate calculations (if separate)
 ```
 
 #### ExperienceLogger Interface
@@ -304,9 +313,10 @@ orchestrator.add_edge("task_complete", reflection_hook.reflect)
 Reserved integration points for Phase 2+ capabilities:
 
 ```
-packages/daw-agents/evolution/
+packages/daw-agents/src/daw_agents/evolution/
 ├── experience_logger.py    # Phase 1 (EVOLVE-001) ✓
 ├── reflection.py           # Phase 1 (EVOLVE-002) ✓
+├── schemas.py              # Phase 1 - shared models ✓
 ├── skill_extractor.py      # Phase 2 (EVOLVE-003) - placeholder
 ├── skill_library.py        # Phase 2 (EVOLVE-004) - placeholder
 ├── prompt_optimizer.py     # Phase 3 (EVOLVE-005) - placeholder

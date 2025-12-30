@@ -205,3 +205,59 @@
     -   *FR Ref*: FR-07.3.2 (Prompt Optimization)
 
 **Design Principle**: Stories 11.1 and 11.2 create the data foundation (experiences, insights) that Stories 11.3 and 11.4 will consume for skill extraction and prompt optimization.
+
+---
+
+## Epic 12: Architecture Conformance Refactoring
+**Goal**: Restructure the codebase to align with the documented architecture in `docs/planning/architecture/sections/02_project_structure.md`. This is a comprehensive refactoring effort requiring file-by-file, folder-by-folder migration with full E2E testing validation.
+
+**Background**: The current implementation deviated from the documented architecture:
+| Documented | Current | Required Change |
+|------------|---------|-----------------|
+| `apps/web/` | `packages/daw-frontend/` | Move frontend to apps/web/ |
+| `apps/server/` | (embedded in daw-agents) | Extract server to apps/server/ |
+| `packages/daw-agents/` | Contains agents + server | Keep agents only |
+| `packages/daw-mcp/` | Missing | Create MCP servers package |
+| `packages/daw-protocol/` | `packages/daw-shared/` | Rename to daw-protocol |
+
+-   **Story 12.1**: [Infra] Create apps/ directory structure.
+    -   *AC*: `apps/web/` and `apps/server/` directories created. Monorepo tooling (pnpm workspaces, turbo) updated to recognize new structure.
+    -   *Task Ref*: REFACTOR-001
+    -   *Architecture Ref*: 02_project_structure.md
+
+-   **Story 12.2**: [Frontend] Migrate daw-frontend to apps/web/.
+    -   *AC*: All files from `packages/daw-frontend/` moved to `apps/web/`. Package.json updated with correct name. All imports updated. `pnpm install` succeeds. `pnpm dev` runs frontend successfully. No TypeScript errors.
+    -   *Task Ref*: REFACTOR-002
+    -   *Architecture Ref*: 02_project_structure.md
+
+-   **Story 12.3**: [Backend] Extract FastAPI server to apps/server/.
+    -   *AC*: FastAPI application code extracted from `packages/daw-agents/` to `apps/server/`. Includes: API routes, WebSocket handlers, middleware, Celery workers. Server imports agents from `packages/daw-agents/`. `uvicorn` starts successfully. All API endpoints respond.
+    -   *Task Ref*: REFACTOR-003
+    -   *Architecture Ref*: 02_project_structure.md
+
+-   **Story 12.4**: [Agents] Refactor daw-agents to contain only agent definitions.
+    -   *AC*: `packages/daw-agents/` contains ONLY: LangGraph agent definitions (planner/, developer/, validator/, healer/, uat/), agent schemas, agent prompts. No FastAPI routes, no Celery config, no API handlers. Agents importable as library.
+    -   *Task Ref*: REFACTOR-004
+    -   *Architecture Ref*: 02_project_structure.md
+
+-   **Story 12.5**: [MCP] Create packages/daw-mcp/ for custom MCP servers.
+    -   *AC*: `packages/daw-mcp/` created with subdirectories: `git-mcp/`, `graph-memory/`. MCP server implementations moved/created here. Servers register with MCP protocol correctly.
+    -   *Task Ref*: REFACTOR-005
+    -   *Architecture Ref*: 02_project_structure.md
+
+-   **Story 12.6**: [Shared] Rename daw-shared to daw-protocol.
+    -   *AC*: `packages/daw-shared/` renamed to `packages/daw-protocol/`. All imports across codebase updated. Contains: Pydantic models, Zod schemas, shared TypeScript types. No import errors.
+    -   *Task Ref*: REFACTOR-006
+    -   *Architecture Ref*: 02_project_structure.md
+
+-   **Story 12.7**: [Testing] Comprehensive E2E validation post-refactor.
+    -   *AC*: All unit tests pass (pytest, jest). All integration tests pass. Docker Compose builds successfully. Full system starts: frontend connects to backend, backend connects to Neo4j/Redis, agents execute successfully. Manual smoke test of critical flows: auth, chat, agent trace.
+    -   *Task Ref*: REFACTOR-007
+    -   *Architecture Ref*: 02_project_structure.md
+
+**Execution Strategy**:
+1. Stories 12.1-12.6 can be executed in waves with dependency tracking
+2. Each story requires: file moves, import updates, package.json updates, test verification
+3. Story 12.7 is the final gate - blocks merge until full system validation passes
+4. Agents must work file-by-file, verifying each change before proceeding
+5. Rollback strategy: git branch isolation, merge only after 12.7 passes

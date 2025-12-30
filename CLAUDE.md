@@ -38,6 +38,37 @@
 ╚══════════════════════════════════════════════════════════════════════════════╝
 ```
 
+### 🚀 SESSION START PROTOCOL (MANDATORY)
+
+**At the start of EVERY session, automatically:**
+
+1. **Check Progress Documentation**
+   - Read `PROGRESS.md` for current state
+   - Read `docs/planning/tasks.json` for task status
+   - Read `docs/codebase_map.json` for code inventory
+   - Identify `in_progress` and next ready tasks
+
+2. **Evidence-Based Verification**
+   - Never assume - always verify with file reads and command outputs
+   - Check actual file existence before claiming completion
+   - Run tests/linters to confirm quality, don't guess
+   - Document evidence in progress updates
+
+3. **Continue Implementation Automatically**
+   - Resume from where previous session stopped
+   - Spawn multiple agents in parallel when dependencies allow
+   - Use agent teams for complex tasks (Plan → Execute → Validate)
+   - Don't ask "should I continue?" - just continue
+
+4. **Production-Grade Standards**
+   - Zero TypeScript/linting errors tolerated
+   - 80%+ test coverage on new code
+   - All TDD phases must complete
+   - Integration verified, not assumed
+
+**If user says "continue" or starts session without specific task:**
+→ Automatically run this protocol and proceed with next wave tasks.
+
 ---
 
 ## Quick Context
@@ -108,7 +139,7 @@ PHASE 5: UPDATE      → Mark progress, commit
 
 ## Agent Execution Plan
 
-### Parallel Execution Waves (10 waves, ~41 hours total)
+### Parallel Execution Waves (11 waves)
 ```
 Wave 1:  Foundation        (CORE-001, INFRA-*)
 Wave 2:  Core Backend      (CORE-002, FRONTEND-001, AUTH-001)
@@ -120,11 +151,12 @@ Wave 7:  Validator         (VALIDATOR-*, POLICY-*)
 Wave 8:  Frontend & UAT    (FRONTEND-*, STREAMING-001)
 Wave 9:  Eval & Ops        (EVAL-*, UAT-*, DRIFT-*)
 Wave 10: Orchestrator      (ORCHESTRATOR-001 - final integration)
+Wave 11: Architecture Refactor (REFACTOR-001 to REFACTOR-007) [Epic 12]
 ```
 
 ### Critical Path (Cannot Parallelize)
 ```
-CORE-001 → CORE-002 → MODEL-001 → PLANNER-001 → EXECUTOR-001 → VALIDATOR-001 → ORCHESTRATOR-001
+CORE-001 → CORE-002 → MODEL-001 → PLANNER-001 → EXECUTOR-001 → VALIDATOR-001 → ORCHESTRATOR-001 → REFACTOR-*
 ```
 
 ---
@@ -133,7 +165,7 @@ CORE-001 → CORE-002 → MODEL-001 → PLANNER-001 → EXECUTOR-001 → VALIDAT
 
 | Document | Location | Purpose |
 |----------|----------|---------|
-| Task Definitions | `docs/planning/tasks.json` | 52 tasks with deps, phases |
+| Task Definitions | `docs/planning/tasks.json` | 59 tasks with deps, phases (52 + 7 REFACTOR) |
 | PRD | `docs/planning/prd/` | Functional requirements FR-01 to FR-07 |
 | Architecture | `docs/planning/architecture/` | Tech stack, patterns, self-evolution |
 | Agent Specs | `agents.md` | Agent personas, tools, constraints |
@@ -315,19 +347,27 @@ Both local dev and E2B connect to VPS Neo4j over public internet.
 
 ## Session Continuity
 
-When starting a new session:
-1. Read `PROGRESS.md` for current state
-2. Read `docs/planning/tasks.json` for task details
-3. Read `docs/codebase_map.json` for code inventory
-4. Check which tasks are `in_progress` or ready to start
-5. Continue from where previous session left off
+### On Session Start (AUTOMATIC - No User Prompt Needed)
+```
+DO NOT WAIT FOR USER TO ASK - EXECUTE IMMEDIATELY:
+1. Read PROGRESS.md → understand current state
+2. Read tasks.json → identify ready tasks
+3. Read codebase_map.json → check code inventory
+4. Spawn agents for next wave tasks → PARALLEL where possible
+5. Continue until blocked or wave complete
+```
 
-When ending a session:
+### On Session End (Before User Signs Off)
 1. Update `tasks.json` with current status
 2. Update `PROGRESS.md` with what was done
 3. Run `python scripts/gather_codebase_map.py` to update codebase map
 4. Note any blockers or issues
 5. Commit progress (including updated codebase_map.json)
+
+### Quick-Start Commands
+- **"continue"** → Execute session start protocol, resume work
+- **"status"** → Report progress, no implementation
+- **"next wave"** → Start next parallel execution wave
 
 ---
 

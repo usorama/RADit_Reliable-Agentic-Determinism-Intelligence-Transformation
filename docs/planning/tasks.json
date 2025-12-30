@@ -1068,5 +1068,128 @@
     "status": "completed",
     "started_at": "2025-12-30T23:00:00Z",
     "completed_at": "2025-12-30T23:45:00Z"
+  },
+  {
+    "id": "REFACTOR-001",
+    "type": "refactor",
+    "priority": "P1",
+    "phase": 9,
+    "description": "Create apps/ directory structure for monorepo",
+    "dependencies": [],
+    "context_files": [
+      "docs/planning/architecture/sections/02_project_structure.md",
+      "pnpm-workspace.yaml",
+      "turbo.json"
+    ],
+    "instruction": "Create the apps/ directory structure per architecture docs: (1) Create apps/web/ and apps/server/ directories, (2) Update pnpm-workspace.yaml to include 'apps/*', (3) Update turbo.json pipeline if exists, (4) Verify monorepo tooling recognizes new structure with 'pnpm install'.",
+    "verification": {
+      "type": "file_exists",
+      "path": "apps/web"
+    }
+  },
+  {
+    "id": "REFACTOR-002",
+    "type": "refactor",
+    "priority": "P1",
+    "phase": 9,
+    "description": "Migrate daw-frontend to apps/web/",
+    "dependencies": ["REFACTOR-001"],
+    "context_files": [
+      "packages/daw-frontend/package.json",
+      "packages/daw-frontend/src/**/*",
+      "packages/daw-frontend/tsconfig.json"
+    ],
+    "instruction": "Migrate frontend to apps/web/: (1) Move all files from packages/daw-frontend/ to apps/web/, (2) Update package.json name to '@daw/web', (3) Update all internal imports, (4) Update tsconfig paths if needed, (5) Run 'pnpm install' to verify, (6) Run 'pnpm dev' to verify frontend starts, (7) Run TypeScript check with 0 errors, (8) Delete empty packages/daw-frontend/ after verification.",
+    "verification": {
+      "type": "test_pass",
+      "command": "cd apps/web && pnpm typecheck && pnpm build"
+    }
+  },
+  {
+    "id": "REFACTOR-003",
+    "type": "refactor",
+    "priority": "P1",
+    "phase": 9,
+    "description": "Extract FastAPI server to apps/server/",
+    "dependencies": ["REFACTOR-001"],
+    "context_files": [
+      "packages/daw-agents/src/daw_agents/api/**/*",
+      "packages/daw-agents/src/daw_agents/workers/**/*",
+      "packages/daw-agents/src/daw_agents/auth/**/*"
+    ],
+    "instruction": "Extract server code to apps/server/: (1) Create apps/server/ with pyproject.toml, (2) Move API routes (api/), WebSocket handlers, middleware, Celery workers from daw-agents, (3) Server should import agents from packages/daw-agents as dependency, (4) Update all imports to reference daw-agents package, (5) Configure uvicorn entry point, (6) Test: 'uvicorn main:app' starts successfully, (7) Test: All API endpoints respond correctly.",
+    "verification": {
+      "type": "test_pass",
+      "command": "cd apps/server && poetry install && pytest tests/"
+    }
+  },
+  {
+    "id": "REFACTOR-004",
+    "type": "refactor",
+    "priority": "P1",
+    "phase": 9,
+    "description": "Refactor daw-agents to contain only agent definitions",
+    "dependencies": ["REFACTOR-003"],
+    "context_files": [
+      "packages/daw-agents/src/daw_agents/agents/**/*",
+      "packages/daw-agents/src/daw_agents/schemas/**/*",
+      "packages/daw-agents/prompts/**/*"
+    ],
+    "instruction": "Clean up daw-agents package: (1) After REFACTOR-003, remove API routes, Celery configs, middleware from daw-agents, (2) Keep ONLY: agents/ (planner, developer, validator, healer, uat), schemas/, prompts/, core utilities needed by agents, (3) Update __init__.py exports for clean agent library interface, (4) Package should be importable as library by apps/server, (5) Run all agent tests to verify nothing broken.",
+    "verification": {
+      "type": "test_pass",
+      "command": "cd packages/daw-agents && poetry install && pytest tests/agents/"
+    }
+  },
+  {
+    "id": "REFACTOR-005",
+    "type": "refactor",
+    "priority": "P2",
+    "phase": 9,
+    "description": "Create packages/daw-mcp/ for custom MCP servers",
+    "dependencies": ["REFACTOR-001"],
+    "context_files": [
+      "packages/daw-agents/src/daw_agents/mcp/**/*",
+      "docs/planning/architecture/sections/02_project_structure.md"
+    ],
+    "instruction": "Create MCP servers package: (1) Create packages/daw-mcp/ with pyproject.toml, (2) Create subdirectories: git-mcp/, graph-memory/, (3) Move MCP-related code from daw-agents/mcp/ if exists, (4) Implement MCP server registration per protocol spec, (5) Each server should be independently runnable, (6) Update docker-compose.yml to include MCP server containers if needed.",
+    "verification": {
+      "type": "test_pass",
+      "command": "cd packages/daw-mcp && poetry install && pytest tests/"
+    }
+  },
+  {
+    "id": "REFACTOR-006",
+    "type": "refactor",
+    "priority": "P2",
+    "phase": 9,
+    "description": "Rename daw-shared to daw-protocol",
+    "dependencies": ["REFACTOR-001"],
+    "context_files": [
+      "packages/daw-shared/**/*"
+    ],
+    "instruction": "Rename shared package: (1) Rename packages/daw-shared/ to packages/daw-protocol/, (2) Update package.json/pyproject.toml name to '@daw/protocol' or 'daw-protocol', (3) Search and replace all imports across entire codebase: 'daw-shared' -> 'daw-protocol', (4) Update pnpm-workspace.yaml if needed, (5) Run 'pnpm install' to verify, (6) Run full test suite to catch any missed imports.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pnpm install && pnpm test"
+    }
+  },
+  {
+    "id": "REFACTOR-007",
+    "type": "test",
+    "priority": "P0",
+    "phase": 9,
+    "description": "Comprehensive E2E validation post-refactor",
+    "dependencies": ["REFACTOR-002", "REFACTOR-003", "REFACTOR-004", "REFACTOR-005", "REFACTOR-006"],
+    "context_files": [
+      "docker-compose.yml",
+      "apps/web/package.json",
+      "apps/server/pyproject.toml"
+    ],
+    "instruction": "Full system validation: (1) Run all unit tests: pytest (Python), jest (TypeScript) - ALL MUST PASS, (2) Run integration tests, (3) Build Docker images: 'docker-compose build' succeeds, (4) Start full system: 'docker-compose up' - all services healthy, (5) Verify connectivity: frontend -> backend -> Neo4j/Redis, (6) Execute smoke tests: user auth flow, chat with planner, agent trace display, (7) Document any issues found and create follow-up tasks if needed. BLOCKING: No merge until this passes.",
+    "verification": {
+      "type": "test_pass",
+      "command": "docker-compose up -d && sleep 30 && curl -f http://localhost:3000/health && curl -f http://localhost:8000/health"
+    }
   }
 ]
