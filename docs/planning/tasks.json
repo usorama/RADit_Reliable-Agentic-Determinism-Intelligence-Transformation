@@ -101,7 +101,9 @@
     "verification": {
       "type": "file_exists",
       "path": "packages/daw-frontend/package.json"
-    }
+    },
+    "status": "completed",
+    "completed_at": "2025-12-30T11:20:10Z"
   },
   {
     "id": "AUTH-001",

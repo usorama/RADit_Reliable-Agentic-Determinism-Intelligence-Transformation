@@ -135,6 +135,40 @@ From `CLAUDE.md`:
 - Redis serves dual purpose (Celery + LangGraph checkpoints)
 - All agents using tools need CORE-003 (MCP Client) dependency
 
+## E2B Sandbox Execution
+
+**All code execution happens in E2B sandboxes, NOT locally.**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ E2B EXECUTION WORKFLOW                                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   1. Write code to local files (packages/*)                     │
+│   2. Commit changes: git add . && git commit                    │
+│   3. Push to GitHub: git push                                   │
+│   4. E2B sandbox clones repo and runs tests                     │
+│   5. Results returned (stdout, exit code)                       │
+│   6. Sandbox terminates automatically                           │
+│                                                                 │
+│   API Key: .creds/e2b_api_key.txt (loaded as E2B_API_KEY)       │
+│   Wrapper: CORE-004 (E2B Sandbox Wrapper)                       │
+│                                                                 │
+│   CRITICAL: Never run tests locally. Always use E2B.            │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### E2B Test Commands
+```bash
+# Tests run in E2B sandbox (via CORE-004 wrapper)
+# Python
+sandbox.run("pytest tests/test_{module}.py --cov={module}")
+
+# TypeScript
+sandbox.run("npm test -- --coverage")
+```
+
 ## Error Handling
 
 If you encounter issues:
