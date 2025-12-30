@@ -15,15 +15,14 @@ to prevent key collisions and enable independent management.
 
 import os
 from dataclasses import dataclass
-from typing import Optional
 
 try:
     from redis import Redis
     from redis.asyncio import Redis as AsyncRedis
-except ImportError:
+except ImportError as err:
     raise ImportError(
         "redis package not found. Install with: pip install redis"
-    )
+    ) from err
 
 
 @dataclass
@@ -44,7 +43,7 @@ class RedisConfig:
 
     host: str = ""
     port: int = 0
-    password: Optional[str] = None
+    password: str | None = None
     db_celery: int = 0
     db_langgraph: int = 1
 

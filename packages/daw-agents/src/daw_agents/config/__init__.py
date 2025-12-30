@@ -7,6 +7,6 @@ This package contains configuration for:
 - Model routing
 """
 
-from .redis import RedisConfig, get_redis_client, get_async_redis_client
+from .redis import RedisConfig, get_async_redis_client, get_redis_client
 
 __all__ = ["RedisConfig", "get_redis_client", "get_async_redis_client"]

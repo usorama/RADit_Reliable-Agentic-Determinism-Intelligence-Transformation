@@ -11,6 +11,12 @@ Exports:
     - ComparisonResult: Result from baseline comparison
     - ThresholdCheck: Individual threshold check result
     - GateLevel: Enum for threshold gate levels
+    - SimilarityScore: Result of similarity scoring
+    - SimilarityConfig: Configuration for similarity scoring
+    - DivergenceReport: Details of output divergence
+    - TextSimilarityScorer: Embedding-based text comparison
+    - CodeSimilarityScorer: AST-based code comparison
+    - AgentSimilarityEvaluator: Combined similarity evaluator
 """
 
 from daw_agents.eval.harness import EvalConfig, EvalHarness
@@ -21,6 +27,14 @@ from daw_agents.eval.metrics import (
     GateLevel,
     ThresholdCheck,
 )
+from daw_agents.eval.similarity import (
+    AgentSimilarityEvaluator,
+    CodeSimilarityScorer,
+    DivergenceReport,
+    SimilarityConfig,
+    SimilarityScore,
+    TextSimilarityScorer,
+)
 
 __all__ = [
     "EvalHarness",
@@ -30,4 +44,10 @@ __all__ = [
     "ComparisonResult",
     "ThresholdCheck",
     "GateLevel",
+    "SimilarityScore",
+    "SimilarityConfig",
+    "DivergenceReport",
+    "TextSimilarityScorer",
+    "CodeSimilarityScorer",
+    "AgentSimilarityEvaluator",
 ]
