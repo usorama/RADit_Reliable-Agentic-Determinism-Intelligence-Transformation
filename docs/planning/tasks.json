@@ -509,8 +509,9 @@
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/agents/planner/test_prd_generator.py"
     },
-    "status": "in_progress",
-    "started_at": "2025-12-30T10:00:00Z"
+    "status": "completed",
+    "started_at": "2025-12-30T10:00:00Z",
+    "completed_at": "2025-12-30T11:30:00Z"
   },
   {
     "id": "EXECUTOR-001",
@@ -577,8 +578,9 @@
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/workflow/test_rule_enforcer.py"
     },
-    "status": "in_progress",
-    "started_at": "2025-12-30T12:00:00Z"
+    "status": "completed",
+    "started_at": "2025-12-30T12:00:00Z",
+    "completed_at": "2025-12-30T13:57:47Z"
   },
   {
     "id": "VALIDATOR-001",

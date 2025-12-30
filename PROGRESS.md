@@ -1,8 +1,8 @@
 # Project Progress Dashboard
 
 **Project**: RADit / DAW (Deterministic Agentic Workbench)
-**Last Updated**: 2025-12-30T04:00:00Z
-**Current Phase**: Wave 7 - MCP Security Complete
+**Last Updated**: 2025-12-30T15:30:00Z
+**Current Phase**: Wave 7 - Content Injection Prevention Complete
 
 ---
 
@@ -11,9 +11,9 @@
 | Metric | Value | Target |
 |--------|-------|--------|
 | Tasks Defined | 52 | 52 |
-| Tasks Completed | 22 | 52 |
+| Tasks Completed | 25 | 52 |
 | Current Wave | 7 (UAT & Eval) | 10 |
-| Progress | 42% | 100% |
+| Progress | 48% | 100% |
 | Blockers | 0 | 0 |
 
 ---
@@ -24,13 +24,13 @@
 |-------|-------------|-------|--------|
 | Phase 0 | Infrastructure Setup | 4 | Complete |
 | Phase 1 | Core Foundations | 6 | Complete (6/6) |
-| Phase 2 | Security & Governance | 6 | In Progress (2/6) |
+| Phase 2 | Security & Governance | 6 | In Progress (3/6) |
 | Phase 3 | Core Agent Infrastructure | 4 | Complete (4/4) |
 | Phase 4 | Planner Agent | 5 | In Progress (3/5) |
 | Phase 5 | Executor Agent | 3 | In Progress (1/3) |
 | Phase 6 | Validator & Quality | 4 | In Progress (3/4) |
 | Phase 7 | UAT & Eval | 15 | In Progress (1/15) |
-| Phase 8 | Observability & Operations | 5 | Pending |
+| Phase 8 | Observability & Operations | 5 | In Progress (1/5) |
 
 > **New (2025-12-31)**: Added 2 self-evolution tasks (EVOLVE-001, EVOLVE-002) for learning foundation. Epic 11 added to epics_stories.md.
 
@@ -48,6 +48,8 @@
 
 | Task ID | Description | Completed | Duration |
 |---------|-------------|-----------|----------|
+| PRD-OUTPUT-001 | Implement PRD Output Format and Validation | 2025-12-30 11:30 | 1.5h |
+| EVOLVE-001 | Implement Experience Logger for Self-Learning | 2025-12-30 14:00 | 2.0h |
 | MCP-SEC-002 | Implement RBAC for MCP Tools | 2025-12-30 04:00 | 0.5h |
 | POLICY-001 | Implement Policy-as-Code Deployment Gates | 2025-12-30 04:00 | 0.5h |
 | STREAMING-001 | Implement WebSocket Streaming Infrastructure | 2025-12-30 12:30 | 0.5h |
@@ -156,6 +158,39 @@ ORCHESTRATOR [ ] ---------------------
 ---
 
 ## Session Log
+
+### 2025-12-30: DRIFT-001 Complete - Drift Detection Metrics
+- **14:00 UTC** Executed DRIFT-001: Implement Drift Detection Metrics (TDD workflow)
+  - Followed TDD workflow (Red -> Green -> Refactor -> Verify)
+  - Created comprehensive test suite with 35 tests covering:
+    - `DriftSeverity` enum - NORMAL, WARNING, CRITICAL, EMERGENCY severity levels
+    - `DriftAction` enum - LOG, ALERT, PAUSE_AGENT, FORCE_COMPACTION, BUDGET_ALERT, ESCALATE_TO_HUMAN
+    - `MetricType` enum - TOOL_USAGE, STEP_COUNT, CONTEXT_UTILIZATION, RETRY_RATE, TOKEN_COST
+    - `DriftMetric` Pydantic model - metric name, baseline, current, deviation_pct, severity
+    - `TaskMetrics` Pydantic model - per-task measurements with context utilization calculation
+    - `BaselineConfig` Pydantic model - configurable thresholds for all drift types
+    - `DriftDetector` class - main class for detecting behavioral drift
+  - Implementation features (per FR-05.1):
+    - Tool Usage Frequency: +50% deviation = WARNING (log warning)
+    - Reasoning Step Count: +100% increase = CRITICAL (pause agent)
+    - Context Window Utilization: >90% = WARNING (force compaction)
+    - Retry Rate: >3x baseline = CRITICAL (escalate to human)
+    - Token Cost per Task: +200% increase = WARNING (budget alert)
+    - Configurable thresholds via BaselineConfig
+    - Per-task-type baseline isolation
+    - Multiple drift detection in single evaluation
+  - Verification results:
+    - All 35 tests pass
+    - Test coverage: 95% for new code (well above 80% threshold)
+    - Linting: 0 errors (ruff)
+    - Type checking: 0 errors (mypy)
+  - **Files created:**
+    - `packages/daw-agents/src/daw_agents/ops/drift_detector.py` - DriftDetector implementation
+    - `packages/daw-agents/tests/ops/test_drift_detector.py` - Comprehensive tests (35 tests)
+  - **Unblocks downstream tasks:**
+    - DRIFT-002 (Drift Detection Alerting and Actions)
+    - EVOLVE-002 (Reflection Hook for Post-Task Learning)
+
 
 ### 2025-12-31: Self-Evolution Foundation Planning (Option A)
 - **03:00 UTC** Added Self-Evolution Foundation to planning documents
