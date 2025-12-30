@@ -44,7 +44,7 @@ deterministic-agent-workbench/
 ├── packages/
 │   ├── daw-agents/           # Contains BOTH agents AND server (to be separated)
 │   ├── daw-frontend/         # Frontend (to be moved to apps/web/)
-│   └── daw-shared/           # Shared types (to be renamed daw-protocol)
+│   └── daw-protocol/         # Shared Types/Schemas (Pydantic/Zod)
 ├── docs/
 ├── eval/
 ├── scripts/
