@@ -1,0 +1,178 @@
+name: Nightly Integration Tests
+
+on:
+  schedule:
+    # Run at 3 AM UTC daily
+    - cron: '0 3 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  E2B_API_KEY: ${{ secrets.E2B_API_KEY }}
+  NEO4J_URI: bolt://72.60.204.156:7687
+  NEO4J_USER: neo4j
+  NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+jobs:
+  integration-tests:
+    name: Run Integration Tests with Real Services
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.8.2
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: packages/daw-agents/.venv
+          key: ${{ runner.os }}-poetry-${{ hashFiles('packages/daw-agents/poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-
+
+      - name: Install dependencies
+        run: |
+          cd packages/daw-agents
+          poetry install --with dev
+
+      - name: Ensure eval_results directory exists
+        run: mkdir -p eval_results
+
+      - name: Run Integration Tests
+        id: integration-tests
+        run: |
+          cd packages/daw-agents
+          poetry run pytest tests/integration/ \
+            -m "integration" \
+            -v \
+            --tb=short \
+            --junitxml=../../eval_results/integration-$(date +%Y%m%d).xml \
+            2>&1 | tee ../../eval_results/integration-$(date +%Y%m%d).log
+        continue-on-error: true
+
+      - name: Generate Test Summary
+        if: always()
+        run: |
+          echo "## Integration Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Run Date:** $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow Run:** [${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.integration-tests.outcome }}" = "success" ]; then
+            echo "**Status:** :white_check_mark: All tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Status:** :x: Some tests failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-results-${{ github.run_number }}
+          path: eval_results/
+          retention-days: 30
+
+      - name: Check for test failures
+        if: steps.integration-tests.outcome == 'failure'
+        run: exit 1
+
+      - name: Notify on Failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": ":rotating_light: Nightly Integration Tests FAILED",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": ":rotating_light: Nightly Integration Tests Failed",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Repository:*\n${{ github.repository }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Run Number:*\n#${{ github.run_number }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Integration tests against real services (Neo4j, E2B) have failed.\n\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|:link: View Run Details>"
+                  }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "Triggered by: ${{ github.event_name }} | Branch: ${{ github.ref_name }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
+
+  notify-success:
+    name: Notify Success (Weekly Summary)
+    needs: integration-tests
+    runs-on: ubuntu-latest
+    # Only notify success on Mondays for weekly summary
+    if: success() && github.event.schedule == '0 3 * * 1'
+
+    steps:
+      - name: Notify Weekly Success
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": ":white_check_mark: Weekly Integration Test Summary - All Passing",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": ":white_check_mark: Weekly Integration Test Summary",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "All nightly integration tests passed this week!\n\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|:link: View Latest Run>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
