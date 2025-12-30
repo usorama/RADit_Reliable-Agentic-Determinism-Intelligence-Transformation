@@ -1,0 +1,891 @@
+[
+  {
+    "id": "CORE-001",
+    "type": "setup",
+    "priority": "P0",
+    "phase": 0,
+    "description": "Initialize Monorepo Structure",
+    "command": "mkdir -p packages/daw-agents packages/daw-frontend packages/daw-shared docs/scrum docs/stories docs/test_strategy",
+    "verification": {
+      "type": "file_exists",
+      "path": "packages/daw-agents"
+    }
+  },
+  {
+    "id": "INFRA-001",
+    "type": "setup",
+    "priority": "P0",
+    "phase": 0,
+    "description": "Configure MCP Servers (Git, FS, Postgres) and Docker Infrastructure",
+    "dependencies": [
+      "CORE-001"
+    ],
+    "command": "echo 'Create docker-compose.yml for mcp-servers, neo4j, and redis'",
+    "context_files": [
+      "docker-compose.yml"
+    ],
+    "instruction": "Define services for `git-mcp`, `filesystem-mcp`, `postgres-mcp`, `neo4j`, and `redis` with proper volume mounts and network isolation.",
+    "verification": {
+      "type": "file_exists",
+      "path": "docker-compose.yml"
+    }
+  },
+  {
+    "id": "INFRA-002",
+    "type": "setup",
+    "priority": "P0",
+    "phase": 0,
+    "description": "Configure Redis for Celery Broker and LangGraph Checkpoints",
+    "dependencies": [
+      "CORE-001"
+    ],
+    "context_files": [
+      "docker-compose.yml",
+      "packages/daw-agents/src/config/redis.py"
+    ],
+    "instruction": "Add Redis 7.x service to docker-compose.yml. Configure for dual use: (1) Celery message broker, (2) LangGraph checkpoint persistence. Set memory limits (maxmemory 256mb), persistence policy (RDB snapshots), and security (password auth). Create Python configuration module.",
+    "verification": {
+      "type": "test_pass",
+      "command": "docker-compose up -d redis && python -c 'import redis; r=redis.Redis(); r.ping()'"
+    }
+  },
+  {
+    "id": "PROMPT-GOV-001",
+    "type": "setup",
+    "priority": "P1",
+    "phase": 0,
+    "description": "Implement Prompt Template Governance Structure",
+    "dependencies": [
+      "CORE-001"
+    ],
+    "command": "mkdir -p packages/daw-agents/prompts/{planner,executor,validator,healer} tests/prompts/goldens",
+    "instruction": "Establish prompt governance structure: (1) All prompts stored in packages/daw-agents/{agent}/prompts/, (2) Prompts versioned with semantic versioning (e.g., prd_generator_v1.0.yaml), (3) Each prompt includes version, name, persona, system_prompt, validation_checklist, and output_schema fields. Changes require PR review by designated 'Prompt Engineers'.",
+    "verification": {
+      "type": "file_exists",
+      "path": "packages/daw-agents/prompts/planner"
+    }
+  },
+  {
+    "id": "CORE-002",
+    "type": "setup",
+    "priority": "P0",
+    "phase": 1,
+    "description": "Initialize Python Backend (FastAPI + LangGraph)",
+    "dependencies": [
+      "CORE-001"
+    ],
+    "command": "cd packages/daw-agents && poetry init -n --name daw-agents --description 'Deterministic Agentic Workbench Backend' && poetry add fastapi uvicorn langgraph langchain-openai litellm",
+    "verification": {
+      "type": "file_exists",
+      "path": "packages/daw-agents/pyproject.toml"
+    }
+  },
+  {
+    "id": "FRONTEND-001",
+    "type": "setup",
+    "priority": "P0",
+    "phase": 1,
+    "description": "Initialize Next.js Frontend",
+    "dependencies": [
+      "CORE-001"
+    ],
+    "command": "npx create-next-app@latest packages/daw-frontend --typescript --tailwind --eslint",
+    "verification": {
+      "type": "file_exists",
+      "path": "packages/daw-frontend/package.json"
+    }
+  },
+  {
+    "id": "AUTH-001",
+    "type": "setup",
+    "priority": "P0",
+    "phase": 1,
+    "description": "Initialize Clerk Authentication",
+    "dependencies": [
+      "CORE-001"
+    ],
+    "command": "echo 'Create Clerk application and get API Keys'",
+    "verification": {
+      "type": "file_exists",
+      "path": "packages/daw-agents/.env"
+    }
+  },
+  {
+    "id": "DB-001",
+    "type": "code",
+    "priority": "P0",
+    "phase": 1,
+    "description": "Implement Neo4j Connector",
+    "dependencies": [
+      "CORE-002"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/memory/neo4j.py"
+    ],
+    "instruction": "Create a singleton class to manage Neo4j connections and simple graph read/write queries.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/test_neo4j.py"
+    }
+  },
+  {
+    "id": "CORE-003",
+    "type": "code",
+    "priority": "P0",
+    "phase": 1,
+    "description": "Implement MCP Client Interface (Protocol Layer)",
+    "dependencies": [
+      "CORE-002"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/mcp/client.py"
+    ],
+    "instruction": "Create a generic MCP client wrapper that can discover tools from a connected MCP server. Must support JSON-RPC.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/test_mcp_client.py"
+    }
+  },
+  {
+    "id": "MODEL-001",
+    "type": "code",
+    "priority": "P0",
+    "phase": 1,
+    "description": "Implement Model Layer Abstraction with Router Mode",
+    "dependencies": [
+      "CORE-002"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/models/router.py",
+      "packages/daw-agents/src/models/providers.py"
+    ],
+    "instruction": "Implement model abstraction layer using LiteLLM. Create Router Mode to select models based on task complexity: o1/opus for planning tasks, sonnet/haiku for coding, gpt-4o for validation (to ensure different model from executor). Include model configuration, fallback logic, and cost tracking integration with Helicone. See FR-01.1 in PRD.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/models/test_router.py"
+    }
+  },
+  {
+    "id": "AUTH-002",
+    "type": "code",
+    "priority": "P0",
+    "phase": 2,
+    "description": "Implement FastAPI Middleware for Clerk",
+    "dependencies": [
+      "CORE-002",
+      "AUTH-001"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/auth/clerk.py"
+    ],
+    "instruction": "Verify JWT tokens from incoming requests against Clerk JWKS.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/test_auth.py"
+    }
+  },
+  {
+    "id": "MCP-SEC-001",
+    "type": "code",
+    "priority": "P1",
+    "phase": 2,
+    "description": "Implement MCP Gateway Authorization (OAuth 2.1 + RFC 8707)",
+    "dependencies": [
+      "CORE-003",
+      "AUTH-002"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/mcp/gateway.py",
+      "packages/daw-agents/src/mcp/auth.py"
+    ],
+    "instruction": "Harden the MCP gateway with OAuth 2.1 and RFC 8707 Resource Indicators: (1) Per-agent scoped tokens (e.g., database agent: SELECT only, no DDL), (2) Token TTL: 15 minutes for automated sessions, 1 hour for interactive, (3) Implement token refresh and revocation mechanisms, (4) Validate all tool calls against agent's granted scopes. See FR-01.3.1 in PRD.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/mcp/test_gateway_auth.py"
+    }
+  },
+  {
+    "id": "MCP-SEC-002",
+    "type": "code",
+    "priority": "P1",
+    "phase": 2,
+    "description": "Implement RBAC for MCP Tools",
+    "dependencies": [
+      "MCP-SEC-001"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/mcp/rbac.py",
+      "packages/daw-agents/src/mcp/policies.yaml"
+    ],
+    "instruction": "Implement fine-grained Role-Based Access Control for tools: Planner: search, read_file, query_db (SELECT) - No writes; Executor: read_file, write_file, git_commit - write_file scoped to project directory; Validator: run_tests, security_scan, lint - No file writes; Healer: read_file, write_file (patches only) - Requires human approval for production. Store policies in YAML configuration. See FR-01.3.2 in PRD.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/mcp/test_rbac.py"
+    }
+  },
+  {
+    "id": "MCP-SEC-003",
+    "type": "code",
+    "priority": "P1",
+    "phase": 2,
+    "description": "Implement MCP Audit Logging",
+    "dependencies": [
+      "MCP-SEC-001"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/mcp/audit.py"
+    ],
+    "instruction": "Every tool call must be logged with: timestamp, agent_id, user_id, tool name, action, parameters, result status, response time. Implement hash-chaining for tamper resistance. Configure 7-year retention for SOC 2/ISO 27001 compliance. Integrate with observability stack (Helicone). See FR-01.3.3 in PRD.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/mcp/test_audit.py"
+    }
+  },
+  {
+    "id": "MCP-SEC-004",
+    "type": "code",
+    "priority": "P1",
+    "phase": 2,
+    "description": "Implement Content Injection Prevention",
+    "dependencies": [
+      "MCP-SEC-001"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/mcp/shields.py"
+    ],
+    "instruction": "Implement AI Prompt Shields for tool output sanitization. Create JSON schema validation for all tool inputs/outputs. Block dangerous command patterns: DROP, DELETE, rm -rf, sudo, and similar destructive operations. Integrate with the gateway to reject malicious requests before execution. See FR-01.3.4 in PRD.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/mcp/test_shields.py"
+    }
+  },
+  {
+    "id": "PROMPT-GOV-002",
+    "type": "code",
+    "priority": "P1",
+    "phase": 2,
+    "description": "Implement Prompt Regression Testing Harness",
+    "dependencies": [
+      "PROMPT-GOV-001",
+      "CORE-002"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/testing/prompt_harness.py",
+      "tests/prompts/conftest.py"
+    ],
+    "instruction": "Create a prompt testing harness that: (1) Stores golden input/output pairs in tests/prompts/goldens/, (2) Runs prompt regression tests on every prompt file change in CI, (3) Uses semantic similarity scoring against golden outputs (configurable threshold), (4) Performs automated JSON schema validation for structured outputs, (5) Reports prompt drift/degradation metrics. Integrate with pytest for CI execution.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest tests/prompts/test_prompt_regression.py"
+    }
+  },
+  {
+    "id": "CORE-004",
+    "type": "code",
+    "priority": "P0",
+    "phase": 3,
+    "description": "Implement E2B Sandbox Wrapper (Security Layer)",
+    "dependencies": [
+      "CORE-002"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/sandbox/e2b_wrapper.py"
+    ],
+    "instruction": "Create a wrapper around E2B SDK. Must enforce strict timeout, CPU/RAM limits, and network allowlist capabilities. Ensure sandbox cleanup on completion/error.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/test_sandbox.py"
+    }
+  },
+  {
+    "id": "CORE-005",
+    "type": "code",
+    "priority": "P0",
+    "phase": 3,
+    "description": "Implement 'Red-Green-Refactor' Enforcement Logic",
+    "dependencies": [
+      "CORE-002"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/workflow/tdd_guard.py"
+    ],
+    "instruction": "Create a logic module that checks for the existence of a failing test file before allowing 'Implementation' tools to be called. Must block writes to src/ until tests/ file exists and fails.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/test_tdd_guard.py"
+    }
+  },
+  {
+    "id": "CORE-006",
+    "type": "code",
+    "priority": "P0",
+    "phase": 3,
+    "description": "Implement Context Compaction Logic",
+    "dependencies": [
+      "CORE-002",
+      "DB-001"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/memory/compactor.py"
+    ],
+    "instruction": "Create a module that summarizes conversation history and relevant graph nodes into a concise 'System Prompt' string. Must produce < 4000 tokens from 1000+ message history.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/test_compactor.py"
+    }
+  },
+  {
+    "id": "OPS-001",
+    "type": "code",
+    "priority": "P0",
+    "phase": 3,
+    "description": "Implement Helicone Observability Proxy",
+    "dependencies": [
+      "CORE-002"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/ops/helicone.py"
+    ],
+    "instruction": "Wrap OpenAI/LiteLLM client calls to route through Helicone proxy for cost tracking. Attach request metadata (user_id, project_id, agent_type). Enable caching with configurable TTL.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/test_ops.py"
+    }
+  },
+  {
+    "id": "PLANNER-001",
+    "type": "code",
+    "priority": "P1",
+    "phase": 4,
+    "description": "Implement 'Taskmaster' Agent Workflow",
+    "dependencies": [
+      "CORE-002",
+      "DB-001",
+      "CORE-003",
+      "MODEL-001"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/agents/planner/graph.py"
+    ],
+    "instruction": "Implement LangGraph state machine. States: [Interview, Roundtable, GeneratePRD]. Configurable personas. Use MODEL-001 router for model selection. Persist conversation to Neo4j.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/agents/planner/test_graph.py"
+    }
+  },
+  {
+    "id": "PLANNER-002",
+    "type": "code",
+    "priority": "P1",
+    "phase": 4,
+    "description": "Implement 'Roundtable' Personas",
+    "dependencies": [
+      "PLANNER-001"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/agents/planner/personas.py"
+    ],
+    "instruction": "Define prompts for CTO, UX, and Security synthetic personas to critique concepts. Each persona provides distinct critique perspective.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/agents/planner/test_personas.py"
+    }
+  },
+  {
+    "id": "COMPLEXITY-001",
+    "type": "code",
+    "priority": "P1",
+    "phase": 4,
+    "description": "Implement Complexity Analysis Engine",
+    "dependencies": [
+      "PLANNER-001",
+      "CORE-003"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/agents/planner/complexity_analyzer.py",
+      "packages/daw-agents/src/schemas/complexity_analysis.py"
+    ],
+    "instruction": "Before any code is written, the system must analyze the PRD to produce complexity_analysis.json containing: (1) Feature-by-feature cognitive load scores (1-10), (2) Dependency graph with risk ratings (low/medium/high/critical), (3) Recommended model tier per task (planning: o1/opus, coding: sonnet/haiku), (4) Architectural bottleneck warnings and mitigation strategies. The analysis MUST complete successfully before task generation proceeds. Integrate with FR-02.4 Task Decomposition to inform task sizing in tasks.json. See FR-02.5 in PRD.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/agents/planner/test_complexity_analyzer.py"
+    }
+  },
+  {
+    "id": "TASK-DECOMP-001",
+    "type": "code",
+    "priority": "P0",
+    "phase": 4,
+    "description": "Implement Task Decomposition Agent (PRD -> tasks.json)",
+    "dependencies": [
+      "PLANNER-001",
+      "COMPLEXITY-001"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/agents/planner/task_decomposer.py",
+      "packages/daw-agents/src/schemas/task_schema.py"
+    ],
+    "instruction": "Implement agent that automatically parses prd.md into tasks.json format. Use complexity scores from COMPLEXITY-001 to inform task sizing. Generate task IDs, dependencies, context files, and verification criteria. Output must conform to existing tasks.json schema. Validate all tasks before emitting. See FR-02.4.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/agents/planner/test_task_decomposer.py"
+    }
+  },
+  {
+    "id": "PRD-OUTPUT-001",
+    "type": "code",
+    "priority": "P1",
+    "phase": 4,
+    "description": "Implement PRD Output Format and Validation",
+    "dependencies": [
+      "PLANNER-001"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/agents/planner/prd_generator.py",
+      "packages/daw-agents/src/schemas/prd_schema.py"
+    ],
+    "instruction": "Define and implement PRD.md output format: (1) User Stories section with priority levels, (2) Tech Specs with architecture decisions, (3) Acceptance Criteria in testable format, (4) Non-functional requirements. Create JSON schema for PRD structure. Validate completeness before allowing Task Decomposition to proceed. See FR-02.3.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/agents/planner/test_prd_generator.py"
+    }
+  },
+  {
+    "id": "EXECUTOR-001",
+    "type": "code",
+    "priority": "P1",
+    "phase": 5,
+    "description": "Implement 'Developer' Agent Workflow",
+    "dependencies": [
+      "CORE-005",
+      "CORE-004",
+      "CORE-003",
+      "MODEL-001"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/agents/developer/graph.py"
+    ],
+    "instruction": "Implement the Red-Green-Refactor loop graph. States: [WriteTest, RunTest, WriteCode, Refactor]. Use MODEL-001 router for model selection. Use MCP client (CORE-003) for tool calls.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/agents/developer/test_graph.py"
+    }
+  },
+  {
+    "id": "OPS-002",
+    "type": "code",
+    "priority": "P1",
+    "phase": 5,
+    "description": "Implement 'Healer' Agent Workflow",
+    "dependencies": [
+      "EXECUTOR-001",
+      "DB-001",
+      "CORE-003"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/agents/healer/graph.py"
+    ],
+    "instruction": "Implement a specialized graph that takes a failed ToolOutput, queries Neo4j knowledge graph for similar past errors, and suggests a fix. Store successful error resolutions for future RAG. Auto-retry up to 3 times.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/agents/healer/test_graph.py"
+    }
+  },
+  {
+    "id": "RULES-001",
+    "type": "code",
+    "priority": "P1",
+    "phase": 5,
+    "description": "Implement Rule Enforcement (.cursorrules / Linter Integration)",
+    "dependencies": [
+      "EXECUTOR-001"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/workflow/rule_enforcer.py",
+      ".cursorrules"
+    ],
+    "instruction": "Implement coding style enforcement in Executor workflow. Parse .cursorrules file for style constraints. Integrate with Ruff (Python) and ESLint (TypeScript) for automatic linting. Code must pass all lint checks before being accepted in Green phase. Auto-fix minor issues where possible. See FR-03.4.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/workflow/test_rule_enforcer.py"
+    }
+  },
+  {
+    "id": "VALIDATOR-001",
+    "type": "code",
+    "priority": "P0",
+    "phase": 6,
+    "description": "Implement Validator Agent (DISTINCT from Sandbox)",
+    "dependencies": [
+      "CORE-002",
+      "MODEL-001",
+      "CORE-003"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/agents/validator/graph.py",
+      "packages/daw-agents/src/agents/validator/tools.py",
+      "packages/daw-agents/src/agents/validator/prompts/validator_v1.yaml"
+    ],
+    "instruction": "Implement a Validator Agent as a LangGraph workflow DISTINCT from the sandbox execution environment. The Validator Agent must: (1) Run on a DIFFERENT model than Executor via MODEL-001 router (e.g., if Executor uses Claude, Validator uses GPT-4o), (2) Execute test suites and interpret results intelligently, (3) Run SAST security scans via tool integration, (4) Perform SCA vulnerability scanning, (5) Validate against organizational policies, (6) Generate actionable improvement suggestions (not just pass/fail), (7) Implement retry logic routing fixable failures back to Executor (max 3 retries), (8) Escalate critical/unfixable issues to human reviewers. States: [run_tests, security_scan, policy_check, generate_report, route_decision]. CRITICAL: Validator is architecturally SEPARATE from Sandbox (CORE-004). See FR-04.2 in PRD and Section 6 in Architecture.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/agents/validator/test_graph.py"
+    }
+  },
+  {
+    "id": "VALIDATOR-002",
+    "type": "code",
+    "priority": "P0",
+    "phase": 6,
+    "description": "Implement Multi-Model Validation Ensemble",
+    "dependencies": [
+      "VALIDATOR-001"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/agents/validator/ensemble.py"
+    ],
+    "instruction": "Implement ensemble validation using 2+ models for critical validations. Create a voting/consensus mechanism where multiple models must agree on pass/fail decisions for high-stakes validations. Configure which validations require ensemble (e.g., security-critical, production deployments).",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/agents/validator/test_ensemble.py"
+    }
+  },
+  {
+    "id": "POLICY-001",
+    "type": "code",
+    "priority": "P0",
+    "phase": 6,
+    "description": "Implement Policy-as-Code Deployment Gates",
+    "dependencies": [
+      "VALIDATOR-001"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/deploy/gates.py",
+      "packages/daw-agents/src/deploy/policies.yaml",
+      ".github/workflows/deploy.yml"
+    ],
+    "instruction": "Implement codified deployment policies enforced automatically. Gate 1 (Code Quality - BLOCKING): Test coverage >= 80% new code, >= 70% total; TypeScript strict mode enabled; 0 linting errors. Gate 2 (Security - BLOCKING): 0 SAST critical findings; 0 SCA critical CVEs; 0 secrets detected. Gate 3 (Performance - WARNING): API p95 < 500ms; Bundle size increase < 10%. Gate 4 (UAT - BLOCKING for prod): All P0 user journeys pass; Visual regression < 0.1%. See Architecture section 05_deployment.md.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/deploy/test_gates.py"
+    }
+  },
+  {
+    "id": "POLICY-002",
+    "type": "code",
+    "priority": "P0",
+    "phase": 6,
+    "description": "Implement Zero-Copy Fork for Database Migrations",
+    "dependencies": [
+      "DB-001",
+      "POLICY-001"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/deploy/migration.py",
+      ".github/workflows/migration.yml"
+    ],
+    "instruction": "Implement safe database migration pattern: (1) Create zero-copy fork of production database (instant, no data duplication), (2) Apply migration to fork, (3) Run full validation suite on fork, (4) If all tests pass, apply migration to production, (5) If any test fails, discard fork with zero production impact. Integrate with CI/CD pipeline. See Architecture section 05_deployment.md.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/deploy/test_migration.py"
+    }
+  },
+  {
+    "id": "API-001",
+    "type": "code",
+    "priority": "P1",
+    "phase": 7,
+    "description": "Define FastAPI Route Endpoints",
+    "dependencies": [
+      "CORE-002",
+      "AUTH-002"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/api/routes.py",
+      "packages/daw-agents/src/api/schemas.py"
+    ],
+    "instruction": "Define FastAPI routes: POST /api/chat (send message to Planner), GET /api/workflow/{id} (get workflow status), POST /api/workflow/{id}/approve (human approval), DELETE /api/workflow/{id} (cancel workflow), WebSocket /ws/trace/{id} (real-time updates). All routes protected by Clerk auth middleware. Include OpenAPI documentation.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/api/test_routes.py"
+    }
+  },
+  {
+    "id": "STREAMING-001",
+    "type": "code",
+    "priority": "P1",
+    "phase": 7,
+    "description": "Implement WebSocket Streaming Infrastructure",
+    "dependencies": [
+      "CORE-002",
+      "FRONTEND-001"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/api/websocket.py",
+      "packages/daw-frontend/src/hooks/useAgentStream.ts"
+    ],
+    "instruction": "Implement WebSocket infrastructure for real-time agent updates: (1) FastAPI WebSocket endpoint with auth, (2) LangGraph callback to emit state transitions, (3) Frontend hook to connect and receive updates, (4) Reconnection logic with exponential backoff. Support multiple concurrent clients per workflow.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/api/test_websocket.py"
+    }
+  },
+  {
+    "id": "FRONTEND-AUTH-001",
+    "type": "code",
+    "priority": "P1",
+    "phase": 7,
+    "description": "Integrate Clerk React SDK in Frontend",
+    "dependencies": [
+      "FRONTEND-001",
+      "AUTH-001"
+    ],
+    "context_files": [
+      "packages/daw-frontend/src/providers/AuthProvider.tsx",
+      "packages/daw-frontend/src/components/auth/SignIn.tsx",
+      "packages/daw-frontend/src/middleware.ts"
+    ],
+    "instruction": "Integrate Clerk React SDK: (1) Create ClerkProvider wrapper, (2) Implement SignIn/SignUp components, (3) Add protected route middleware, (4) Create user session hook, (5) Display user info in header. Use @clerk/nextjs package.",
+    "verification": {
+      "type": "file_exists",
+      "path": "packages/daw-frontend/src/providers/AuthProvider.tsx"
+    }
+  },
+  {
+    "id": "FRONTEND-002",
+    "type": "code",
+    "priority": "P1",
+    "phase": 7,
+    "description": "Implement Agent Trace UI",
+    "dependencies": [
+      "FRONTEND-001",
+      "STREAMING-001"
+    ],
+    "context_files": [
+      "packages/daw-frontend/src/components/AgentTrace.tsx"
+    ],
+    "instruction": "Create a React component to visualize the LangGraph state stream via WebSocket. Live 'thought bubble' shows agent reasoning in real-time. Expandable/collapsible trace sections. Trace persisted for replay.",
+    "verification": {
+      "type": "file_exists",
+      "path": "packages/daw-frontend/src/components/AgentTrace.tsx"
+    }
+  },
+  {
+    "id": "FRONTEND-003",
+    "type": "code",
+    "priority": "P0",
+    "phase": 7,
+    "description": "Implement Chat Interface for Planner Interaction",
+    "dependencies": [
+      "FRONTEND-001",
+      "STREAMING-001"
+    ],
+    "context_files": [
+      "packages/daw-frontend/src/components/ChatInterface.tsx",
+      "packages/daw-frontend/src/hooks/useChat.ts"
+    ],
+    "instruction": "Create chat interface component allowing users to interact with Planner agent. Support: (1) Markdown rendering with syntax highlighting, (2) Code block copy buttons, (3) File attachment uploads, (4) Typing indicators, (5) Message history. Connect to backend via WebSocket for real-time streaming responses. This is the primary user entry point for the system.",
+    "verification": {
+      "type": "file_exists",
+      "path": "packages/daw-frontend/src/components/ChatInterface.tsx"
+    }
+  },
+  {
+    "id": "INFRA-003",
+    "type": "code",
+    "priority": "P1",
+    "phase": 7,
+    "description": "Configure Celery Workers for Background Processing",
+    "dependencies": [
+      "INFRA-002"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/workers/celery_app.py",
+      "packages/daw-agents/src/workers/tasks.py"
+    ],
+    "instruction": "Configure Celery 5.x for background agent task processing: (1) Define Celery app with Redis broker, (2) Create task queue definitions (planner, executor, validator), (3) Set concurrency and prefetch settings, (4) Implement retry policies with exponential backoff, (5) Add task result backend (Redis).",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/workers/test_celery.py"
+    }
+  },
+  {
+    "id": "EVAL-001",
+    "type": "setup",
+    "priority": "P0",
+    "phase": 7,
+    "description": "Establish Eval Protocol Golden Benchmark Suite",
+    "dependencies": [
+      "PLANNER-001",
+      "EXECUTOR-001"
+    ],
+    "command": "mkdir -p eval/benchmarks/{calculator,todo_app,ecommerce_checkout} eval/goldens eval/results",
+    "context_files": [
+      "eval/README.md",
+      "eval/benchmarks/index.json"
+    ],
+    "instruction": "Establish golden benchmark infrastructure: (1) Create 10-20 representative PRDs (Calculator, ToDo App, E-commerce Checkout, etc.), (2) Store expected outputs (tests, code, architecture) as golden references, (3) Define scoring rubrics for each benchmark, (4) Create benchmark index file with metadata. See test_strategy.md Section 4.",
+    "verification": {
+      "type": "file_exists",
+      "path": "eval/benchmarks/index.json"
+    }
+  },
+  {
+    "id": "EVAL-002",
+    "type": "code",
+    "priority": "P0",
+    "phase": 7,
+    "description": "Implement Eval Harness with Performance Metrics",
+    "dependencies": [
+      "EVAL-001",
+      "VALIDATOR-001"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/eval/harness.py",
+      "packages/daw-agents/src/eval/metrics.py"
+    ],
+    "instruction": "Implement eval harness using DeepEval or Braintrust framework. Track metrics: pass@1 (first attempt success) >= 85% release blocking; Task Completion Rate >= 90% release blocking; pass^8 (8-trial consistency) >= 60% warning; Cost per Task < $0.50 avg advisory. Integrate with CI for nightly runs. Performance regression > 5% triggers alert. Store timestamped results in eval_results/. See test_strategy.md Section 4.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/eval/test_harness.py"
+    }
+  },
+  {
+    "id": "EVAL-003",
+    "type": "code",
+    "priority": "P0",
+    "phase": 7,
+    "description": "Implement Agent Similarity Scoring",
+    "dependencies": [
+      "EVAL-002"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/eval/similarity.py"
+    ],
+    "instruction": "Implement semantic similarity scoring for agent outputs against golden references. Agent must achieve >= 85% similarity score on golden PRDs. Use embedding-based comparison for textual outputs and AST comparison for code outputs. Report detailed breakdown of where outputs diverge.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/eval/test_similarity.py"
+    }
+  },
+  {
+    "id": "UAT-001",
+    "type": "code",
+    "priority": "P1",
+    "phase": 7,
+    "description": "Implement UAT Agent with Playwright MCP",
+    "dependencies": [
+      "VALIDATOR-001",
+      "FRONTEND-002",
+      "CORE-003"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/agents/uat/graph.py",
+      "packages/daw-agents/src/agents/uat/tools.py",
+      "packages/daw-agents/src/agents/uat/personas.yaml"
+    ],
+    "instruction": "Implement UAT Agent using Playwright MCP for browser automation. The agent must: (1) Operate on accessibility snapshots (not screenshots) for determinism and speed, (2) Support cross-browser testing (Chromium, Firefox, WebKit), (3) Execute Gherkin scenarios (Given/When/Then) translated from PRD acceptance criteria, (4) Generate validation reports with screenshots, traces, and timing. See FR-06 in PRD.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/agents/uat/test_graph.py"
+    }
+  },
+  {
+    "id": "UAT-002",
+    "type": "code",
+    "priority": "P1",
+    "phase": 7,
+    "description": "Implement Persona-Based UAT Testing",
+    "dependencies": [
+      "UAT-001"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/agents/uat/personas.yaml",
+      "packages/daw-agents/src/agents/uat/persona_engine.py"
+    ],
+    "instruction": "Define and implement user personas in uat/personas.yaml: 'Power User' (Desktop, fast network, uses keyboard shortcuts), 'First-Time User' (Mobile, 3G network, help-seeking behavior), 'Accessibility User' (Screen reader, keyboard-only navigation). Each persona modifies how the UAT Agent interacts with the UI. See FR-06.2 in PRD.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/agents/uat/test_personas.py"
+    }
+  },
+  {
+    "id": "UAT-003",
+    "type": "code",
+    "priority": "P1",
+    "phase": 7,
+    "description": "Implement Visual Regression Testing",
+    "dependencies": [
+      "UAT-001"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/agents/uat/visual_regression.py"
+    ],
+    "instruction": "Integrate AI-powered visual comparison (Applitools Eyes or equivalent). Threshold: < 0.1% pixel difference for critical UI components. Implement automatic baseline updates for approved intentional changes. Store baseline images with version control. See FR-06.4 in PRD.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/agents/uat/test_visual_regression.py"
+    }
+  },
+  {
+    "id": "DRIFT-001",
+    "type": "code",
+    "priority": "P2",
+    "phase": 8,
+    "description": "Implement Drift Detection Metrics",
+    "dependencies": [
+      "OPS-001",
+      "EXECUTOR-001"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/ops/drift_detector.py",
+      "packages/daw-agents/src/ops/metrics.py"
+    ],
+    "instruction": "Implement drift detection monitoring: Tool Usage Frequency (+50% deviation = log warning), Reasoning Step Count (+100% increase = pause agent), Context Window Utilization (>90% = force compaction), Retry Rate (>3x baseline = escalate to human), Token Cost per Task (+200% increase = budget alert). Track baselines per task type. See FR-05.1 in PRD.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/ops/test_drift_detector.py"
+    }
+  },
+  {
+    "id": "DRIFT-002",
+    "type": "code",
+    "priority": "P2",
+    "phase": 8,
+    "description": "Implement Drift Detection Alerting and Actions",
+    "dependencies": [
+      "DRIFT-001"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/ops/alerts.py",
+      "packages/daw-agents/src/ops/actions.py"
+    ],
+    "instruction": "Implement drift response system: (1) Integrate with observability stack (Helicone, Datadog), (2) Slack/Linear notifications for drift detection, (3) Weekly drift report generation, (4) Action triggers: Mild drift = increase monitoring + log; Moderate drift = context compaction + model switch; Severe drift = pause agent + human intervention required. See FR-05.1 in PRD.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/ops/test_alerts.py"
+    }
+  },
+  {
+    "id": "ORCHESTRATOR-001",
+    "type": "code",
+    "priority": "P0",
+    "phase": 8,
+    "description": "Implement Main Workflow Orchestrator (Planning -> Coding -> Testing)",
+    "dependencies": [
+      "MODEL-001",
+      "PLANNER-001",
+      "EXECUTOR-001",
+      "VALIDATOR-001"
+    ],
+    "context_files": [
+      "packages/daw-agents/src/workflow/orchestrator.py",
+      "packages/daw-agents/src/workflow/states.py"
+    ],
+    "instruction": "Implement the main LangGraph workflow orchestrator that enforces the sequence: User Input -> Planner (Interview/Roundtable/GeneratePRD) -> Task Decomposition -> Executor (Red/Green/Refactor loop for each task) -> Validator -> Deployment Gates. Manage state transitions, checkpoints (Redis-backed via INFRA-002), and human-in-the-loop interrupts. This is the core workflow engine per FR-01.4. CRITICAL: This is the main entry point that coordinates all other agents.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/daw-agents/tests/workflow/test_orchestrator.py"
+    }
+  }
+]
