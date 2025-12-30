@@ -927,7 +927,10 @@
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/agents/uat/test_personas.py"
-    }
+    },
+    "status": "completed",
+    "started_at": "2025-12-31T01:00:00Z",
+    "completed_at": "2025-12-31T01:30:00Z"
   },
   {
     "id": "UAT-003",
@@ -945,7 +948,10 @@
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/agents/uat/test_visual_regression.py"
-    }
+    },
+    "status": "completed",
+    "started_at": "2025-12-31T01:00:00Z",
+    "completed_at": "2025-12-31T01:30:00Z"
   },
   {
     "id": "DRIFT-001",

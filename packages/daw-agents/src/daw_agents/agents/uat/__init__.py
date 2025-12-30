@@ -47,11 +47,14 @@ from daw_agents.agents.uat.models import (
     ValidationResult,
 )
 from daw_agents.agents.uat.parser import GherkinParser
+from daw_agents.agents.uat.persona_engine import PersonaConfig, PersonaEngine
 from daw_agents.agents.uat.state import UATState
 
 __all__ = [
     "GherkinParser",
     "GherkinStep",
+    "PersonaConfig",
+    "PersonaEngine",
     "UATAgent",
     "UATResult",
     "UATState",

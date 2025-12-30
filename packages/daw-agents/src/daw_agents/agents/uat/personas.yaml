@@ -73,3 +73,93 @@ uat_agent:
       - total_ms
       - navigation_ms
       - setup_ms
+
+# User Personas for UAT Testing (UAT-002)
+#
+# These personas represent different types of users with unique characteristics
+# and interaction patterns. The PersonaEngine applies these configurations to
+# modify UAT testing behavior.
+
+personas:
+  # Power User: Desktop, fast network, keyboard shortcuts
+  power_user:
+    name: "Power User"
+    description: |
+      An experienced user on a desktop with a fast network connection.
+      Uses keyboard shortcuts extensively and expects fast response times.
+    browser: "chromium"
+    viewport:
+      width: 1920
+      height: 1080
+    network:
+      speed: "fast"
+      latency: 10
+      bandwidth: 100000  # 100 Mbps
+    behaviors:
+      - "keyboard_shortcuts"
+      - "fast_typing"
+      - "minimal_mouse_usage"
+      - "expects_fast_response"
+      - "power_user_workflows"
+    interactions:
+      mode: "keyboard_first"
+      pace: "fast"
+      navigation: "tab_key"
+      selection: "keyboard_shortcuts"
+
+  # First-Time User: Mobile, 3G network, help-seeking behavior
+  first_time_user:
+    name: "First-Time User"
+    description: |
+      A new user on a mobile device with a slow 3G connection.
+      Reads all text, hesitant with clicks, and seeks guidance.
+    browser: "webkit"  # Safari-like
+    viewport:
+      width: 375
+      height: 812  # iPhone X dimensions
+    network:
+      speed: "slow_3g"
+      latency: 400
+      bandwidth: 750  # 750 Kbps
+    behaviors:
+      - "help_seeking"
+      - "reads_all_text"
+      - "hesitant_clicks"
+      - "needs_guidance"
+      - "slow_pace"
+    interactions:
+      mode: "touch"
+      pace: "slow"
+      navigation: "tap"
+      selection: "tap_and_hold"
+
+  # Accessibility User: Screen reader, keyboard-only navigation
+  accessibility_user:
+    name: "Accessibility User"
+    description: |
+      A user relying on screen reader and keyboard-only navigation.
+      Requires proper ARIA labels and focus management.
+    browser: "firefox"
+    viewport:
+      width: 1280
+      height: 800
+    network:
+      speed: "fast"
+      latency: 10
+      bandwidth: 100000
+    behaviors:
+      - "screen_reader"
+      - "keyboard_only"
+      - "relies_on_aria"
+      - "focus_order_critical"
+      - "high_contrast"
+    interactions:
+      mode: "keyboard_only"
+      pace: "methodical"
+      navigation: "tab_and_arrows"
+      selection: "enter_and_space"
+    screen_reader_type: "nvda"
+    accessibility_features:
+      reduced_motion: true
+      high_contrast: true
+      forced_colors: "active"
