@@ -8,16 +8,20 @@ This module defines the API routes:
 - DELETE /api/workflow/{id}: Cancel/delete workflow
 - WebSocket /ws/trace/{id}: Real-time updates
 
-All routes are protected by Clerk auth middleware.
+All routes are protected by Clerk auth middleware (bypassed in dev mode).
 """
 
 import logging
+import os
 import uuid
 from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+# Development bypass mode - allows testing without Clerk credentials
+DEV_BYPASS_AUTH = os.getenv("DEV_BYPASS_AUTH", "false").lower() == "true"
 
 from daw_server.api.schemas import (
     ApprovalAction,
@@ -220,6 +224,32 @@ def create_auth_dependency(config: ClerkConfig) -> Any:
     Returns:
         Dependency function that returns ClerkUser
     """
+    # Dev bypass mode - return mock user without verification
+    if DEV_BYPASS_AUTH:
+        logger.warning("⚠️  DEV_BYPASS_AUTH enabled - authentication is disabled!")
+
+        async def verify_user_dev(
+            credentials: HTTPAuthorizationCredentials | None = Depends(
+                lambda: None  # Make credentials optional in dev mode
+            ),
+        ) -> ClerkUser:
+            """Return mock user in dev mode."""
+            return ClerkUser(
+                user_id="dev-user-001",
+                email="dev@localhost",
+                name="Dev User",
+                claims={
+                    "sub": "dev-user-001",
+                    "email": "dev@localhost",
+                    "name": "Dev User",
+                    "role": "admin",
+                    "dev_mode": True,
+                },
+            )
+
+        return verify_user_dev
+
+    # Production mode - verify JWT tokens
     verifier = ClerkJWTVerifier(config)
 
     async def verify_user(
