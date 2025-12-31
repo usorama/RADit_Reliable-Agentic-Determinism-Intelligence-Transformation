@@ -26,6 +26,33 @@ from daw_server.api.schemas import (
     ChatRequest,
     ChatResponse,
     DeleteWorkflowResponse,
+    Dependency,
+    InterviewAnswerRequest,
+    InterviewAnswerResponse,
+    InterviewStatusResponse,
+    KanbanBoardResponse,
+    KanbanColumnEnum,
+    KanbanColumnInfo,
+    KanbanStats,
+    KanbanTask,
+    KanbanUpdateRequest,
+    KanbanUpdateResponse,
+    Phase,
+    PRDReviewAction,
+    PRDReviewRequest,
+    PRDReviewResponse,
+    QuestionSchema,
+    QuestionTypeEnum,
+    Story,
+    StoryPriority,
+    Task,
+    TaskComplexity,
+    TaskPriorityEnum,
+    TaskReviewAction,
+    TaskReviewRequest,
+    TaskReviewResponse,
+    TasksListResponse,
+    TaskType,
     WebSocketMessage,
     WorkflowStatus,
     WorkflowStatusEnum,
@@ -476,6 +503,147 @@ def create_router(config: ClerkConfig) -> APIRouter:
         )
 
     # -------------------------------------------------------------------------
+    # POST /workflow/{workflow_id}/prd-review - PRD approval gate
+    # -------------------------------------------------------------------------
+
+    @router.post(
+        "/workflow/{workflow_id}/prd-review",
+        response_model=PRDReviewResponse,
+        summary="Review the generated PRD",
+        description="Approve, reject, or request modifications to the generated PRD before task execution begins.",
+        responses={
+            200: {"description": "PRD review action processed"},
+            400: {"description": "Invalid action or workflow not awaiting PRD approval"},
+            401: {"description": "Authentication required"},
+            403: {"description": "Access denied"},
+            404: {"description": "Workflow not found"},
+        },
+    )
+    async def review_prd(
+        workflow_id: str,
+        request: PRDReviewRequest,
+        user: ClerkUser = Depends(verify_user),
+    ) -> PRDReviewResponse:
+        """Handle PRD review action (approve, reject, modify).
+
+        This is the human-in-the-loop checkpoint for PRD approval.
+        Users must review and approve the PRD before the system proceeds
+        to task decomposition and execution.
+
+        Args:
+            workflow_id: The workflow ID
+            request: PRD review request with action and optional feedback
+            user: Authenticated user
+
+        Returns:
+            PRD review response with new status
+
+        Raises:
+            HTTPException: 400 if workflow not awaiting PRD approval
+            HTTPException: 403 if not owner
+            HTTPException: 404 if not found
+        """
+        # Validate UUID format
+        try:
+            uuid.UUID(workflow_id)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Invalid workflow ID format. Expected UUID.",
+            ) from e
+
+        workflow = WorkflowManager.get_workflow(workflow_id)
+        if workflow is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Workflow {workflow_id} not found",
+            )
+
+        # Verify ownership
+        if not WorkflowManager.user_owns_workflow(user.user_id, workflow_id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have access to this workflow",
+            )
+
+        # Verify workflow is in AWAITING_PRD_APPROVAL status
+        current_status = workflow.get("status")
+        if current_status != WorkflowStatusEnum.AWAITING_PRD_APPROVAL:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Workflow is not awaiting PRD approval. Current status: {current_status}",
+            )
+
+        # Validate feedback is provided for reject/modify actions
+        if request.action in [PRDReviewAction.REJECT, PRDReviewAction.MODIFY]:
+            if not request.feedback or not request.feedback.strip():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Feedback is required for {request.action.value} action",
+                )
+
+        # Process PRD review action
+        now = datetime.now(UTC)
+
+        if request.action == PRDReviewAction.APPROVE:
+            new_status = WorkflowStatusEnum.EXECUTING
+            message = "PRD approved. Proceeding to task execution."
+            prd = workflow.get("prd")
+        elif request.action == PRDReviewAction.REJECT:
+            new_status = WorkflowStatusEnum.PLANNING
+            message = "PRD rejected. Returning to interview phase with feedback."
+            prd = None
+        elif request.action == PRDReviewAction.MODIFY:
+            new_status = WorkflowStatusEnum.PLANNING
+            message = "PRD modification requested. Regenerating with feedback."
+            prd = workflow.get("prd")
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid PRD review action",
+            )
+
+        # Log the audit entry
+        audit_log = workflow.get("audit_log", [])
+        audit_entry = {
+            "timestamp": now.isoformat(),
+            "user_id": user.user_id,
+            "action": f"prd_{request.action.value}",
+            "artifact_type": "prd",
+            "feedback": request.feedback,
+            "previous_status": str(current_status),
+            "new_status": new_status.value,
+        }
+        audit_log.append(audit_entry)
+
+        # Update workflow
+        WorkflowManager.update_workflow(
+            workflow_id,
+            {
+                "status": new_status,
+                "prd_review_action": request.action.value,
+                "prd_review_feedback": request.feedback,
+                "prd_review_timestamp": now.isoformat(),
+                "prd_review_user_id": user.user_id,
+                "audit_log": audit_log,
+            },
+        )
+
+        logger.info(
+            "PRD review action: workflow=%s action=%s user=%s",
+            workflow_id,
+            request.action.value,
+            user.user_id,
+        )
+
+        return PRDReviewResponse(
+            success=True,
+            status=new_status,
+            prd=prd,
+            message=message,
+        )
+
+    # -------------------------------------------------------------------------
     # DELETE /workflow/{workflow_id} - Cancel/delete workflow
     # -------------------------------------------------------------------------
 
@@ -539,7 +707,820 @@ def create_router(config: ClerkConfig) -> APIRouter:
             message="Workflow deleted successfully",
         )
 
+    # -------------------------------------------------------------------------
+    # GET /workflow/{workflow_id}/tasks - Get workflow tasks
+    # -------------------------------------------------------------------------
+
+    @router.get(
+        "/workflow/{workflow_id}/tasks",
+        response_model=TasksListResponse,
+        summary="Get workflow tasks",
+        description="Retrieve the decomposed tasks for a workflow.",
+        responses={
+            200: {"description": "Task list with phases, stories, and dependencies"},
+            401: {"description": "Authentication required"},
+            403: {"description": "Access denied"},
+            404: {"description": "Workflow not found"},
+        },
+    )
+    async def get_workflow_tasks(
+        workflow_id: str,
+        user: ClerkUser = Depends(verify_user),
+    ) -> TasksListResponse:
+        """Get decomposed tasks for a workflow.
+
+        Args:
+            workflow_id: The workflow ID (UUID format)
+            user: Authenticated user
+
+        Returns:
+            TasksListResponse with phases, stories, tasks, and dependencies
+        """
+        # Validate UUID format
+        try:
+            uuid.UUID(workflow_id)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Invalid workflow ID format. Expected UUID.",
+            ) from e
+
+        workflow = WorkflowManager.get_workflow(workflow_id)
+        if workflow is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Workflow {workflow_id} not found",
+            )
+
+        # Verify ownership
+        if not WorkflowManager.user_owns_workflow(user.user_id, workflow_id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have access to this workflow",
+            )
+
+        # Get tasks from workflow storage
+        # For MVP, return mock data structure until orchestrator produces real tasks
+        stored_tasks = workflow.get("tasks", None)
+        if stored_tasks is not None:
+            return TasksListResponse(**stored_tasks)
+
+        # Return mock data for development/testing
+        # In production, orchestrator populates these fields
+        mock_tasks = _generate_mock_tasks(workflow_id)
+        return mock_tasks
+
+    # -------------------------------------------------------------------------
+    # POST /workflow/{workflow_id}/tasks-review - Review tasks
+    # -------------------------------------------------------------------------
+
+    @router.post(
+        "/workflow/{workflow_id}/tasks-review",
+        response_model=TaskReviewResponse,
+        summary="Review workflow tasks",
+        description="Approve or reject the decomposed tasks for a workflow.",
+        responses={
+            200: {"description": "Task review processed"},
+            400: {"description": "Invalid request"},
+            401: {"description": "Authentication required"},
+            403: {"description": "Access denied"},
+            404: {"description": "Workflow not found"},
+        },
+    )
+    async def review_workflow_tasks(
+        workflow_id: str,
+        request: TaskReviewRequest,
+        user: ClerkUser = Depends(verify_user),
+    ) -> TaskReviewResponse:
+        """Review and approve/reject workflow tasks.
+
+        Args:
+            workflow_id: The workflow ID (UUID format)
+            request: TaskReviewRequest with action and optional feedback
+            user: Authenticated user
+
+        Returns:
+            TaskReviewResponse with new status
+        """
+        # Validate UUID format
+        try:
+            uuid.UUID(workflow_id)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Invalid workflow ID format. Expected UUID.",
+            ) from e
+
+        workflow = WorkflowManager.get_workflow(workflow_id)
+        if workflow is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Workflow {workflow_id} not found",
+            )
+
+        # Verify ownership
+        if not WorkflowManager.user_owns_workflow(user.user_id, workflow_id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have access to this workflow",
+            )
+
+        # Validate workflow is in correct status
+        current_status = workflow.get("status")
+        if current_status != WorkflowStatusEnum.AWAITING_TASK_APPROVAL:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Workflow is not awaiting task approval. Current status: {current_status}",
+            )
+
+        # Process review action
+        if request.action == TaskReviewAction.APPROVE:
+            new_status = WorkflowStatusEnum.EXECUTING
+            message = "Tasks approved. Starting execution."
+        elif request.action == TaskReviewAction.REJECT:
+            if not request.feedback:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Feedback is required when rejecting tasks.",
+                )
+            new_status = WorkflowStatusEnum.PLANNING
+            message = "Tasks rejected. Returning to planning with feedback."
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid review action",
+            )
+
+        # Update workflow
+        WorkflowManager.update_workflow(
+            workflow_id,
+            {
+                "status": new_status,
+                "task_review_feedback": request.feedback,
+                "task_review_action": request.action,
+            },
+        )
+
+        return TaskReviewResponse(
+            success=True,
+            workflow_id=workflow_id,
+            status=new_status,
+            message=message,
+        )
+
+    # -------------------------------------------------------------------------
+    # GET /workflow/{workflow_id}/kanban - Get Kanban board state
+    # -------------------------------------------------------------------------
+
+    @router.get(
+        "/workflow/{workflow_id}/kanban",
+        response_model=KanbanBoardResponse,
+        summary="Get Kanban board state",
+        description="Retrieve the current Kanban board state for a workflow.",
+        responses={
+            200: {"description": "Kanban board state"},
+            401: {"description": "Authentication required"},
+            403: {"description": "Access denied"},
+            404: {"description": "Workflow not found"},
+        },
+    )
+    async def get_kanban_board(
+        workflow_id: str,
+        user: ClerkUser = Depends(verify_user),
+    ) -> KanbanBoardResponse:
+        """Get Kanban board state for a workflow.
+
+        Args:
+            workflow_id: The workflow ID (UUID format)
+            user: Authenticated user
+
+        Returns:
+            KanbanBoardResponse with columns, tasks, and stats
+        """
+        # Validate UUID format
+        try:
+            uuid.UUID(workflow_id)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Invalid workflow ID format. Expected UUID.",
+            ) from e
+
+        workflow = WorkflowManager.get_workflow(workflow_id)
+        if workflow is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Workflow {workflow_id} not found",
+            )
+
+        # Verify ownership
+        if not WorkflowManager.user_owns_workflow(user.user_id, workflow_id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have access to this workflow",
+            )
+
+        # Get Kanban data from workflow storage or generate mock
+        kanban_data = workflow.get("kanban_tasks")
+        if kanban_data is not None:
+            return KanbanBoardResponse(**kanban_data)
+
+        # Generate mock Kanban board from tasks
+        return _generate_kanban_board(workflow_id, workflow)
+
+    # -------------------------------------------------------------------------
+    # PATCH /workflow/{workflow_id}/kanban/{task_id} - Update task position
+    # -------------------------------------------------------------------------
+
+    @router.patch(
+        "/workflow/{workflow_id}/kanban/{task_id}",
+        response_model=KanbanUpdateResponse,
+        summary="Update task position on Kanban board",
+        description="Move a task to a different column or update its priority.",
+        responses={
+            200: {"description": "Task updated successfully"},
+            401: {"description": "Authentication required"},
+            403: {"description": "Access denied"},
+            404: {"description": "Workflow or task not found"},
+        },
+    )
+    async def update_kanban_task(
+        workflow_id: str,
+        task_id: str,
+        request: KanbanUpdateRequest,
+        user: ClerkUser = Depends(verify_user),
+    ) -> KanbanUpdateResponse:
+        """Update a task's position on the Kanban board.
+
+        Args:
+            workflow_id: The workflow ID (UUID format)
+            task_id: The task ID to update
+            request: KanbanUpdateRequest with new column and optional priority
+            user: Authenticated user
+
+        Returns:
+            KanbanUpdateResponse with updated task
+        """
+        # Validate UUID format
+        try:
+            uuid.UUID(workflow_id)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Invalid workflow ID format. Expected UUID.",
+            ) from e
+
+        workflow = WorkflowManager.get_workflow(workflow_id)
+        if workflow is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Workflow {workflow_id} not found",
+            )
+
+        # Verify ownership
+        if not WorkflowManager.user_owns_workflow(user.user_id, workflow_id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have access to this workflow",
+            )
+
+        # Get or generate Kanban data
+        kanban_data = workflow.get("kanban_tasks")
+        if kanban_data is None:
+            # Generate initial Kanban board
+            kanban_response = _generate_kanban_board(workflow_id, workflow)
+            kanban_data = {
+                "tasks": [t.model_dump(mode="json") for t in kanban_response.tasks],
+            }
+            workflow["kanban_tasks"] = kanban_data
+
+        # Find and update the task
+        tasks = kanban_data.get("tasks", [])
+        task_found = False
+        updated_task = None
+
+        for i, task in enumerate(tasks):
+            if task["id"] == task_id:
+                task_found = True
+                # Update column
+                task["column"] = request.column.value
+                # Update priority if provided
+                if request.priority is not None:
+                    task["priority"] = request.priority.value
+                # Update timestamp
+                task["updated_at"] = datetime.now(UTC).isoformat()
+                updated_task = KanbanTask(**task)
+                tasks[i] = task
+                break
+
+        if not task_found:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Task {task_id} not found in workflow {workflow_id}",
+            )
+
+        # Save updated Kanban data
+        kanban_data["tasks"] = tasks
+        WorkflowManager.update_workflow(workflow_id, {"kanban_tasks": kanban_data})
+
+        return KanbanUpdateResponse(
+            success=True,
+            task=updated_task,
+            message=f"Task moved to {request.column.value}",
+        )
+
+    # -------------------------------------------------------------------------
+    # GET /workflow/{workflow_id}/interview-status - Get interview status
+    # -------------------------------------------------------------------------
+
+    @router.get(
+        "/workflow/{workflow_id}/interview-status",
+        response_model=InterviewStatusResponse,
+        summary="Get interview status",
+        description="Retrieve the current state of the requirements interview.",
+        responses={
+            200: {"description": "Interview status"},
+            401: {"description": "Authentication required"},
+            403: {"description": "Access denied"},
+            404: {"description": "Workflow not found or no interview in progress"},
+        },
+    )
+    async def get_interview_status(
+        workflow_id: str,
+        user: ClerkUser = Depends(verify_user),
+    ) -> InterviewStatusResponse:
+        """Get the current interview status for a workflow.
+
+        Args:
+            workflow_id: The workflow ID (UUID format)
+            user: Authenticated user
+
+        Returns:
+            InterviewStatusResponse with current interview state
+        """
+        # Validate UUID format
+        try:
+            uuid.UUID(workflow_id)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Invalid workflow ID format. Expected UUID.",
+            ) from e
+
+        workflow = WorkflowManager.get_workflow(workflow_id)
+        if workflow is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Workflow {workflow_id} not found",
+            )
+
+        # Verify ownership
+        if not WorkflowManager.user_owns_workflow(user.user_id, workflow_id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have access to this workflow",
+            )
+
+        # Get interview state from workflow
+        interview_state = workflow.get("interview_state")
+        if interview_state is None:
+            # No interview in progress - return empty state
+            return InterviewStatusResponse(
+                current_question=0,
+                total_questions=0,
+                questions=[],
+                answers={},
+                completed=False,
+            )
+
+        # Convert interview state to response schema
+        questions = [
+            QuestionSchema(
+                id=q.get("id", f"Q-{i}"),
+                type=QuestionTypeEnum(q.get("type", "text")),
+                text=q.get("text", ""),
+                options=q.get("options"),
+                required=q.get("required", True),
+                context=q.get("context"),
+            )
+            for i, q in enumerate(interview_state.get("questions", []))
+        ]
+
+        return InterviewStatusResponse(
+            current_question=interview_state.get("current_index", 0),
+            total_questions=len(questions),
+            questions=questions,
+            answers=interview_state.get("answers", {}),
+            completed=interview_state.get("completed", False),
+        )
+
+    # -------------------------------------------------------------------------
+    # POST /workflow/{workflow_id}/interview-answer - Submit interview answer
+    # -------------------------------------------------------------------------
+
+    @router.post(
+        "/workflow/{workflow_id}/interview-answer",
+        response_model=InterviewAnswerResponse,
+        summary="Submit interview answer",
+        description="Submit an answer to the current interview question.",
+        responses={
+            200: {"description": "Answer accepted, next question or completion"},
+            400: {"description": "Invalid answer or no interview in progress"},
+            401: {"description": "Authentication required"},
+            403: {"description": "Access denied"},
+            404: {"description": "Workflow not found"},
+        },
+    )
+    async def submit_interview_answer(
+        workflow_id: str,
+        request: InterviewAnswerRequest,
+        user: ClerkUser = Depends(verify_user),
+    ) -> InterviewAnswerResponse:
+        """Submit an answer to an interview question.
+
+        Args:
+            workflow_id: The workflow ID (UUID format)
+            request: InterviewAnswerRequest with question_id and answer
+            user: Authenticated user
+
+        Returns:
+            InterviewAnswerResponse with next question or completion status
+        """
+        # Validate UUID format
+        try:
+            uuid.UUID(workflow_id)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Invalid workflow ID format. Expected UUID.",
+            ) from e
+
+        workflow = WorkflowManager.get_workflow(workflow_id)
+        if workflow is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Workflow {workflow_id} not found",
+            )
+
+        # Verify ownership
+        if not WorkflowManager.user_owns_workflow(user.user_id, workflow_id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have access to this workflow",
+            )
+
+        # Get interview state from workflow
+        interview_state = workflow.get("interview_state")
+        if interview_state is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No interview in progress for this workflow",
+            )
+
+        if interview_state.get("completed", False):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Interview is already completed",
+            )
+
+        # Verify question exists
+        questions = interview_state.get("questions", [])
+        question_ids = [q.get("id") for q in questions]
+        if request.question_id not in question_ids:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Question {request.question_id} not found in interview",
+            )
+
+        # Add the answer
+        answers = dict(interview_state.get("answers", {}))
+        answers[request.question_id] = request.answer
+
+        # Calculate new current index
+        current_idx = interview_state.get("current_index", 0)
+        for i, q in enumerate(questions):
+            if q.get("id") == request.question_id and i >= current_idx:
+                current_idx = i + 1
+                break
+
+        # Check completion
+        if request.skip_remaining:
+            # Check if all required questions are answered
+            unanswered_required = [
+                q
+                for q in questions
+                if q.get("required", True) and q.get("id") not in answers
+            ]
+            if unanswered_required:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Cannot skip: {len(unanswered_required)} required "
+                    "questions unanswered",
+                )
+            completed = True
+            current_idx = len(questions)
+        else:
+            # Check if all required questions are answered
+            completed = all(
+                q.get("id") in answers
+                for q in questions
+                if q.get("required", True)
+            )
+
+        # Update interview state
+        updated_interview = {
+            **interview_state,
+            "answers": answers,
+            "current_index": current_idx,
+            "completed": completed,
+        }
+
+        # Update workflow
+        WorkflowManager.update_workflow(
+            workflow_id,
+            {"interview_state": updated_interview},
+        )
+
+        # Find next unanswered question
+        next_question: QuestionSchema | None = None
+        if not completed:
+            for q in questions:
+                if q.get("id") not in answers:
+                    next_question = QuestionSchema(
+                        id=q.get("id", ""),
+                        type=QuestionTypeEnum(q.get("type", "text")),
+                        text=q.get("text", ""),
+                        options=q.get("options"),
+                        required=q.get("required", True),
+                        context=q.get("context"),
+                    )
+                    break
+
+        return InterviewAnswerResponse(
+            next_question=next_question,
+            complete=completed,
+            answers_count=len(answers),
+            total_questions=len(questions),
+        )
+
     return router
+
+
+def _generate_mock_tasks(workflow_id: str) -> TasksListResponse:
+    """Generate mock task data for development/testing.
+
+    In production, the orchestrator populates real task data.
+
+    Args:
+        workflow_id: The workflow ID
+
+    Returns:
+        TasksListResponse with mock data
+    """
+    # Create mock tasks
+    task1 = Task(
+        id=f"{workflow_id}-task-1",
+        description="Set up project structure and dependencies",
+        type=TaskType.SETUP,
+        complexity=TaskComplexity.LOW,
+        dependencies=[],
+        estimated_hours=1.0,
+    )
+    task2 = Task(
+        id=f"{workflow_id}-task-2",
+        description="Implement core data models",
+        type=TaskType.CODE,
+        complexity=TaskComplexity.MEDIUM,
+        dependencies=[f"{workflow_id}-task-1"],
+        estimated_hours=3.0,
+    )
+    task3 = Task(
+        id=f"{workflow_id}-task-3",
+        description="Write unit tests for data models",
+        type=TaskType.TEST,
+        complexity=TaskComplexity.MEDIUM,
+        dependencies=[f"{workflow_id}-task-2"],
+        estimated_hours=2.0,
+    )
+    task4 = Task(
+        id=f"{workflow_id}-task-4",
+        description="Implement API endpoints",
+        type=TaskType.CODE,
+        complexity=TaskComplexity.HIGH,
+        dependencies=[f"{workflow_id}-task-2"],
+        estimated_hours=4.0,
+    )
+    task5 = Task(
+        id=f"{workflow_id}-task-5",
+        description="Write API documentation",
+        type=TaskType.DOCS,
+        complexity=TaskComplexity.LOW,
+        dependencies=[f"{workflow_id}-task-4"],
+        estimated_hours=1.5,
+    )
+
+    # Create mock stories
+    story1 = Story(
+        id=f"{workflow_id}-story-1",
+        title="Project Setup",
+        priority=StoryPriority.P0,
+        tasks=[task1],
+    )
+    story2 = Story(
+        id=f"{workflow_id}-story-2",
+        title="Core Implementation",
+        priority=StoryPriority.P0,
+        tasks=[task2, task3],
+    )
+    story3 = Story(
+        id=f"{workflow_id}-story-3",
+        title="API Development",
+        priority=StoryPriority.P1,
+        tasks=[task4, task5],
+    )
+
+    # Create mock phases
+    phase1 = Phase(
+        id=f"{workflow_id}-phase-1",
+        name="Foundation",
+        description="Set up project foundation and core components",
+        stories=[story1, story2],
+    )
+    phase2 = Phase(
+        id=f"{workflow_id}-phase-2",
+        name="Features",
+        description="Implement main features and API",
+        stories=[story3],
+    )
+
+    # Create dependencies
+    dependencies = [
+        Dependency(source_id=task1.id, target_id=task2.id),
+        Dependency(source_id=task2.id, target_id=task3.id),
+        Dependency(source_id=task2.id, target_id=task4.id),
+        Dependency(source_id=task4.id, target_id=task5.id),
+    ]
+
+    # Flatten tasks and stories
+    all_tasks = [task1, task2, task3, task4, task5]
+    all_stories = [story1, story2, story3]
+
+    return TasksListResponse(
+        phases=[phase1, phase2],
+        stories=all_stories,
+        tasks=all_tasks,
+        dependencies=dependencies,
+    )
+
+
+# -----------------------------------------------------------------------------
+# Kanban Board Helpers
+# -----------------------------------------------------------------------------
+
+# Human-readable column titles
+COLUMN_TITLES: dict[KanbanColumnEnum, str] = {
+    KanbanColumnEnum.BACKLOG: "Backlog",
+    KanbanColumnEnum.PLANNING: "Planning",
+    KanbanColumnEnum.CODING: "Coding",
+    KanbanColumnEnum.VALIDATING: "Validating",
+    KanbanColumnEnum.DEPLOYING: "Deploying",
+    KanbanColumnEnum.DONE: "Done",
+}
+
+
+def _generate_kanban_board(
+    workflow_id: str, workflow: dict[str, Any]
+) -> KanbanBoardResponse:
+    """Generate Kanban board data from workflow tasks.
+
+    Converts workflow tasks into Kanban format with columns and statistics.
+
+    Args:
+        workflow_id: The workflow ID
+        workflow: The workflow data dictionary
+
+    Returns:
+        KanbanBoardResponse with columns, tasks, and stats
+    """
+    now = datetime.now(UTC)
+
+    # Get tasks from workflow or generate mock
+    tasks_data = workflow.get("tasks")
+    if tasks_data is None:
+        # Use mock tasks
+        mock_response = _generate_mock_tasks(workflow_id)
+        tasks_list = mock_response.tasks
+    else:
+        tasks_list = tasks_data.get("tasks", [])
+
+    # Convert tasks to KanbanTask format
+    kanban_tasks: list[KanbanTask] = []
+    for i, task in enumerate(tasks_list):
+        # Determine column based on task state
+        if isinstance(task, dict):
+            task_id = task.get("id", f"{workflow_id}-task-{i}")
+            description = task.get("description", "Task")
+            deps = task.get("dependencies", [])
+            complexity = task.get("complexity", "medium")
+        else:
+            task_id = task.id
+            description = task.description
+            deps = task.dependencies
+            complexity = task.complexity.value if hasattr(task, "complexity") else "medium"
+
+        # Determine priority from complexity
+        priority = TaskPriorityEnum.P2
+        if complexity == "high":
+            priority = TaskPriorityEnum.P0
+        elif complexity == "medium":
+            priority = TaskPriorityEnum.P1
+
+        # Default to backlog column
+        column = KanbanColumnEnum.BACKLOG
+
+        # Create short title from description
+        title = description[:50] if len(description) > 50 else description
+
+        kanban_task = KanbanTask(
+            id=task_id,
+            title=title,
+            description=description,
+            column=column,
+            priority=priority,
+            assigned_agent=None,
+            dependencies=deps if isinstance(deps, list) else [],
+            dependents=[],
+            updated_at=now,
+            created_at=now,
+        )
+        kanban_tasks.append(kanban_task)
+
+    # Build dependents list for each task
+    task_id_set = {t.id for t in kanban_tasks}
+    for task in kanban_tasks:
+        for dep_id in task.dependencies:
+            if dep_id in task_id_set:
+                for other in kanban_tasks:
+                    if other.id == dep_id:
+                        other.dependents.append(task.id)
+
+    # Count tasks per column
+    column_counts: dict[KanbanColumnEnum, int] = {col: 0 for col in KanbanColumnEnum}
+    for task in kanban_tasks:
+        column_counts[task.column] += 1
+
+    total_tasks = len(kanban_tasks)
+    done_count = column_counts[KanbanColumnEnum.DONE]
+
+    # Build column info
+    columns: list[KanbanColumnInfo] = []
+    for col in KanbanColumnEnum:
+        count = column_counts[col]
+        progress = (count / total_tasks * 100) if total_tasks > 0 else 0.0
+        columns.append(
+            KanbanColumnInfo(
+                id=col,
+                title=COLUMN_TITLES[col],
+                count=count,
+                progress_percent=progress,
+            )
+        )
+
+    # Calculate stats
+    in_progress_cols = {
+        KanbanColumnEnum.PLANNING,
+        KanbanColumnEnum.CODING,
+        KanbanColumnEnum.VALIDATING,
+        KanbanColumnEnum.DEPLOYING,
+    }
+    in_progress_count = sum(column_counts[c] for c in in_progress_cols)
+
+    # Count blocked tasks (tasks with unmet dependencies)
+    blocked_count = 0
+    for task in kanban_tasks:
+        if task.column != KanbanColumnEnum.DONE:
+            for dep_id in task.dependencies:
+                dep_task = next((t for t in kanban_tasks if t.id == dep_id), None)
+                if dep_task and dep_task.column != KanbanColumnEnum.DONE:
+                    blocked_count += 1
+                    break
+
+    completion_percent = (done_count / total_tasks * 100) if total_tasks > 0 else 0.0
+
+    stats = KanbanStats(
+        total_tasks=total_tasks,
+        completed_tasks=done_count,
+        in_progress_tasks=in_progress_count,
+        blocked_tasks=blocked_count,
+        completion_percent=completion_percent,
+    )
+
+    return KanbanBoardResponse(
+        columns=columns,
+        tasks=kanban_tasks,
+        stats=stats,
+        last_updated=now,
+    )
 
 
 # -----------------------------------------------------------------------------

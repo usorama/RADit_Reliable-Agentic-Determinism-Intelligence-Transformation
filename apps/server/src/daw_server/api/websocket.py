@@ -39,6 +39,14 @@ class EventType(str, Enum):
     DISCONNECTED = "DISCONNECTED"
 
 
+class KanbanEventType(str, Enum):
+    """Types of kanban-specific events that can be streamed to clients."""
+
+    TASK_UPDATE = "kanban_update"
+    FULL_SYNC = "kanban_sync"
+    AGENT_ACTIVITY = "kanban_agent_activity"
+
+
 class AgentStreamEvent(BaseModel):
     """Model for events streamed to WebSocket clients.
 
@@ -53,6 +61,92 @@ class AgentStreamEvent(BaseModel):
     workflow_id: str
     data: dict[str, Any] = Field(default_factory=dict)
     timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
+class KanbanTask(BaseModel):
+    """Model for a task on the kanban board.
+
+    Attributes:
+        id: Unique task identifier
+        title: Short title for the task
+        description: Full description of the task
+        column: Current column/stage
+        priority: Task priority (P0, P1, P2)
+        assigned_agent: Agent currently assigned to this task (if any)
+        dependencies: List of task IDs this task depends on
+        dependents: List of task IDs that depend on this task
+        updated_at: ISO timestamp of last update
+        created_at: ISO timestamp of creation
+    """
+
+    id: str
+    title: str
+    description: str = ""
+    column: str
+    priority: str = "P2"
+    assigned_agent: str | None = None
+    dependencies: list[str] = Field(default_factory=list)
+    dependents: list[str] = Field(default_factory=list)
+    updated_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
+    created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
+
+
+class TaskUpdatePayload(BaseModel):
+    """Payload for a task update event.
+
+    Attributes:
+        task: The updated task
+        previous_column: Previous column (for undo)
+        source: Source of the update (user, agent, system)
+    """
+
+    task: KanbanTask
+    previous_column: str | None = None
+    source: str = "system"
+
+
+class FullSyncPayload(BaseModel):
+    """Payload for a full sync event.
+
+    Attributes:
+        tasks: All tasks in the workflow
+        server_timestamp: Server timestamp for synchronization
+    """
+
+    tasks: list[KanbanTask]
+    server_timestamp: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
+
+
+class AgentActivityPayload(BaseModel):
+    """Payload for an agent activity event.
+
+    Attributes:
+        task_id: Task ID the agent is working on
+        agent_name: Agent name
+        activity: Activity type (started, completed, failed, paused)
+        details: Additional details
+    """
+
+    task_id: str
+    agent_name: str
+    activity: str
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
+class KanbanWebSocketEvent(BaseModel):
+    """Model for kanban events streamed to WebSocket clients.
+
+    Attributes:
+        type: Event type (kanban_update, kanban_sync, kanban_agent_activity)
+        workflow_id: ID of the workflow this event belongs to
+        payload: Event payload (varies by type)
+        timestamp: When the event occurred (defaults to now)
+    """
+
+    type: KanbanEventType
+    workflow_id: str
+    payload: TaskUpdatePayload | FullSyncPayload | AgentActivityPayload
+    timestamp: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
 class ReconnectionConfig(BaseModel):
@@ -533,15 +627,164 @@ def get_default_manager() -> WebSocketManager:
     return _default_manager
 
 
+class KanbanBroadcaster:
+    """Broadcaster for kanban-specific events.
+
+    Provides convenience methods for broadcasting task updates, full syncs,
+    and agent activity events to all connected clients for a workflow.
+
+    Attributes:
+        _manager: The WebSocketManager to use for broadcasting
+    """
+
+    def __init__(self, manager: WebSocketManager | None = None) -> None:
+        """Initialize the broadcaster.
+
+        Args:
+            manager: WebSocketManager for broadcasting events (uses default if None)
+        """
+        self._manager = manager or get_default_manager()
+
+    async def broadcast_task_update(
+        self,
+        workflow_id: str,
+        task: KanbanTask,
+        previous_column: str | None = None,
+        source: str = "system",
+    ) -> None:
+        """Broadcast a task update event.
+
+        Args:
+            workflow_id: ID of the workflow
+            task: The updated task
+            previous_column: Previous column (for undo)
+            source: Source of the update (user, agent, system)
+        """
+        event = KanbanWebSocketEvent(
+            type=KanbanEventType.TASK_UPDATE,
+            workflow_id=workflow_id,
+            payload=TaskUpdatePayload(
+                task=task,
+                previous_column=previous_column,
+                source=source,
+            ),
+        )
+        await self._broadcast_kanban_event(workflow_id, event)
+
+    async def broadcast_full_sync(
+        self,
+        workflow_id: str,
+        tasks: list[KanbanTask],
+    ) -> None:
+        """Broadcast a full sync event.
+
+        Args:
+            workflow_id: ID of the workflow
+            tasks: All tasks in the workflow
+        """
+        event = KanbanWebSocketEvent(
+            type=KanbanEventType.FULL_SYNC,
+            workflow_id=workflow_id,
+            payload=FullSyncPayload(tasks=tasks),
+        )
+        await self._broadcast_kanban_event(workflow_id, event)
+
+    async def broadcast_agent_activity(
+        self,
+        workflow_id: str,
+        task_id: str,
+        agent_name: str,
+        activity: str,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        """Broadcast an agent activity event.
+
+        Args:
+            workflow_id: ID of the workflow
+            task_id: Task ID the agent is working on
+            agent_name: Agent name
+            activity: Activity type (started, completed, failed, paused)
+            details: Additional details
+        """
+        event = KanbanWebSocketEvent(
+            type=KanbanEventType.AGENT_ACTIVITY,
+            workflow_id=workflow_id,
+            payload=AgentActivityPayload(
+                task_id=task_id,
+                agent_name=agent_name,
+                activity=activity,
+                details=details or {},
+            ),
+        )
+        await self._broadcast_kanban_event(workflow_id, event)
+
+    async def _broadcast_kanban_event(
+        self,
+        workflow_id: str,
+        event: KanbanWebSocketEvent,
+    ) -> None:
+        """Internal method to broadcast a kanban event.
+
+        Converts the Pydantic model to JSON and broadcasts to all connected clients.
+
+        Args:
+            workflow_id: ID of the workflow
+            event: The kanban event to broadcast
+        """
+        if workflow_id not in self._manager._connections:
+            return
+
+        connections = self._manager._connections[workflow_id].copy()
+        disconnected: list[WebSocket] = []
+
+        for websocket in connections:
+            try:
+                await websocket.send_json(event.model_dump(mode="json"))
+            except Exception as e:
+                logger.warning(f"Failed to send kanban event: {e}")
+                disconnected.append(websocket)
+
+        # Remove disconnected clients
+        for ws in disconnected:
+            try:
+                self._manager._connections[workflow_id].remove(ws)
+            except ValueError:
+                pass
+
+
+# Default kanban broadcaster instance
+_default_kanban_broadcaster: KanbanBroadcaster | None = None
+
+
+def get_kanban_broadcaster() -> KanbanBroadcaster:
+    """Get or create the default KanbanBroadcaster instance.
+
+    Returns:
+        The default KanbanBroadcaster
+    """
+    global _default_kanban_broadcaster
+    if _default_kanban_broadcaster is None:
+        _default_kanban_broadcaster = KanbanBroadcaster()
+    return _default_kanban_broadcaster
+
+
 __all__ = [
+    "AgentActivityPayload",
     "AgentStreamCallback",
     "AgentStreamEvent",
     "EventType",
+    "FullSyncPayload",
+    "KanbanBroadcaster",
+    "KanbanEventType",
+    "KanbanTask",
+    "KanbanWebSocketEvent",
     "MaxConnectionsExceededError",
     "MessageQueue",
     "ReconnectionConfig",
+    "TaskUpdatePayload",
     "WebSocketAuthError",
     "WebSocketManager",
     "create_websocket_router",
     "get_default_manager",
+    "get_kanban_broadcaster",
 ]

@@ -476,7 +476,7 @@ class TestClerkAuthMiddleware:
         token = create_test_token(valid_jwt_payload)
 
         with patch(
-            "daw_agents.auth.middleware.ClerkJWTVerifier._fetch_jwks",
+            "daw_server.auth.clerk.ClerkJWTVerifier._fetch_jwks",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = mock_jwks
@@ -560,7 +560,7 @@ class TestGetCurrentUser:
         token = create_test_token(valid_jwt_payload)
 
         with patch(
-            "daw_agents.auth.dependencies.ClerkJWTVerifier._fetch_jwks",
+            "daw_server.auth.clerk.ClerkJWTVerifier._fetch_jwks",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = mock_jwks
@@ -656,7 +656,7 @@ class TestOptionalCurrentUser:
         token = create_test_token(valid_jwt_payload)
 
         with patch(
-            "daw_agents.auth.dependencies.ClerkJWTVerifier._fetch_jwks",
+            "daw_server.auth.clerk.ClerkJWTVerifier._fetch_jwks",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = mock_jwks

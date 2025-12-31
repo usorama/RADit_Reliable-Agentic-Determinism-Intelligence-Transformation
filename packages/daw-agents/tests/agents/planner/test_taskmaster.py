@@ -280,7 +280,7 @@ class TestTaskmasterInterview:
     async def test_interview_generates_clarifications(
         self, taskmaster: Taskmaster
     ) -> None:
-        """Test that interview node generates clarifying questions."""
+        """Test that interview node generates interview state or clarifications."""
         initial_state: PlannerState = {
             "requirement": "Build a web app",
             "messages": [],
@@ -290,16 +290,19 @@ class TestTaskmasterInterview:
             "tasks": [],
             "status": PlannerStatus.INTERVIEW,
             "error": None,
+            "interview_state": None,
         }
 
         with patch.object(
             taskmaster._model_router, "route", new_callable=AsyncMock
         ) as mock_route:
-            mock_route.return_value = "What specific features do you need?"
+            # Return valid JSON for question generation
+            mock_route.return_value = '[{"id": "Q-001", "type": "text", "text": "What features?", "required": true}]'
 
             result = await taskmaster._interview_node(initial_state)
 
-            assert "clarifications" in result or "messages" in result
+            # New behavior: interview node generates interview_state
+            assert "interview_state" in result or "clarifications" in result
             mock_route.assert_called()
 
 

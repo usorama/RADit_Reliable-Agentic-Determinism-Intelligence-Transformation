@@ -363,7 +363,7 @@ class TestChatEndpoint:
         token = create_test_token(valid_jwt_payload)
 
         with patch(
-            "daw_agents.auth.dependencies.ClerkJWTVerifier._fetch_jwks",
+            "daw_server.auth.clerk.ClerkJWTVerifier._fetch_jwks",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = mock_jwks
@@ -400,7 +400,7 @@ class TestChatEndpoint:
         token = create_test_token(valid_jwt_payload)
 
         with patch(
-            "daw_agents.auth.dependencies.ClerkJWTVerifier._fetch_jwks",
+            "daw_server.auth.clerk.ClerkJWTVerifier._fetch_jwks",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = mock_jwks
@@ -436,7 +436,7 @@ class TestChatEndpoint:
         token = create_test_token(valid_jwt_payload)
 
         with patch(
-            "daw_agents.auth.dependencies.ClerkJWTVerifier._fetch_jwks",
+            "daw_server.auth.clerk.ClerkJWTVerifier._fetch_jwks",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = mock_jwks
@@ -495,7 +495,7 @@ class TestGetWorkflowEndpoint:
         token = create_test_token(valid_jwt_payload)
 
         with patch(
-            "daw_agents.auth.dependencies.ClerkJWTVerifier._fetch_jwks",
+            "daw_server.auth.clerk.ClerkJWTVerifier._fetch_jwks",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = mock_jwks
@@ -532,7 +532,7 @@ class TestGetWorkflowEndpoint:
         non_existent_id = str(uuid.uuid4())
 
         with patch(
-            "daw_agents.auth.dependencies.ClerkJWTVerifier._fetch_jwks",
+            "daw_server.auth.clerk.ClerkJWTVerifier._fetch_jwks",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = mock_jwks
@@ -563,7 +563,7 @@ class TestGetWorkflowEndpoint:
         token = create_test_token(valid_jwt_payload)
 
         with patch(
-            "daw_agents.auth.dependencies.ClerkJWTVerifier._fetch_jwks",
+            "daw_server.auth.clerk.ClerkJWTVerifier._fetch_jwks",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = mock_jwks
@@ -624,7 +624,7 @@ class TestApproveWorkflowEndpoint:
         token = create_test_token(valid_jwt_payload)
 
         with patch(
-            "daw_agents.auth.dependencies.ClerkJWTVerifier._fetch_jwks",
+            "daw_server.auth.clerk.ClerkJWTVerifier._fetch_jwks",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = mock_jwks
@@ -661,7 +661,7 @@ class TestApproveWorkflowEndpoint:
         token = create_test_token(valid_jwt_payload)
 
         with patch(
-            "daw_agents.auth.dependencies.ClerkJWTVerifier._fetch_jwks",
+            "daw_server.auth.clerk.ClerkJWTVerifier._fetch_jwks",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = mock_jwks
@@ -720,7 +720,7 @@ class TestDeleteWorkflowEndpoint:
         token = create_test_token(valid_jwt_payload)
 
         with patch(
-            "daw_agents.auth.dependencies.ClerkJWTVerifier._fetch_jwks",
+            "daw_server.auth.clerk.ClerkJWTVerifier._fetch_jwks",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = mock_jwks
@@ -753,7 +753,7 @@ class TestDeleteWorkflowEndpoint:
         non_existent_id = str(uuid.uuid4())
 
         with patch(
-            "daw_agents.auth.dependencies.ClerkJWTVerifier._fetch_jwks",
+            "daw_server.auth.clerk.ClerkJWTVerifier._fetch_jwks",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = mock_jwks
@@ -807,7 +807,7 @@ class TestWebSocketTraceEndpoint:
         )
 
         with patch(
-            "daw_agents.api.routes.ClerkJWTVerifier._fetch_jwks",
+            "daw_server.auth.clerk.ClerkJWTVerifier._fetch_jwks",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = mock_jwks
@@ -945,7 +945,7 @@ class TestErrorHandling:
         token = create_test_token(valid_jwt_payload)
 
         with patch(
-            "daw_agents.auth.dependencies.ClerkJWTVerifier._fetch_jwks",
+            "daw_server.auth.clerk.ClerkJWTVerifier._fetch_jwks",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = mock_jwks
@@ -981,13 +981,13 @@ class TestErrorHandling:
 
         # Mock the planner to raise an exception
         with patch(
-            "daw_agents.auth.dependencies.ClerkJWTVerifier._fetch_jwks",
+            "daw_server.auth.clerk.ClerkJWTVerifier._fetch_jwks",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = mock_jwks
 
             with patch(
-                "daw_agents.api.routes.WorkflowManager.create_workflow",
+                "daw_server.api.routes.WorkflowManager.create_workflow",
                 side_effect=Exception("Internal error"),
             ):
                 client = TestClient(app, raise_server_exceptions=False)
@@ -1036,7 +1036,7 @@ class TestWorkflowOwnership:
         token = create_test_token(other_user_payload)
 
         with patch(
-            "daw_agents.auth.dependencies.ClerkJWTVerifier._fetch_jwks",
+            "daw_server.auth.clerk.ClerkJWTVerifier._fetch_jwks",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = mock_jwks
@@ -1247,7 +1247,7 @@ class TestAdditionalCoverage:
         token = create_test_token(valid_jwt_payload)
 
         with patch(
-            "daw_agents.auth.dependencies.ClerkJWTVerifier._fetch_jwks",
+            "daw_server.auth.clerk.ClerkJWTVerifier._fetch_jwks",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = mock_jwks
@@ -1292,7 +1292,7 @@ class TestAdditionalCoverage:
         token = create_test_token(valid_jwt_payload)
 
         with patch(
-            "daw_agents.auth.dependencies.ClerkJWTVerifier._fetch_jwks",
+            "daw_server.auth.clerk.ClerkJWTVerifier._fetch_jwks",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = mock_jwks
@@ -1339,7 +1339,7 @@ class TestAdditionalCoverage:
         token = create_test_token(valid_jwt_payload)
 
         with patch(
-            "daw_agents.auth.dependencies.ClerkJWTVerifier._fetch_jwks",
+            "daw_server.auth.clerk.ClerkJWTVerifier._fetch_jwks",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = mock_jwks
@@ -1381,7 +1381,7 @@ class TestAdditionalCoverage:
         token = create_test_token(valid_jwt_payload)
 
         with patch(
-            "daw_agents.auth.dependencies.ClerkJWTVerifier._fetch_jwks",
+            "daw_server.auth.clerk.ClerkJWTVerifier._fetch_jwks",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = mock_jwks
@@ -1432,7 +1432,7 @@ class TestAdditionalCoverage:
         token = create_test_token(other_user_payload)
 
         with patch(
-            "daw_agents.auth.dependencies.ClerkJWTVerifier._fetch_jwks",
+            "daw_server.auth.clerk.ClerkJWTVerifier._fetch_jwks",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = mock_jwks
@@ -1481,7 +1481,7 @@ class TestAdditionalCoverage:
         token = create_test_token(other_user_payload)
 
         with patch(
-            "daw_agents.auth.dependencies.ClerkJWTVerifier._fetch_jwks",
+            "daw_server.auth.clerk.ClerkJWTVerifier._fetch_jwks",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = mock_jwks
