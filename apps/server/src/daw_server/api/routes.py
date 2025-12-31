@@ -15,11 +15,16 @@ import logging
 import os
 import uuid
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from dotenv import load_dotenv
-from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, WebSocket, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+if TYPE_CHECKING:
+    from slowapi import Limiter
 
 # Load environment variables from daw-agents package for LLM API keys
 _env_path = os.path.join(
@@ -75,23 +80,36 @@ from daw_server.api.schemas import (
     WorkflowStatusEnum,
 )
 from daw_server.auth.clerk import ClerkConfig, ClerkJWTVerifier, ClerkUser
+from daw_server.repositories.workflow import WorkflowRepository, get_workflow_repository
 
 logger = logging.getLogger(__name__)
 
 # Security scheme for OpenAPI docs
 security = HTTPBearer()
 
+# Create module-level limiter for use with decorators
+# Disable rate limiting in test mode to avoid test failures
+TESTING = os.getenv("TESTING", "false").lower() == "true"
+limiter = Limiter(
+    key_func=get_remote_address,
+    enabled=not TESTING,  # Disable rate limiting in test mode
+)
+
 
 # -----------------------------------------------------------------------------
-# Workflow Manager (In-Memory Storage for MVP)
+# Workflow Manager (In-Memory Storage) - DEPRECATED
 # -----------------------------------------------------------------------------
+# NOTE: This class is deprecated. Use WorkflowRepository for persistent storage.
+# The repository provides Neo4j-backed storage that survives server restarts.
+# Kept for backward compatibility during migration.
 
 
 class WorkflowManager:
     """Manages workflow state and operations.
 
-    This is an in-memory implementation for MVP.
-    Production implementation should use Redis/Neo4j persistence.
+    DEPRECATED: This is an in-memory implementation for MVP.
+    Use WorkflowRepository from daw_server.repositories.workflow instead.
+    The repository provides Neo4j-backed persistent storage.
     """
 
     _workflows: dict[str, dict[str, Any]] = {}
@@ -224,6 +242,32 @@ class WorkflowManager:
 
 
 # -----------------------------------------------------------------------------
+# Repository Dependency
+# -----------------------------------------------------------------------------
+
+
+def get_repository() -> WorkflowRepository:
+    """Get the workflow repository dependency.
+
+    This function returns the global WorkflowRepository instance
+    that provides Neo4j-backed persistent storage.
+
+    Returns:
+        WorkflowRepository instance
+
+    Raises:
+        HTTPException: 503 if repository not initialized (Neo4j not available)
+    """
+    try:
+        return get_workflow_repository()
+    except RuntimeError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Workflow repository not available. Database connection may be down.",
+        )
+
+
+# -----------------------------------------------------------------------------
 # Authentication Dependency
 # -----------------------------------------------------------------------------
 
@@ -323,17 +367,21 @@ def create_router(config: ClerkConfig) -> APIRouter:
             200: {"description": "Successful response with workflow status"},
             401: {"description": "Authentication required"},
             422: {"description": "Validation error"},
+            429: {"description": "Rate limit exceeded"},
             500: {"description": "Internal server error"},
         },
     )
+    @limiter.limit("30/minute")
     async def chat(
-        request: ChatRequest,
+        request: Request,
+        chat_request: ChatRequest,
         user: ClerkUser = Depends(verify_user),
     ) -> ChatResponse:
         """Handle chat message to Planner agent.
 
         Args:
-            request: Chat request with message
+            request: FastAPI request object (for rate limiting)
+            chat_request: Chat request with message
             user: Authenticated user
 
         Returns:
@@ -341,16 +389,16 @@ def create_router(config: ClerkConfig) -> APIRouter:
         """
         try:
             # Check if continuing existing workflow
-            if request.workflow_id:
-                workflow = WorkflowManager.get_workflow(request.workflow_id)
+            if chat_request.workflow_id:
+                workflow = WorkflowManager.get_workflow(chat_request.workflow_id)
                 if workflow is None:
                     raise HTTPException(
                         status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"Workflow {request.workflow_id} not found",
+                        detail=f"Workflow {chat_request.workflow_id} not found",
                     )
                 # Verify ownership
                 if not WorkflowManager.user_owns_workflow(
-                    user.user_id, request.workflow_id
+                    user.user_id, chat_request.workflow_id
                 ):
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
@@ -358,21 +406,21 @@ def create_router(config: ClerkConfig) -> APIRouter:
                     )
                 # Update workflow with new message
                 WorkflowManager.update_workflow(
-                    request.workflow_id,
-                    {"message": request.message, "context": request.context},
+                    chat_request.workflow_id,
+                    {"message": chat_request.message, "context": chat_request.context},
                 )
             else:
                 # Create new workflow
                 workflow = WorkflowManager.create_workflow(
                     user_id=user.user_id,
-                    message=request.message,
-                    context=request.context,
+                    message=chat_request.message,
+                    context=chat_request.context,
                 )
 
             # Invoke the Taskmaster (Planner) agent with actual LLM
             taskmaster = Taskmaster()
             initial_state = taskmaster.create_initial_state(
-                requirement=request.message,
+                requirement=chat_request.message,
                 workflow_id=workflow["id"],
             )
 
@@ -508,9 +556,12 @@ def create_router(config: ClerkConfig) -> APIRouter:
             403: {"description": "Access denied"},
             404: {"description": "Workflow not found"},
             422: {"description": "Invalid workflow ID format"},
+            429: {"description": "Rate limit exceeded"},
         },
     )
+    @limiter.limit("100/minute")
     async def get_workflow(
+        request: Request,
         workflow_id: str,
         user: ClerkUser = Depends(verify_user),
     ) -> WorkflowStatus:
@@ -577,18 +628,22 @@ def create_router(config: ClerkConfig) -> APIRouter:
             401: {"description": "Authentication required"},
             403: {"description": "Access denied"},
             404: {"description": "Workflow not found"},
+            429: {"description": "Rate limit exceeded"},
         },
     )
+    @limiter.limit("60/minute")
     async def approve_workflow(
+        request: Request,
         workflow_id: str,
-        request: ApprovalRequest,
+        approval_request: ApprovalRequest,
         user: ClerkUser = Depends(verify_user),
     ) -> ApprovalResponse:
         """Handle workflow approval.
 
         Args:
+            request: FastAPI request object (for rate limiting)
             workflow_id: The workflow ID
-            request: Approval request with action and optional comment
+            approval_request: Approval request with action and optional comment
             user: Authenticated user
 
         Returns:
@@ -618,13 +673,13 @@ def create_router(config: ClerkConfig) -> APIRouter:
             )
 
         # Process approval action
-        if request.action == ApprovalAction.APPROVE:
+        if approval_request.action == ApprovalAction.APPROVE:
             new_status = WorkflowStatusEnum.EXECUTING
             message = "Workflow approved. Starting execution."
-        elif request.action == ApprovalAction.REJECT:
+        elif approval_request.action == ApprovalAction.REJECT:
             new_status = WorkflowStatusEnum.CANCELLED
             message = "Workflow rejected and cancelled."
-        elif request.action == ApprovalAction.MODIFY:
+        elif approval_request.action == ApprovalAction.MODIFY:
             new_status = WorkflowStatusEnum.PLANNING
             message = "Workflow modifications requested. Returning to planning phase."
         else:
@@ -638,8 +693,8 @@ def create_router(config: ClerkConfig) -> APIRouter:
             workflow_id,
             {
                 "status": new_status,
-                "approval_comment": request.comment,
-                "approval_action": request.action,
+                "approval_comment": approval_request.comment,
+                "approval_action": approval_request.action,
             },
         )
 
@@ -1767,4 +1822,6 @@ __all__ = [
     "create_router",
     "create_trace_websocket_router",
     "WorkflowManager",
+    "get_repository",
+    "WorkflowRepository",
 ]
