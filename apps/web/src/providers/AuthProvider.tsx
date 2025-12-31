@@ -4,10 +4,18 @@ import { ClerkProvider } from '@clerk/nextjs'
 import type { ReactNode } from 'react'
 
 /**
+ * Development bypass mode - provides mock auth context for testing
+ * Set NEXT_PUBLIC_DEV_BYPASS_AUTH=true in .env.local to enable
+ */
+const DEV_BYPASS_AUTH = process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true'
+
+/**
  * AuthProvider wraps the application with Clerk authentication context.
  * This provider must wrap all components that need access to authentication state.
  *
- * Environment variables required:
+ * In development bypass mode (DEV_BYPASS_AUTH=true), Clerk is skipped entirely.
+ *
+ * Environment variables required (when not in bypass mode):
  * - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: Clerk publishable key
  * - CLERK_SECRET_KEY: Clerk secret key (server-side only)
  * - NEXT_PUBLIC_CLERK_SIGN_IN_URL: Sign-in page URL (default: /sign-in)
@@ -55,6 +63,11 @@ const clerkAppearance = {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
+  // In development bypass mode, render children directly without Clerk
+  if (DEV_BYPASS_AUTH) {
+    return <>{children}</>
+  }
+
   return (
     <ClerkProvider
       appearance={clerkAppearance}

@@ -1,5 +1,11 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+
+/**
+ * Development bypass mode - allows testing without Clerk credentials
+ * Set NEXT_PUBLIC_DEV_BYPASS_AUTH=true in .env.local to enable
+ */
+const DEV_BYPASS_AUTH = process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true'
 
 /**
  * Public routes that don't require authentication
@@ -46,7 +52,18 @@ interface SessionClaimsMetadata {
   role?: string
 }
 
-export default clerkMiddleware(async (auth, request) => {
+/**
+ * Development bypass middleware - skips Clerk auth entirely
+ */
+function devBypassMiddleware(request: NextRequest): NextResponse {
+  // In dev bypass mode, allow all routes
+  return NextResponse.next()
+}
+
+/**
+ * Production middleware with full Clerk authentication
+ */
+const productionMiddleware = clerkMiddleware(async (auth, request) => {
   const { userId, sessionClaims } = await auth()
 
   // Handle admin routes - require admin role
@@ -83,6 +100,11 @@ export default clerkMiddleware(async (auth, request) => {
 
   return NextResponse.next()
 })
+
+/**
+ * Export the appropriate middleware based on environment
+ */
+export default DEV_BYPASS_AUTH ? devBypassMiddleware : productionMiddleware
 
 /**
  * Middleware configuration
