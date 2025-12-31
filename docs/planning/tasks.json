@@ -1095,7 +1095,9 @@
     "priority": "P1",
     "phase": 9,
     "description": "Migrate daw-frontend to apps/web/",
-    "dependencies": ["REFACTOR-001"],
+    "dependencies": [
+      "REFACTOR-001"
+    ],
     "context_files": [
       "packages/daw-frontend/package.json",
       "packages/daw-frontend/src/**/*",
@@ -1115,7 +1117,9 @@
     "priority": "P1",
     "phase": 9,
     "description": "Extract FastAPI server to apps/server/",
-    "dependencies": ["REFACTOR-001"],
+    "dependencies": [
+      "REFACTOR-001"
+    ],
     "context_files": [
       "packages/daw-agents/src/daw_agents/api/**/*",
       "packages/daw-agents/src/daw_agents/workers/**/*",
@@ -1135,7 +1139,9 @@
     "priority": "P1",
     "phase": 9,
     "description": "Refactor daw-agents to contain only agent definitions",
-    "dependencies": ["REFACTOR-003"],
+    "dependencies": [
+      "REFACTOR-003"
+    ],
     "context_files": [
       "packages/daw-agents/src/daw_agents/agents/**/*",
       "packages/daw-agents/src/daw_agents/schemas/**/*",
@@ -1155,7 +1161,9 @@
     "priority": "P2",
     "phase": 9,
     "description": "Create packages/daw-mcp/ for custom MCP servers",
-    "dependencies": ["REFACTOR-001"],
+    "dependencies": [
+      "REFACTOR-001"
+    ],
     "context_files": [
       "packages/daw-agents/src/daw_agents/mcp/**/*",
       "docs/planning/architecture/sections/02_project_structure.md"
@@ -1174,7 +1182,9 @@
     "priority": "P2",
     "phase": 9,
     "description": "Rename daw-shared to daw-protocol",
-    "dependencies": ["REFACTOR-001"],
+    "dependencies": [
+      "REFACTOR-001"
+    ],
     "context_files": [
       "packages/daw-protocol/**/*"
     ],
@@ -1193,7 +1203,13 @@
     "priority": "P0",
     "phase": 9,
     "description": "Comprehensive E2E validation post-refactor",
-    "dependencies": ["REFACTOR-002", "REFACTOR-003", "REFACTOR-004", "REFACTOR-005", "REFACTOR-006"],
+    "dependencies": [
+      "REFACTOR-002",
+      "REFACTOR-003",
+      "REFACTOR-004",
+      "REFACTOR-005",
+      "REFACTOR-006"
+    ],
     "context_files": [
       "docker-compose.yml",
       "apps/web/package.json",
@@ -1225,7 +1241,8 @@
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/agents/planner/test_interview_loop.py && pnpm --filter @daw/web test"
     },
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2025-12-31T01:32:37.509277Z"
   },
   {
     "id": "INTERACT-002",
@@ -1234,7 +1251,9 @@
     "phase": 10,
     "epic": "Epic 13: User Interaction",
     "description": "PRD Presentation and Display - Show generated PRD in structured format",
-    "dependencies": ["INTERACT-001"],
+    "dependencies": [
+      "INTERACT-001"
+    ],
     "context_files": [
       "apps/web/src/components/plan/PlanPresentation.tsx",
       "apps/web/src/types/prd.ts"
@@ -1244,7 +1263,8 @@
       "type": "test_pass",
       "command": "pnpm --filter @daw/web test && pnpm --filter @daw/web build"
     },
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2025-12-31T01:32:37.509277Z"
   },
   {
     "id": "INTERACT-003",
@@ -1253,7 +1273,9 @@
     "phase": 10,
     "epic": "Epic 13: User Interaction",
     "description": "PRD Approval Gate - Enable user approval/rejection/modification of PRD",
-    "dependencies": ["INTERACT-002"],
+    "dependencies": [
+      "INTERACT-002"
+    ],
     "context_files": [
       "apps/server/src/daw_server/api/routes.py",
       "packages/daw-agents/src/daw_agents/workflow/orchestrator.py",
@@ -1264,7 +1286,8 @@
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/workflow/test_prd_approval.py"
     },
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2025-12-31T01:32:37.509277Z"
   },
   {
     "id": "INTERACT-004",
@@ -1273,18 +1296,21 @@
     "phase": 10,
     "epic": "Epic 13: User Interaction",
     "description": "Task List Review and Approval - Enable user review of decomposed tasks before execution",
-    "dependencies": ["INTERACT-003"],
+    "dependencies": [
+      "INTERACT-003"
+    ],
     "context_files": [
       "apps/server/src/daw_server/api/routes.py",
       "apps/web/src/components/plan/TaskList.tsx",
       "apps/web/src/components/plan/TaskCard.tsx"
     ],
-    "instruction": "Implement task review gate: (1) Backend: New workflow status AWAITING_TASK_APPROVAL, (2) Orchestrator pauses after task decomposition, (3) New endpoint POST /api/workflow/{id}/tasks-review with actions: approve (proceed), reorder, remove, modify, (4) Frontend: TaskList.tsx with hierarchical display (Phase → Story → Task), (5) Dependency arrows or badges, (6) Complexity/effort badges per task, (7) Checkbox to remove tasks, inline edit for descriptions, (8) 'Approve and Begin Execution' prominent button, (9) Dependency recalculation when tasks removed.",
+    "instruction": "Implement task review gate: (1) Backend: New workflow status AWAITING_TASK_APPROVAL, (2) Orchestrator pauses after task decomposition, (3) New endpoint POST /api/workflow/{id}/tasks-review with actions: approve (proceed), reorder, remove, modify, (4) Frontend: TaskList.tsx with hierarchical display (Phase \u2192 Story \u2192 Task), (5) Dependency arrows or badges, (6) Complexity/effort badges per task, (7) Checkbox to remove tasks, inline edit for descriptions, (8) 'Approve and Begin Execution' prominent button, (9) Dependency recalculation when tasks removed.",
     "verification": {
       "type": "test_pass",
       "command": "pytest packages/daw-agents/tests/workflow/test_task_approval.py && pnpm --filter @daw/web test"
     },
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2025-12-31T01:32:37.509277Z"
   },
   {
     "id": "INTERACT-005",
@@ -1293,7 +1319,9 @@
     "phase": 10,
     "epic": "Epic 13: User Interaction",
     "description": "Research Display and Evidence - Show research findings that informed PRD",
-    "dependencies": ["INTERACT-002"],
+    "dependencies": [
+      "INTERACT-002"
+    ],
     "context_files": [
       "apps/web/src/components/plan/ResearchDisplay.tsx"
     ],
@@ -1311,7 +1339,10 @@
     "phase": 10,
     "epic": "Epic 13: User Interaction",
     "description": "Complexity Analysis Visualization - Display complexity analysis before commitment",
-    "dependencies": ["INTERACT-002", "COMPLEXITY-001"],
+    "dependencies": [
+      "INTERACT-002",
+      "COMPLEXITY-001"
+    ],
     "context_files": [
       "apps/web/src/components/plan/ComplexityAnalysis.tsx"
     ],
@@ -1329,7 +1360,9 @@
     "phase": 10,
     "epic": "Epic 13: User Interaction",
     "description": "Web Research MCP Integration - Enable Planner to perform web research",
-    "dependencies": ["CORE-003"],
+    "dependencies": [
+      "CORE-003"
+    ],
     "context_files": [
       "packages/daw-mcp/src/daw_mcp/web_research/server.py",
       "packages/daw-agents/src/daw_agents/mcp/rbac.py"
@@ -1348,7 +1381,9 @@
     "phase": 10,
     "epic": "Epic 13: User Interaction",
     "description": "Iterative Planning Refinement - Enable multiple planning iterations",
-    "dependencies": ["INTERACT-003"],
+    "dependencies": [
+      "INTERACT-003"
+    ],
     "context_files": [
       "packages/daw-agents/src/daw_agents/workflow/orchestrator.py",
       "apps/web/src/components/plan/VersionSelector.tsx"
@@ -1367,11 +1402,16 @@
     "phase": 11,
     "epic": "Epic 13: User Interaction",
     "description": "Workflow Progress Dashboard - Visual workflow state machine",
-    "dependencies": ["INTERACT-001", "INTERACT-002", "INTERACT-003", "INTERACT-004"],
+    "dependencies": [
+      "INTERACT-001",
+      "INTERACT-002",
+      "INTERACT-003",
+      "INTERACT-004"
+    ],
     "context_files": [
       "apps/web/src/components/plan/WorkflowDashboard.tsx"
     ],
-    "instruction": "Create workflow dashboard: (1) WorkflowDashboard.tsx with visual state machine (Interview → Roundtable → PRD → Tasks → Execution → Validation → Deploy), (2) Current phase highlighted, (3) Phase descriptions on hover, (4) Time spent in each phase, (5) Phase-specific success criteria checklist.",
+    "instruction": "Create workflow dashboard: (1) WorkflowDashboard.tsx with visual state machine (Interview \u2192 Roundtable \u2192 PRD \u2192 Tasks \u2192 Execution \u2192 Validation \u2192 Deploy), (2) Current phase highlighted, (3) Phase descriptions on hover, (4) Time spent in each phase, (5) Phase-specific success criteria checklist.",
     "verification": {
       "type": "file_exists",
       "path": "apps/web/src/components/plan/WorkflowDashboard.tsx"
@@ -1385,7 +1425,10 @@
     "phase": 11,
     "epic": "Epic 13: User Interaction",
     "description": "Inline PRD Editing - Direct PRD modification in UI",
-    "dependencies": ["INTERACT-002", "INTERACT-003"],
+    "dependencies": [
+      "INTERACT-002",
+      "INTERACT-003"
+    ],
     "context_files": [
       "apps/web/src/components/plan/PRDEditor.tsx"
     ],
@@ -1403,7 +1446,9 @@
     "phase": 11,
     "epic": "Epic 13: User Interaction",
     "description": "Real-time Persona Collaboration Indicators - Show which AI persona is speaking",
-    "dependencies": ["INTERACT-002"],
+    "dependencies": [
+      "INTERACT-002"
+    ],
     "context_files": [
       "apps/web/src/components/plan/PersonaIndicator.tsx"
     ],
@@ -1421,7 +1466,9 @@
     "phase": 11,
     "epic": "Epic 13: User Interaction",
     "description": "Dependency Resolver MCP Server - Check package dependencies and versions",
-    "dependencies": ["INTERACT-007"],
+    "dependencies": [
+      "INTERACT-007"
+    ],
     "context_files": [
       "packages/daw-mcp/src/daw_mcp/dependency_resolver/server.py"
     ],
@@ -1480,8 +1527,11 @@
     "priority": "P0",
     "phase": 12,
     "epic": "Epic 14: Real-World Integration Testing",
-    "description": "E2B → Neo4j End-to-End Test - Full round-trip validation",
-    "dependencies": ["INTEG-001", "INTEG-002"],
+    "description": "E2B \u2192 Neo4j End-to-End Test - Full round-trip validation",
+    "dependencies": [
+      "INTEG-001",
+      "INTEG-002"
+    ],
     "context_files": [
       "tests/integration/test_e2b_neo4j_e2e.py"
     ],
@@ -1501,7 +1551,10 @@
     "phase": 13,
     "epic": "Epic 14: Real-World Integration Testing",
     "description": "Dogfood Test - Build Calculator with DAW",
-    "dependencies": ["ORCHESTRATOR-001", "INTEG-003"],
+    "dependencies": [
+      "ORCHESTRATOR-001",
+      "INTEG-003"
+    ],
     "context_files": [
       "tests/functional/test_dogfood_calculator.py",
       "eval/benchmarks/calculator/"
@@ -1522,7 +1575,10 @@
     "phase": 13,
     "epic": "Epic 14: Real-World Integration Testing",
     "description": "Dogfood Test - Build Settings Page with DAW",
-    "dependencies": ["FUNC-001", "FRONTEND-002"],
+    "dependencies": [
+      "FUNC-001",
+      "FRONTEND-002"
+    ],
     "context_files": [
       "tests/functional/test_dogfood_settings.py"
     ],
@@ -1542,7 +1598,10 @@
     "phase": 12,
     "epic": "Epic 14: Real-World Integration Testing",
     "description": "Nightly Integration CI Workflow - Automated regression with real services",
-    "dependencies": ["INTEG-001", "INTEG-002"],
+    "dependencies": [
+      "INTEG-001",
+      "INTEG-002"
+    ],
     "context_files": [
       ".github/workflows/integration-nightly.yml"
     ],
@@ -1563,7 +1622,10 @@
     "epic": "Epic 15: Kanban Board & Real-Time Visualization",
     "scope": "MVP",
     "description": "Core Kanban Board Component - Task visualization with column-based workflow",
-    "dependencies": ["STREAMING-001", "FRONTEND-001"],
+    "dependencies": [
+      "STREAMING-001",
+      "FRONTEND-001"
+    ],
     "context_files": [
       "apps/web/src/components/kanban/KanbanBoard.tsx",
       "apps/web/src/components/kanban/TaskCard.tsx",
@@ -1575,7 +1637,8 @@
       "command": "pnpm --filter @daw/web test -- --grep 'KanbanBoard'"
     },
     "estimated_hours": 12,
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2025-12-31T01:32:37.509277Z"
   },
   {
     "id": "KANBAN-002",
@@ -1585,7 +1648,9 @@
     "epic": "Epic 15: Kanban Board & Real-Time Visualization",
     "scope": "MVP",
     "description": "Task Card Details Panel - Expandable task information view",
-    "dependencies": ["KANBAN-001"],
+    "dependencies": [
+      "KANBAN-001"
+    ],
     "context_files": [
       "apps/web/src/components/kanban/TaskDetailPanel.tsx"
     ],
@@ -1595,7 +1660,8 @@
       "command": "pnpm --filter @daw/web test -- --grep 'TaskDetailPanel'"
     },
     "estimated_hours": 6,
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2025-12-31T01:32:37.509277Z"
   },
   {
     "id": "KANBAN-003",
@@ -1605,7 +1671,10 @@
     "epic": "Epic 15: Kanban Board & Real-Time Visualization",
     "scope": "MVP",
     "description": "Live Status Streaming to Kanban - Real-time WebSocket updates",
-    "dependencies": ["KANBAN-001", "STREAMING-001"],
+    "dependencies": [
+      "KANBAN-001",
+      "STREAMING-001"
+    ],
     "context_files": [
       "apps/web/src/hooks/useKanban.ts",
       "packages/daw-agents/src/daw_agents/api/websocket.py"
@@ -1616,7 +1685,8 @@
       "command": "pnpm --filter @daw/web test -- --grep 'useKanban'"
     },
     "estimated_hours": 6,
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2025-12-31T01:32:37.509277Z"
   },
   {
     "id": "KANBAN-004",
@@ -1626,7 +1696,9 @@
     "epic": "Epic 15: Kanban Board & Real-Time Visualization",
     "scope": "Production",
     "description": "Drag-and-Drop Task Prioritization - Manual task reordering",
-    "dependencies": ["KANBAN-001"],
+    "dependencies": [
+      "KANBAN-001"
+    ],
     "context_files": [
       "apps/web/src/components/kanban/DraggableCard.tsx"
     ],
@@ -1646,7 +1718,9 @@
     "epic": "Epic 15: Kanban Board & Real-Time Visualization",
     "scope": "Production",
     "description": "Agent Assignment Display - Show which agent is working on tasks",
-    "dependencies": ["KANBAN-001"],
+    "dependencies": [
+      "KANBAN-001"
+    ],
     "context_files": [
       "apps/web/src/components/kanban/AgentAvatar.tsx"
     ],
@@ -1666,7 +1740,9 @@
     "epic": "Epic 15: Kanban Board & Real-Time Visualization",
     "scope": "Production",
     "description": "Metrics Dashboard - Workflow analytics and cost tracking",
-    "dependencies": ["KANBAN-001"],
+    "dependencies": [
+      "KANBAN-001"
+    ],
     "context_files": [
       "apps/web/src/components/dashboard/MetricsDashboard.tsx"
     ],
@@ -1686,7 +1762,9 @@
     "epic": "Epic 15: Kanban Board & Real-Time Visualization",
     "scope": "Future",
     "description": "Multi-Workflow Board - View multiple workflows on single board",
-    "dependencies": ["KANBAN-001"],
+    "dependencies": [
+      "KANBAN-001"
+    ],
     "context_files": [],
     "instruction": "Implement multi-workflow view: (1) Workflow selector dropdown, (2) Split view option, (3) Cross-workflow dependency visualization.",
     "verification": {
@@ -1703,7 +1781,9 @@
     "epic": "Epic 15: Kanban Board & Real-Time Visualization",
     "scope": "Future",
     "description": "Custom Column Configuration - User-defined workflow stages",
-    "dependencies": ["KANBAN-001"],
+    "dependencies": [
+      "KANBAN-001"
+    ],
     "context_files": [],
     "instruction": "Implement custom columns: (1) Column configuration modal, (2) Persist column settings per user, (3) Default templates for common workflows.",
     "verification": {
@@ -1720,7 +1800,9 @@
     "epic": "Epic 15: Kanban Board & Real-Time Visualization",
     "scope": "Future",
     "description": "Swimlane Views - Group tasks by feature, priority, or agent",
-    "dependencies": ["KANBAN-001"],
+    "dependencies": [
+      "KANBAN-001"
+    ],
     "context_files": [],
     "instruction": "Implement swimlanes: (1) Group by feature, priority, or agent, (2) Collapsible swimlane rows, (3) Swimlane totals.",
     "verification": {
@@ -1737,7 +1819,9 @@
     "epic": "Epic 16: Monitor-Diagnose-Heal Loop",
     "scope": "Production",
     "description": "Monitor Node Integration - Post-deployment health monitoring",
-    "dependencies": ["ORCHESTRATOR-001"],
+    "dependencies": [
+      "ORCHESTRATOR-001"
+    ],
     "context_files": [
       "packages/daw-agents/src/daw_agents/orchestrator/orchestrator.py"
     ],
@@ -1757,7 +1841,9 @@
     "epic": "Epic 16: Monitor-Diagnose-Heal Loop",
     "scope": "Production",
     "description": "Diagnose Node Implementation - Automated error analysis",
-    "dependencies": ["MDH-001"],
+    "dependencies": [
+      "MDH-001"
+    ],
     "context_files": [
       "packages/daw-agents/src/daw_agents/orchestrator/orchestrator.py"
     ],
@@ -1777,7 +1863,9 @@
     "epic": "Epic 16: Monitor-Diagnose-Heal Loop",
     "scope": "Production",
     "description": "Heal Node Implementation - Automated fix application",
-    "dependencies": ["MDH-002"],
+    "dependencies": [
+      "MDH-002"
+    ],
     "context_files": [
       "packages/daw-agents/src/daw_agents/orchestrator/orchestrator.py",
       "packages/daw-agents/src/daw_agents/agents/healer/"
@@ -1798,7 +1886,9 @@
     "epic": "Epic 16: Monitor-Diagnose-Heal Loop",
     "scope": "Production",
     "description": "Escalation & Human Override - Unfixable error handling",
-    "dependencies": ["MDH-003"],
+    "dependencies": [
+      "MDH-003"
+    ],
     "context_files": [
       "packages/daw-agents/src/daw_agents/orchestrator/orchestrator.py",
       "apps/web/src/components/dashboard/EscalationAlert.tsx"
@@ -1819,7 +1909,10 @@
     "epic": "Epic 16: Monitor-Diagnose-Heal Loop",
     "scope": "Future",
     "description": "Sentinel Agent - Risk scanning and interception",
-    "dependencies": ["MDH-001", "CORE-003"],
+    "dependencies": [
+      "MDH-001",
+      "CORE-003"
+    ],
     "context_files": [
       "packages/daw-mcp/src/daw_mcp/servers/sentinel.py"
     ],
@@ -1838,7 +1931,10 @@
     "epic": "Epic 16: Monitor-Diagnose-Heal Loop",
     "scope": "Future",
     "description": "Predictive Issue Detection - Proactive problem identification",
-    "dependencies": ["MDH-001", "EVOLVE-001"],
+    "dependencies": [
+      "MDH-001",
+      "EVOLVE-001"
+    ],
     "context_files": [],
     "instruction": "Implement prediction: (1) Pattern analysis from historical data, (2) Predict issues before they occur, (3) Proactive alerts.",
     "verification": {
@@ -1855,7 +1951,9 @@
     "epic": "Epic 16: Monitor-Diagnose-Heal Loop",
     "scope": "Future",
     "description": "Auto-Rollback Capability - Automatic recovery to last good state",
-    "dependencies": ["MDH-003"],
+    "dependencies": [
+      "MDH-003"
+    ],
     "context_files": [],
     "instruction": "Implement rollback: (1) Track deployment checkpoints, (2) Auto-rollback on critical failure, (3) Notify user of rollback.",
     "verification": {
@@ -1872,7 +1970,10 @@
     "epic": "Epic 17: Self-Evolution & Learning",
     "scope": "Production",
     "description": "Skill Extraction Library - Extract reusable patterns from successes",
-    "dependencies": ["EVOLVE-001", "EVOLVE-002"],
+    "dependencies": [
+      "EVOLVE-001",
+      "EVOLVE-002"
+    ],
     "context_files": [
       "packages/daw-agents/src/daw_agents/evolution/skill_extractor.py"
     ],
@@ -1892,7 +1993,10 @@
     "epic": "Epic 17: Self-Evolution & Learning",
     "scope": "Production",
     "description": "Model Performance Analytics - Track model effectiveness by task type",
-    "dependencies": ["EVOLVE-001", "MODEL-001"],
+    "dependencies": [
+      "EVOLVE-001",
+      "MODEL-001"
+    ],
     "context_files": [
       "packages/daw-agents/src/daw_agents/evolution/model_analytics.py",
       "apps/web/src/components/dashboard/ModelAnalytics.tsx"
@@ -1913,7 +2017,10 @@
     "epic": "Epic 17: Self-Evolution & Learning",
     "scope": "Future",
     "description": "Prompt Optimization (DSPy) - Automatic prompt improvement",
-    "dependencies": ["EVOLVE-003", "EVOLVE-004"],
+    "dependencies": [
+      "EVOLVE-003",
+      "EVOLVE-004"
+    ],
     "context_files": [],
     "instruction": "Implement DSPy-style prompt optimization: (1) Track prompt effectiveness, (2) Suggest prompt improvements, (3) A/B test prompt variations.",
     "verification": {
@@ -1930,7 +2037,9 @@
     "epic": "Epic 17: Self-Evolution & Learning",
     "scope": "Future",
     "description": "A/B Testing Infrastructure - Statistical experiment framework",
-    "dependencies": ["EVOLVE-005"],
+    "dependencies": [
+      "EVOLVE-005"
+    ],
     "context_files": [],
     "instruction": "Implement A/B testing: (1) Experiment definition, (2) Traffic splitting, (3) Statistical significance calculation, (4) Winner declaration.",
     "verification": {
@@ -1947,7 +2056,9 @@
     "epic": "Epic 17: Self-Evolution & Learning",
     "scope": "Future",
     "description": "Constitutional Safety Constraints - Safety guardrails for self-modification",
-    "dependencies": ["EVOLVE-005"],
+    "dependencies": [
+      "EVOLVE-005"
+    ],
     "context_files": [],
     "instruction": "Implement safety: (1) RLAIF constraints for self-modification, (2) Bounded evolution limits, (3) Human approval for significant changes.",
     "verification": {
@@ -1964,7 +2075,9 @@
     "epic": "Epic 18: Multi-Model Driver Support",
     "scope": "Production",
     "description": "Model Driver Abstraction Layer - Hot-swappable model configuration",
-    "dependencies": ["MODEL-001"],
+    "dependencies": [
+      "MODEL-001"
+    ],
     "context_files": [
       "packages/daw-agents/src/daw_agents/models/drivers/base.py",
       "packages/daw-agents/src/daw_agents/models/drivers/claude.py",
@@ -1987,7 +2100,10 @@
     "epic": "Epic 18: Multi-Model Driver Support",
     "scope": "Production",
     "description": "Model Driver MCP Server - Expose model config via MCP",
-    "dependencies": ["DRIVER-001", "CORE-003"],
+    "dependencies": [
+      "DRIVER-001",
+      "CORE-003"
+    ],
     "context_files": [
       "packages/daw-mcp/src/daw_mcp/servers/model_driver.py"
     ],
@@ -2007,7 +2123,10 @@
     "epic": "Epic 18: Multi-Model Driver Support",
     "scope": "Production",
     "description": "Cost Optimization Router - Intelligent cost/capability routing",
-    "dependencies": ["DRIVER-001", "MODEL-001"],
+    "dependencies": [
+      "DRIVER-001",
+      "MODEL-001"
+    ],
     "context_files": [
       "packages/daw-agents/src/daw_agents/models/cost_router.py"
     ],
@@ -2027,7 +2146,9 @@
     "epic": "Epic 18: Multi-Model Driver Support",
     "scope": "Future",
     "description": "Local Model Support - Ollama/LM Studio integration",
-    "dependencies": ["DRIVER-001"],
+    "dependencies": [
+      "DRIVER-001"
+    ],
     "context_files": [
       "packages/daw-agents/src/daw_agents/models/drivers/local.py"
     ],
@@ -2046,7 +2167,9 @@
     "epic": "Epic 18: Multi-Model Driver Support",
     "scope": "Future",
     "description": "Model Ensemble Voting - Multi-model consensus for critical decisions",
-    "dependencies": ["DRIVER-001"],
+    "dependencies": [
+      "DRIVER-001"
+    ],
     "context_files": [],
     "instruction": "Implement ensemble: (1) Multiple models vote on critical decisions, (2) Consensus threshold configuration, (3) Disagreement escalation to human.",
     "verification": {
