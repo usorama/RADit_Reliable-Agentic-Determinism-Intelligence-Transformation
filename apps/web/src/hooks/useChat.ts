@@ -136,6 +136,10 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
   // Ref to track current streaming message
   const streamingMessageIdRef = useRef<string | null>(null);
 
+  // Ref for callbacks to avoid stale closures
+  const onMessageRef = useRef(onMessage);
+  onMessageRef.current = onMessage;
+
   // -----------------------------------------------------------------------------
   // Connection Status Update
   // -----------------------------------------------------------------------------
@@ -183,11 +187,11 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
             };
 
             if (streamingMessageIdRef.current) {
+              const currentStreamingId = streamingMessageIdRef.current;
               // Update existing streaming message
-              setState((prev) => ({
-                ...prev,
-                messages: prev.messages.map((msg) =>
-                  msg.id === streamingMessageIdRef.current
+              setState((prev) => {
+                const updatedMessages = prev.messages.map((msg) =>
+                  msg.id === currentStreamingId
                     ? {
                         ...msg,
                         content: msg.content + content,
@@ -195,19 +199,25 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
                         phase,
                       }
                     : msg
-                ),
-                isTyping: false,
-                isLoading: !isComplete,
-              }));
+                );
+
+                // Call onMessage callback if complete (using ref to avoid stale closure)
+                if (isComplete) {
+                  const completedMsg = updatedMessages.find((m) => m.id === currentStreamingId);
+                  if (completedMsg) {
+                    onMessageRef.current?.({ ...completedMsg });
+                  }
+                }
+
+                return {
+                  ...prev,
+                  messages: updatedMessages,
+                  isTyping: false,
+                  isLoading: !isComplete,
+                };
+              });
 
               if (isComplete) {
-                // Get the completed message
-                const completedMsg = state.messages.find(
-                  (m) => m.id === streamingMessageIdRef.current
-                );
-                if (completedMsg) {
-                  onMessage?.({ ...completedMsg, content: completedMsg.content + content });
-                }
                 streamingMessageIdRef.current = null;
               }
             }
@@ -289,7 +299,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
         console.error('Failed to parse WebSocket message:', err);
       }
     },
-    [handleError, onMessage, state.messages, updateConnectionStatus]
+    [handleError, updateConnectionStatus]
   );
 
   // -----------------------------------------------------------------------------
@@ -547,11 +557,22 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
     if (initialWorkflowId) {
       connectWebSocket(initialWorkflowId);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialWorkflowId]);
 
+  // Cleanup WebSocket on unmount (separate effect to avoid circular deps)
+  useEffect(() => {
     return () => {
-      disconnect();
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+      if (wsRef.current) {
+        wsRef.current.close(1000, 'Component unmounted');
+        wsRef.current = null;
+      }
     };
-  }, [initialWorkflowId, connectWebSocket, disconnect]);
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
