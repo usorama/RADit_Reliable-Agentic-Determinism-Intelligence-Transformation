@@ -1,0 +1,226 @@
+# Remediation Action Registry Configuration
+# Part of OBS-010: Remediation Action Registry
+# See: docs/planning/epics/EPIC-13-OBSERVABILITY.md
+#
+# This file defines the available remediation actions for the self-healing system.
+# Each action specifies:
+#   - trigger: What event triggers this action
+#   - command: The command to execute (with {variable} substitution)
+#   - cooldown: Minimum seconds between executions
+#   - max_attempts: Maximum tries per cooldown period
+#   - requires_approval: Whether human approval is needed
+
+version: "1.0.0"
+default_cooldown_seconds: 300
+default_max_attempts: 3
+global_rate_limit_per_hour: 10
+
+actions:
+  # =============================================================================
+  # RESTART ACTIONS
+  # =============================================================================
+  - name: restart_container
+    action_type: restart
+    trigger: container_unhealthy
+    description: "Restart an unhealthy Docker container"
+    command: "docker restart {target}"
+    cooldown_seconds: 300  # 5 minutes
+    max_attempts: 3
+    requires_approval: none
+    enabled: true
+    priority: 10
+    timeout_seconds: 60
+    rollback_command: null
+    tags:
+      - docker
+      - container
+      - automatic
+
+  - name: restart_service
+    action_type: restart
+    trigger: service_down
+    description: "Restart a systemd service"
+    command: "systemctl restart {target}"
+    cooldown_seconds: 600  # 10 minutes
+    max_attempts: 2
+    requires_approval: notify
+    enabled: true
+    priority: 15
+    timeout_seconds: 120
+    tags:
+      - systemd
+      - service
+      - automatic
+
+  # =============================================================================
+  # SCALE ACTIONS
+  # =============================================================================
+  - name: scale_service
+    action_type: scale
+    trigger: high_cpu_sustained
+    description: "Scale a Docker Swarm service to handle increased load"
+    command: "docker service scale {target}={replicas}"
+    cooldown_seconds: 600  # 10 minutes
+    max_attempts: 2
+    requires_approval: require
+    enabled: true
+    priority: 30
+    timeout_seconds: 120
+    rollback_command: "docker service scale {target}={original_replicas}"
+    parameters:
+      min_replicas: 1
+      max_replicas: 10
+      scale_increment: 1
+    tags:
+      - docker
+      - swarm
+      - scaling
+      - manual
+
+  - name: scale_kubernetes_deployment
+    action_type: scale
+    trigger: high_cpu_sustained
+    description: "Scale a Kubernetes deployment"
+    command: "kubectl scale deployment {target} --replicas={replicas} -n {namespace}"
+    cooldown_seconds: 600
+    max_attempts: 2
+    requires_approval: require
+    enabled: true
+    priority: 30
+    timeout_seconds: 120
+    rollback_command: "kubectl scale deployment {target} --replicas={original_replicas} -n {namespace}"
+    parameters:
+      default_namespace: default
+    tags:
+      - kubernetes
+      - k8s
+      - scaling
+      - manual
+
+  # =============================================================================
+  # ROLLBACK ACTIONS
+  # =============================================================================
+  - name: rollback_deployment
+    action_type: rollback
+    trigger: error_rate_spike
+    description: "Rollback to previous deployment version"
+    command: "git revert HEAD --no-commit && git commit -m 'Automated rollback' && ./deploy.sh {target}"
+    cooldown_seconds: 3600  # 1 hour
+    max_attempts: 1
+    requires_approval: require
+    enabled: true
+    priority: 50
+    timeout_seconds: 300
+    tags:
+      - git
+      - deployment
+      - rollback
+      - manual
+      - destructive
+
+  - name: rollback_kubernetes
+    action_type: rollback
+    trigger: error_rate_spike
+    description: "Rollback a Kubernetes deployment to previous revision"
+    command: "kubectl rollout undo deployment/{target} -n {namespace}"
+    cooldown_seconds: 1800  # 30 minutes
+    max_attempts: 1
+    requires_approval: require
+    enabled: true
+    priority: 50
+    timeout_seconds: 180
+    tags:
+      - kubernetes
+      - k8s
+      - rollback
+      - manual
+
+  # =============================================================================
+  # CACHE ACTIONS
+  # =============================================================================
+  - name: clear_cache
+    action_type: clear_cache
+    trigger: cache_memory_high
+    description: "Clear Redis cache for a specific database"
+    command: "redis-cli -n {db_number} FLUSHDB"
+    cooldown_seconds: 600  # 10 minutes
+    max_attempts: 1
+    requires_approval: none
+    enabled: true
+    priority: 20
+    timeout_seconds: 30
+    parameters:
+      default_db_number: 0
+    tags:
+      - redis
+      - cache
+      - automatic
+
+  - name: clear_all_cache
+    action_type: clear_cache
+    trigger: cache_memory_high
+    description: "Clear all Redis databases (use with caution)"
+    command: "redis-cli FLUSHALL"
+    cooldown_seconds: 3600  # 1 hour
+    max_attempts: 1
+    requires_approval: require
+    enabled: true
+    priority: 40
+    timeout_seconds: 60
+    tags:
+      - redis
+      - cache
+      - manual
+      - destructive
+
+  - name: invalidate_cdn_cache
+    action_type: clear_cache
+    trigger: custom
+    description: "Invalidate CDN cache paths"
+    command: "aws cloudfront create-invalidation --distribution-id {distribution_id} --paths {paths}"
+    cooldown_seconds: 1800  # 30 minutes
+    max_attempts: 2
+    requires_approval: notify
+    enabled: false  # Disabled by default - requires AWS credentials
+    priority: 25
+    timeout_seconds: 120
+    tags:
+      - cdn
+      - cloudfront
+      - aws
+      - cache
+
+  # =============================================================================
+  # DIAGNOSTIC ACTIONS (Non-destructive)
+  # =============================================================================
+  - name: collect_diagnostics
+    action_type: custom
+    trigger: custom
+    description: "Collect diagnostic information for debugging"
+    command: "docker logs {target} --tail 1000 > /tmp/diagnostics/{target}-$(date +%Y%m%d-%H%M%S).log"
+    cooldown_seconds: 60
+    max_attempts: 10
+    requires_approval: none
+    enabled: true
+    priority: 5
+    timeout_seconds: 30
+    tags:
+      - diagnostic
+      - logs
+      - automatic
+
+  - name: health_check
+    action_type: custom
+    trigger: custom
+    description: "Run health check on a service"
+    command: "curl -sf {health_endpoint} || exit 1"
+    cooldown_seconds: 30
+    max_attempts: 5
+    requires_approval: none
+    enabled: true
+    priority: 1
+    timeout_seconds: 10
+    tags:
+      - health
+      - diagnostic
+      - automatic
