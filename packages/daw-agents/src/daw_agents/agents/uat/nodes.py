@@ -16,21 +16,69 @@ update. Routing functions determine the next node based on state.
 from __future__ import annotations
 
 import logging
+import os
 import time
 from typing import Any
 
 from daw_agents.agents.uat.state import UATState
+from daw_agents.mcp import MCPClient, MCPToolResult
 
 logger = logging.getLogger(__name__)
 
 
 # =============================================================================
-# Helper Functions (MCP integration stubs)
+# Playwright MCP Client Singleton
+# =============================================================================
+
+# Environment variable for Playwright MCP server URL
+PLAYWRIGHT_MCP_URL = os.environ.get("MCP_PLAYWRIGHT_SERVER_URL", "")
+
+# Module-level client instance (lazily initialized)
+_playwright_client: MCPClient | None = None
+
+
+def _get_playwright_client() -> MCPClient | None:
+    """Get or create the Playwright MCP client singleton.
+
+    Returns:
+        MCPClient instance if configured, None otherwise
+    """
+    global _playwright_client
+
+    if not PLAYWRIGHT_MCP_URL:
+        logger.debug("MCP_PLAYWRIGHT_SERVER_URL not configured")
+        return None
+
+    if _playwright_client is None:
+        _playwright_client = MCPClient(
+            server_url=PLAYWRIGHT_MCP_URL,
+            server_name="playwright",
+            timeout=60.0,  # Browser operations can be slow
+        )
+        logger.info("Created Playwright MCP client: %s", PLAYWRIGHT_MCP_URL)
+
+    return _playwright_client
+
+
+def _is_mcp_available() -> bool:
+    """Check if Playwright MCP is available.
+
+    Returns:
+        True if MCP is configured and accessible
+    """
+    return bool(PLAYWRIGHT_MCP_URL)
+
+
+# =============================================================================
+# Helper Functions (MCP integration)
 # =============================================================================
 
 
 async def initialize_browser(browser_type: str) -> dict[str, Any]:
     """Initialize browser via Playwright MCP.
+
+    Uses the Playwright MCP 'browser_launch' tool to start a browser instance.
+    Falls back to a stub response when MCP is not available.
 
     Args:
         browser_type: Browser type (chromium, firefox, webkit)
@@ -38,17 +86,62 @@ async def initialize_browser(browser_type: str) -> dict[str, Any]:
     Returns:
         Dictionary with browser initialization result
     """
-    # This would call Playwright MCP to start browser
-    # For now, return a stub response
     logger.info("Initializing %s browser via Playwright MCP", browser_type)
-    return {
-        "browser_id": f"{browser_type}-{int(time.time())}",
-        "success": True,
-    }
+
+    client = _get_playwright_client()
+    if client is None:
+        logger.warning(
+            "Playwright MCP not configured (set MCP_PLAYWRIGHT_SERVER_URL). "
+            "Returning stub response."
+        )
+        return {
+            "browser_id": f"{browser_type}-stub-{int(time.time())}",
+            "success": True,
+            "stub": True,
+        }
+
+    try:
+        result: MCPToolResult = await client.call_tool(
+            "browser_launch",
+            params={
+                "browser": browser_type,
+                "headless": True,
+            },
+        )
+
+        if not result.success:
+            logger.error("Failed to launch browser: %s", result.error)
+            return {
+                "success": False,
+                "error": result.error or "Unknown error launching browser",
+            }
+
+        # Extract browser ID from result
+        browser_id = f"{browser_type}-{int(time.time())}"
+        if isinstance(result.result, dict):
+            browser_id = result.result.get("browserId", browser_id)
+        elif isinstance(result.result, str):
+            browser_id = result.result
+
+        logger.info("Browser launched successfully: %s", browser_id)
+        return {
+            "browser_id": browser_id,
+            "success": True,
+        }
+
+    except Exception as e:
+        logger.error("Error initializing browser via MCP: %s", e)
+        return {
+            "success": False,
+            "error": f"MCP error: {str(e)}",
+        }
 
 
 async def navigate_to_url(url: str) -> dict[str, Any]:
     """Navigate to URL via Playwright MCP.
+
+    Uses the Playwright MCP 'browser_navigate' tool to navigate to a URL
+    and captures an accessibility snapshot.
 
     Args:
         url: Target URL
@@ -57,14 +150,71 @@ async def navigate_to_url(url: str) -> dict[str, Any]:
         Dictionary with navigation result and accessibility snapshot
     """
     logger.info("Navigating to URL: %s", url)
-    return {
-        "success": True,
-        "accessibility_snapshot": {
+
+    client = _get_playwright_client()
+    if client is None:
+        logger.warning(
+            "Playwright MCP not configured. Returning stub response for: %s", url
+        )
+        return {
+            "success": True,
+            "stub": True,
+            "accessibility_snapshot": {
+                "role": "document",
+                "name": "Page (stub)",
+                "url": url,
+            },
+        }
+
+    try:
+        # Navigate to URL
+        nav_result: MCPToolResult = await client.call_tool(
+            "browser_navigate",
+            params={"url": url},
+        )
+
+        if not nav_result.success:
+            logger.error("Navigation failed: %s", nav_result.error)
+            return {
+                "success": False,
+                "error": nav_result.error or f"Failed to navigate to {url}",
+            }
+
+        # Get accessibility snapshot
+        snapshot_result: MCPToolResult = await client.call_tool(
+            "browser_snapshot",
+            params={},
+        )
+
+        accessibility_snapshot: dict[str, Any] = {
             "role": "document",
             "name": "Page",
             "url": url,
-        },
-    }
+        }
+
+        if snapshot_result.success and snapshot_result.result:
+            if isinstance(snapshot_result.result, dict):
+                accessibility_snapshot = snapshot_result.result
+            elif isinstance(snapshot_result.result, str):
+                # Parse if it's a JSON string
+                import json
+                try:
+                    accessibility_snapshot = json.loads(snapshot_result.result)
+                except json.JSONDecodeError:
+                    accessibility_snapshot["raw"] = snapshot_result.result
+
+        logger.info("Navigation successful, captured accessibility snapshot")
+        return {
+            "success": True,
+            "accessibility_snapshot": accessibility_snapshot,
+        }
+
+    except Exception as e:
+        logger.error("Error navigating via MCP: %s", e)
+        return {
+            "success": False,
+            "error": f"MCP error: {str(e)}",
+        }
 
 
 async def execute_interaction(
@@ -74,22 +224,102 @@ async def execute_interaction(
 ) -> dict[str, Any]:
     """Execute user interaction via Playwright MCP.
 
+    Maps action types to Playwright MCP tools:
+    - click -> browser_click
+    - type -> browser_type
+    - scroll -> browser_scroll
+    - hover -> browser_hover
+    - select -> browser_select
+
     Args:
         action_type: Type of action (click, type, etc.)
-        selector: Element selector
+        selector: Element selector (ref or CSS selector)
         value: Value for input actions
 
     Returns:
         Dictionary with interaction result
     """
     logger.info("Executing %s on %s with value %s", action_type, selector, value)
-    return {
-        "success": True,
-        "accessibility_snapshot": {
+
+    client = _get_playwright_client()
+    if client is None:
+        logger.warning(
+            "Playwright MCP not configured. Returning stub response for: %s",
+            action_type,
+        )
+        return {
+            "success": True,
+            "stub": True,
+            "accessibility_snapshot": {
+                "role": "button" if action_type == "click" else "textbox",
+                "name": selector or "element",
+            },
+        }
+
+    # Map action types to MCP tools
+    tool_mapping = {
+        "click": "browser_click",
+        "type": "browser_type",
+        "scroll": "browser_scroll",
+        "hover": "browser_hover",
+        "select": "browser_select_option",
+        "interact": "browser_click",  # Default interaction is click
+    }
+
+    tool_name = tool_mapping.get(action_type, "browser_click")
+
+    try:
+        # Build params based on action type
+        params: dict[str, Any] = {}
+
+        if selector:
+            # Playwright MCP uses 'ref' for element references
+            params["ref"] = selector
+
+        if action_type == "type" and value:
+            params["text"] = value
+        elif action_type == "select" and value:
+            params["values"] = [value]
+        elif action_type == "scroll":
+            # Scroll uses coordinates or element ref
+            params["deltaY"] = 300  # Default scroll amount
+
+        result: MCPToolResult = await client.call_tool(tool_name, params=params)
+
+        if not result.success:
+            logger.error("Interaction failed: %s", result.error)
+            return {
+                "success": False,
+                "error": result.error or f"Failed to execute {action_type}",
+            }
+
+        # Get updated accessibility snapshot after interaction
+        snapshot_result: MCPToolResult = await client.call_tool(
+            "browser_snapshot",
+            params={},
+        )
+
+        accessibility_snapshot: dict[str, Any] = {
             "role": "button" if action_type == "click" else "textbox",
             "name": selector or "element",
-        },
-    }
+        }
+
+        if snapshot_result.success and snapshot_result.result:
+            if isinstance(snapshot_result.result, dict):
+                accessibility_snapshot = snapshot_result.result
+
+        logger.info("Interaction %s successful", action_type)
+        return {
+            "success": True,
+            "accessibility_snapshot": accessibility_snapshot,
+        }
+
+    except Exception as e:
+        logger.error("Error executing interaction via MCP: %s", e)
+        return {
+            "success": False,
+            "error": f"MCP error: {str(e)}",
+        }
 
 
 async def validate_assertion(
@@ -97,6 +327,9 @@ async def validate_assertion(
     accessibility_snapshot: dict[str, Any],
 ) -> dict[str, Any]:
     """Validate assertion using accessibility snapshot.
+
+    Performs semantic validation by checking if expected elements/text
+    are present in the accessibility snapshot.
 
     Args:
         expected: Expected outcome description
@@ -106,12 +339,143 @@ async def validate_assertion(
         Dictionary with validation result
     """
     logger.info("Validating: %s", expected)
-    return {
-        "passed": True,
-        "expected": expected,
-        "actual": expected,
-        "accessibility_snapshot": accessibility_snapshot,
+
+    client = _get_playwright_client()
+    if client is None:
+        logger.warning(
+            "Playwright MCP not configured. Returning stub validation for: %s",
+            expected,
+        )
+        return {
+            "passed": True,
+            "stub": True,
+            "expected": expected,
+            "actual": expected,
+            "accessibility_snapshot": accessibility_snapshot,
+        }
+
+    try:
+        # Get fresh accessibility snapshot for validation
+        snapshot_result: MCPToolResult = await client.call_tool(
+            "browser_snapshot",
+            params={},
+        )
+
+        current_snapshot = accessibility_snapshot
+        if snapshot_result.success and snapshot_result.result:
+            if isinstance(snapshot_result.result, dict):
+                current_snapshot = snapshot_result.result
+            elif isinstance(snapshot_result.result, str):
+                import json
+                try:
+                    current_snapshot = json.loads(snapshot_result.result)
+                except json.JSONDecodeError:
+                    current_snapshot = {"raw": snapshot_result.result}
+
+        # Perform semantic validation
+        # Convert snapshot to searchable text
+        snapshot_text = _extract_text_from_snapshot(current_snapshot)
+
+        # Check if expected content is present (case-insensitive)
+        expected_lower = expected.lower()
+        snapshot_text_lower = snapshot_text.lower()
+
+        # Extract key terms from expected string
+        key_terms = _extract_key_terms(expected_lower)
+
+        # Check if key terms are present
+        matched_terms = [term for term in key_terms if term in snapshot_text_lower]
+        match_ratio = len(matched_terms) / len(key_terms) if key_terms else 1.0
+
+        # Consider passed if majority of key terms match
+        passed = match_ratio >= 0.5
+
+        logger.info(
+            "Validation result: passed=%s, match_ratio=%.2f, terms=%s",
+            passed,
+            match_ratio,
+            matched_terms,
+        )
+
+        return {
+            "passed": passed,
+            "expected": expected,
+            "actual": snapshot_text[:200] if snapshot_text else "No content",
+            "accessibility_snapshot": current_snapshot,
+            "match_ratio": match_ratio,
+            "matched_terms": matched_terms,
+        }
+
+    except Exception as e:
+        logger.error("Error validating via MCP: %s", e)
+        return {
+            "passed": False,
+            "expected": expected,
+            "actual": f"Error: {str(e)}",
+            "accessibility_snapshot": accessibility_snapshot,
+            "error": str(e),
+        }
+
+
+def _extract_text_from_snapshot(snapshot: dict[str, Any]) -> str:
+    """Extract searchable text from accessibility snapshot.
+
+    Args:
+        snapshot: Accessibility snapshot dict
+
+    Returns:
+        Concatenated text content from the snapshot
+    """
+    texts: list[str] = []
+
+    def _traverse(node: dict[str, Any] | list[Any] | str) -> None:
+        if isinstance(node, str):
+            texts.append(node)
+        elif isinstance(node, dict):
+            # Extract common accessibility properties
+            for key in ("name", "text", "value", "description", "role"):
+                if key in node and isinstance(node[key], str):
+                    texts.append(node[key])
+            # Traverse children
+            for key in ("children", "nodes", "elements"):
+                if key in node:
+                    _traverse(node[key])
+        elif isinstance(node, list):
+            for item in node:
+                _traverse(item)
+
+    _traverse(snapshot)
+    return " ".join(texts)
+
+
+def _extract_key_terms(text: str) -> list[str]:
+    """Extract key terms from expected outcome text.
+
+    Filters out common words to focus on meaningful terms.
+
+    Args:
+        text: The expected outcome text
+
+    Returns:
+        List of key terms
+    """
+    # Common words to ignore
+    stop_words = {
+        "i", "should", "see", "the", "a", "an", "is", "are", "be",
+        "have", "has", "will", "would", "can", "could", "to", "of",
+        "in", "on", "at", "for", "with", "that", "this", "it",
+        "and", "or", "not", "my", "their", "there", "here",
     }
+
+    # Split and filter
+    words = text.split()
+    key_terms = [
+        word.strip(".,!?\"'()[]{}") for word in words
+        if word.strip(".,!?\"'()[]{}").lower() not in stop_words
+        and len(word.strip(".,!?\"'()[]{}")) > 2
+    ]
+
+    return key_terms
 
 
 async def close_browser() -> dict[str, Any]:
@@ -121,24 +485,92 @@ async def close_browser() -> dict[str, Any]:
         Dictionary with close result
     """
     logger.info("Closing browser")
-    return {"success": True}
+
+    client = _get_playwright_client()
+    if client is None:
+        logger.warning("Playwright MCP not configured. Returning stub close.")
+        return {"success": True, "stub": True}
+
+    try:
+        result: MCPToolResult = await client.call_tool(
+            "browser_close",
+            params={},
+        )
+
+        if not result.success:
+            logger.warning("Browser close returned error: %s", result.error)
+            # Still consider it successful if browser is already closed
+            return {"success": True, "warning": result.error}
+
+        logger.info("Browser closed successfully")
+        return {"success": True}
+
+    except Exception as e:
+        logger.warning("Error closing browser via MCP: %s", e)
+        # Don't fail cleanup on close errors
+        return {"success": True, "warning": str(e)}
 
 
 async def take_screenshot(path: str | None = None) -> dict[str, Any]:
     """Take screenshot via Playwright MCP.
 
     Args:
-        path: Optional path to save screenshot
+        path: Optional path to save screenshot (ignored by MCP, returns base64)
 
     Returns:
         Dictionary with screenshot result
     """
     screenshot_path = path or f"/tmp/screenshot-{int(time.time())}.png"
     logger.info("Taking screenshot: %s", screenshot_path)
-    return {
-        "success": True,
-        "path": screenshot_path,
-    }
+
+    client = _get_playwright_client()
+    if client is None:
+        logger.warning("Playwright MCP not configured. Returning stub screenshot.")
+        return {
+            "success": True,
+            "stub": True,
+            "path": screenshot_path,
+        }
+
+    try:
+        result: MCPToolResult = await client.call_tool(
+            "browser_screenshot",
+            params={},
+        )
+
+        if not result.success:
+            logger.warning("Screenshot failed: %s", result.error)
+            return {
+                "success": False,
+                "error": result.error or "Failed to take screenshot",
+            }
+
+        # MCP returns base64 encoded screenshot
+        # Save to file if path provided
+        if result.result and path:
+            import base64
+            try:
+                if isinstance(result.result, str):
+                    # Assume base64 encoded PNG
+                    img_data = base64.b64decode(result.result)
+                    with open(path, "wb") as f:
+                        f.write(img_data)
+                    logger.info("Screenshot saved to: %s", path)
+            except Exception as save_error:
+                logger.warning("Failed to save screenshot to file: %s", save_error)
+
+        return {
+            "success": True,
+            "path": screenshot_path,
+            "data": result.result if isinstance(result.result, str) else None,
+        }
+
+    except Exception as e:
+        logger.warning("Error taking screenshot via MCP: %s", e)
+        return {
+            "success": False,
+            "error": str(e),
+        }
 
 
 # =============================================================================

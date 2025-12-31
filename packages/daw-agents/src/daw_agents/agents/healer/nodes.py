@@ -24,10 +24,14 @@ Dependencies:
 from __future__ import annotations
 
 import logging
+import os
 from typing import Any
 
 from daw_agents.agents.healer.models import ErrorInfo
 from daw_agents.agents.healer.state import HealerState
+from daw_agents.memory.neo4j import Neo4jConfig, Neo4jConnector
+from daw_agents.models.router import ModelRouter, TaskType
+from daw_agents.sandbox.e2b import E2BSandbox, SandboxConfig
 
 logger = logging.getLogger(__name__)
 
@@ -79,9 +83,56 @@ async def query_similar_errors(
     """
     logger.info("Querying knowledge graph for: %s", error_signature)
 
-    # In production, this would query Neo4j using DB-001
-    # For now, return empty list (will be mocked in tests)
-    return []
+    # Try to query Neo4j for similar errors
+    # Note: VPS may be unreachable (72.60.204.156:7687), so handle gracefully
+    try:
+        # Get Neo4j configuration from environment or use defaults
+        neo4j_uri = os.environ.get("NEO4J_URI", "bolt://72.60.204.156:7687")
+        neo4j_user = os.environ.get("NEO4J_USER", "neo4j")
+        neo4j_password = os.environ.get("NEO4J_PASSWORD", "daw_graph_2024")
+
+        config = Neo4jConfig(
+            uri=neo4j_uri,
+            user=neo4j_user,
+            password=neo4j_password,
+        )
+
+        connector = Neo4jConnector.get_instance(config)
+
+        # Check connectivity before querying
+        if not await connector.is_connected():
+            logger.warning("Neo4j not connected, returning empty results")
+            return []
+
+        # Query for similar errors by signature and type
+        cypher = """
+            MATCH (e:ErrorResolution)
+            WHERE e.error_type = $error_type
+               OR e.error_signature CONTAINS $signature_part
+            RETURN e.error_signature as signature,
+                   e.error_type as type,
+                   e.fix_description as fix_description,
+                   e.fixed_code as fixed_code,
+                   e.created_at as created_at
+            ORDER BY e.created_at DESC
+            LIMIT 5
+        """
+
+        # Use first 50 chars of signature for fuzzy matching
+        signature_part = error_signature[:50] if len(error_signature) > 50 else error_signature
+
+        results = await connector.query(
+            cypher,
+            params={"error_type": error_type, "signature_part": signature_part},
+        )
+
+        logger.info("Found %d similar errors in knowledge graph", len(results))
+        return results
+
+    except Exception as e:
+        # Neo4j VPS may be unreachable - graceful fallback
+        logger.warning("Failed to query Neo4j for similar errors: %s", str(e))
+        return []
 
 
 async def generate_fix_suggestion(
@@ -103,14 +154,114 @@ async def generate_fix_suggestion(
     """
     logger.info("Generating fix suggestion, attempt: %d", previous_attempts + 1)
 
-    # In production, this would use ModelRouter with TaskType.CODING
-    # For now, return placeholder
-    return {
-        "description": "Placeholder fix suggestion",
-        "fixed_code": error_info.get("source_code", ""),
-        "confidence": 0.5,
-        "based_on_past_resolution": len(similar_errors) > 0,
-    }
+    # Build context from similar errors if available
+    similar_context = ""
+    if similar_errors:
+        similar_context = "\n\n## Similar Past Errors and Fixes:\n"
+        for i, err in enumerate(similar_errors[:3], 1):  # Limit to top 3
+            similar_context += f"""
+### Similar Error {i}:
+- Type: {err.get('type', 'unknown')}
+- Fix: {err.get('fix_description', 'No description')}
+- Fixed Code Snippet: {err.get('fixed_code', 'N/A')[:500]}
+"""
+
+    # Build the prompt for the LLM
+    prompt = f"""You are an expert software engineer tasked with fixing a code error.
+
+## Error Details:
+- Error Type: {error_info.get('error_type', 'unknown')}
+- Error Message: {error_info.get('error_message', 'No message')}
+- Error Signature: {error_info.get('error_signature', 'N/A')}
+- Root Cause Analysis: {error_info.get('root_cause', 'Unknown')}
+
+## Failed Source Code:
+```
+{error_info.get('source_code', 'No source code provided')}
+```
+
+## Test Code (if available):
+```
+{error_info.get('test_code', 'No test code provided')}
+```
+{similar_context}
+
+## Previous Attempts: {previous_attempts}
+
+Please analyze the error and provide a fix. Return your response in the following format:
+
+DESCRIPTION: <brief description of the fix>
+CONFIDENCE: <0.0 to 1.0>
+FIXED_CODE:
+```
+<the complete fixed code>
+```
+"""
+
+    try:
+        # Use ModelRouter with TaskType.CODING for fix generation
+        router = ModelRouter()
+        response = await router.route(
+            task_type=TaskType.CODING,
+            messages=[
+                {"role": "system", "content": "You are an expert code repair assistant."},
+                {"role": "user", "content": prompt},
+            ],
+            metadata={"task": "healer_fix_suggestion", "attempt": previous_attempts + 1},
+        )
+
+        # Parse the LLM response
+        description = "LLM-generated fix"
+        confidence = 0.7
+        fixed_code = error_info.get("source_code", "")
+
+        # Extract description
+        if "DESCRIPTION:" in response:
+            desc_start = response.find("DESCRIPTION:") + len("DESCRIPTION:")
+            desc_end = response.find("\n", desc_start)
+            if desc_end > desc_start:
+                description = response[desc_start:desc_end].strip()
+
+        # Extract confidence
+        if "CONFIDENCE:" in response:
+            conf_start = response.find("CONFIDENCE:") + len("CONFIDENCE:")
+            conf_end = response.find("\n", conf_start)
+            if conf_end > conf_start:
+                try:
+                    confidence = float(response[conf_start:conf_end].strip())
+                    confidence = max(0.0, min(1.0, confidence))  # Clamp to [0, 1]
+                except ValueError:
+                    confidence = 0.7
+
+        # Extract fixed code
+        if "FIXED_CODE:" in response and "```" in response:
+            code_start = response.find("```", response.find("FIXED_CODE:"))
+            if code_start != -1:
+                code_start = response.find("\n", code_start) + 1
+                code_end = response.find("```", code_start)
+                if code_end > code_start:
+                    fixed_code = response[code_start:code_end].strip()
+
+        logger.info("Generated fix suggestion with confidence: %.2f", confidence)
+
+        return {
+            "description": description,
+            "fixed_code": fixed_code,
+            "confidence": confidence,
+            "based_on_past_resolution": len(similar_errors) > 0,
+            "llm_response": response,  # Include full response for debugging
+        }
+
+    except Exception as e:
+        logger.error("Failed to generate fix suggestion via LLM: %s", str(e))
+        # Fallback to placeholder if LLM fails
+        return {
+            "description": f"Fallback fix (LLM error: {str(e)[:100]})",
+            "fixed_code": error_info.get("source_code", ""),
+            "confidence": 0.3,
+            "based_on_past_resolution": False,
+            "error": str(e),
+        }
 
 
 async def apply_code_fix(
@@ -156,14 +307,77 @@ async def run_validation_tests(
     """
     logger.info("Running validation tests for: %s", test_file)
 
-    # In production, this would use E2B sandbox (CORE-004) for test execution
-    # For now, return placeholder
-    return {
-        "passed": False,
-        "output": "No tests executed (placeholder)",
-        "exit_code": 1,
-        "duration_ms": 0.0,
-    }
+    import time
+
+    start_time = time.time()
+
+    try:
+        # Get E2B API key from environment
+        e2b_api_key = os.environ.get("E2B_API_KEY")
+        if not e2b_api_key:
+            logger.warning("E2B_API_KEY not set, cannot run validation tests")
+            return {
+                "passed": False,
+                "output": "E2B_API_KEY environment variable not set",
+                "exit_code": 1,
+                "duration_ms": 0.0,
+            }
+
+        config = SandboxConfig(
+            api_key=e2b_api_key,
+            timeout=120,  # 2 minute timeout for test execution
+        )
+
+        async with E2BSandbox(config) as sandbox:
+            # Write the fixed source code to sandbox
+            sandbox_source_file = f"/tmp/{source_file.split('/')[-1]}"
+            await sandbox.write_file(sandbox_source_file, fixed_code)
+            logger.debug("Wrote fixed code to sandbox: %s", sandbox_source_file)
+
+            # Write the test code to sandbox
+            sandbox_test_file = f"/tmp/{test_file.split('/')[-1]}"
+            await sandbox.write_file(sandbox_test_file, test_code)
+            logger.debug("Wrote test code to sandbox: %s", sandbox_test_file)
+
+            # Run pytest on the test file
+            # Use PYTHONPATH to include /tmp so imports work
+            result = await sandbox.run_command(
+                f"cd /tmp && PYTHONPATH=/tmp python -m pytest {sandbox_test_file} -v --tb=short",
+                timeout=60,
+            )
+
+            duration_ms = (time.time() - start_time) * 1000
+
+            passed = result.success
+            output = result.stdout
+            if result.stderr:
+                output += f"\n\nSTDERR:\n{result.stderr}"
+            if result.error:
+                output += f"\n\nERROR:\n{result.error}"
+
+            logger.info(
+                "Validation tests %s (exit_code=%s, duration=%.2fms)",
+                "PASSED" if passed else "FAILED",
+                result.exit_code,
+                duration_ms,
+            )
+
+            return {
+                "passed": passed,
+                "output": output,
+                "exit_code": result.exit_code if result.exit_code is not None else 1,
+                "duration_ms": duration_ms,
+            }
+
+    except Exception as e:
+        duration_ms = (time.time() - start_time) * 1000
+        logger.error("Failed to run validation tests: %s", str(e))
+        return {
+            "passed": False,
+            "output": f"Sandbox execution failed: {str(e)}",
+            "exit_code": 1,
+            "duration_ms": duration_ms,
+        }
 
 
 async def store_to_neo4j(

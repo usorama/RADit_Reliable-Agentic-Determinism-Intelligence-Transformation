@@ -6,6 +6,7 @@ This module implements:
 - ModelRouter class for task-based model selection
 - Fallback logic when primary model fails
 - Helicone integration for cost tracking
+- Integration with Model Driver abstraction (FR-10.1)
 
 Based on FR-01.1: Router Mode selects models based on task type:
 - Planning tasks: o1/Claude Opus (high reasoning)
@@ -16,16 +17,26 @@ Based on FR-01.1: Router Mode selects models based on task type:
 Critical Architecture Decision:
 The Validator Agent MUST use a different model than the Executor Agent
 to ensure cross-validation and avoid model-specific blind spots.
+
+LLM Agnosticism (FR-10.1):
+When use_drivers=True, the router uses the ModelDriver abstraction layer
+instead of LiteLLM directly, enabling hot-swappable LLM providers.
 """
 
 from __future__ import annotations
 
 import logging
+import os
 from enum import Enum
 from typing import Any
 
 from litellm import acompletion
 
+from daw_agents.models.drivers import (
+    DriverRegistry,
+    DriverWithFallback,
+    ModelDriver,
+)
 from daw_agents.models.providers import (
     ModelConfig,
     get_default_configs,
@@ -59,10 +70,16 @@ class ModelRouter:
     2. Automatic fallback when primary model fails
     3. Helicone integration for cost tracking
     4. Cross-validation principle (validator != executor model)
+    5. LLM agnosticism via ModelDriver abstraction (FR-10.1)
 
     Example:
         ```python
+        # Legacy mode (LiteLLM)
         router = ModelRouter()
+
+        # Driver mode (FR-10.1 - LLM agnostic)
+        router = ModelRouter(use_drivers=True)
+        # or set DAW_USE_DRIVERS=true environment variable
 
         # Route a planning task to high-reasoning model
         result = await router.route(
@@ -78,15 +95,34 @@ class ModelRouter:
     def __init__(
         self,
         configs: dict[TaskType, ModelConfig] | None = None,
+        use_drivers: bool | None = None,
     ) -> None:
         """Initialize the ModelRouter.
 
         Args:
             configs: Optional custom configs. If None, uses defaults from environment.
+            use_drivers: Use ModelDriver abstraction instead of LiteLLM.
+                        If None, reads from DAW_USE_DRIVERS env var.
+                        Defaults to False for backward compatibility.
         """
         self.configs = configs or get_default_configs()
         self._helicone_config = get_helicone_config()
+
+        # Determine if we should use drivers
+        if use_drivers is None:
+            use_drivers = os.environ.get("DAW_USE_DRIVERS", "").lower() in (
+                "true",
+                "1",
+                "yes",
+            )
+        self._use_drivers = use_drivers
+        self._driver: ModelDriver | None = None
+
         self._validate_cross_validation_principle()
+
+    def _get_driver_for_model(self, model: str) -> ModelDriver:
+        """Get the appropriate driver for a model."""
+        return DriverRegistry.get_driver_for_model(model)
 
     def _validate_cross_validation_principle(self) -> None:
         """Validate that validation model differs from coding model.
@@ -203,6 +239,9 @@ class ModelRouter:
         Implements automatic fallback: if the primary model fails,
         the request is retried with the fallback model.
 
+        When use_drivers=True, uses the ModelDriver abstraction (FR-10.1)
+        for LLM-agnostic operation.
+
         Args:
             task_type: The type of task (planning, coding, validation, fast)
             messages: Chat messages in OpenAI format
@@ -216,6 +255,58 @@ class ModelRouter:
         """
         config = self.configs[task_type]
 
+        # Use driver abstraction if enabled (FR-10.1)
+        if self._use_drivers:
+            return await self._route_with_drivers(task_type, messages, config)
+
+        # Legacy LiteLLM mode
+        return await self._route_with_litellm(task_type, messages, config, metadata)
+
+    async def _route_with_drivers(
+        self,
+        task_type: TaskType,
+        messages: list[dict[str, str]],
+        config: ModelConfig,
+    ) -> str:
+        """Route using ModelDriver abstraction (FR-10.1).
+
+        This enables true LLM agnosticism - drivers can be swapped
+        without code changes.
+        """
+        logger.debug(
+            "Routing %s task via driver to model: %s",
+            task_type.value,
+            config.primary,
+        )
+
+        # Get driver for primary model
+        primary_driver = self._get_driver_for_model(config.primary)
+        fallback_driver = self._get_driver_for_model(config.fallback)
+
+        # Use DriverWithFallback for automatic recovery
+        driver = DriverWithFallback(
+            primary=primary_driver,
+            fallback=fallback_driver,
+            fallback_models={config.primary: config.fallback},
+        )
+
+        response = await driver.complete(
+            messages=messages,
+            model=config.primary,
+            max_tokens=config.max_tokens,
+            temperature=config.temperature,
+        )
+
+        return response.content
+
+    async def _route_with_litellm(
+        self,
+        task_type: TaskType,
+        messages: list[dict[str, str]],
+        config: ModelConfig,
+        metadata: dict[str, Any] | None,
+    ) -> str:
+        """Route using LiteLLM (legacy mode)."""
         # Try primary model first
         try:
             logger.debug(

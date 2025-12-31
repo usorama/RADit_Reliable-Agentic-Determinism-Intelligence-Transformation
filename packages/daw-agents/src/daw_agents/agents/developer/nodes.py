@@ -22,11 +22,25 @@ Dependencies:
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any
 
 from daw_agents.agents.developer.state import DeveloperState
+from daw_agents.models.router import ModelRouter, TaskType
+from daw_agents.sandbox.e2b import E2BSandbox
 
 logger = logging.getLogger(__name__)
+
+# Module-level router instance (lazy-initialized)
+_router: ModelRouter | None = None
+
+
+def _get_router() -> ModelRouter:
+    """Get or create the module-level ModelRouter instance."""
+    global _router
+    if _router is None:
+        _router = ModelRouter()
+    return _router
 
 
 # =============================================================================
@@ -51,10 +65,37 @@ async def generate_test_code(
     Returns:
         Generated test code as a string
     """
-    # In production, this would use ModelRouter with TaskType.CODING
-    # For now, return a placeholder
     logger.info("Generating test code for: %s", task_description)
-    return f'"""Tests for {source_file}"""\n\ndef test_placeholder():\n    pass'
+
+    router = _get_router()
+
+    prompt = f"""You are a TDD expert. Write pytest test code for the following task.
+
+Task Description:
+{task_description}
+
+Source file path: {source_file}
+Test file path: {test_file}
+
+Requirements:
+1. Write comprehensive pytest tests that will initially FAIL (Red phase of TDD)
+2. Tests should cover edge cases and error conditions
+3. Use descriptive test names that explain what is being tested
+4. Include necessary imports (pytest, the module being tested)
+5. Do NOT include any implementation code, only tests
+
+Return ONLY the Python test code, no explanations or markdown formatting.
+"""
+
+    messages = [{"role": "user", "content": prompt}]
+
+    test_code = await router.route(
+        task_type=TaskType.CODING,
+        messages=messages,
+        metadata={"phase": "red", "source_file": source_file},
+    )
+
+    return test_code
 
 
 async def execute_tests_in_sandbox(
@@ -76,14 +117,51 @@ async def execute_tests_in_sandbox(
     Returns:
         Dictionary with test results (passed, output, exit_code, duration_ms)
     """
-    # In production, this would use E2B sandbox (CORE-004)
     logger.info("Executing tests in sandbox: %s", test_file)
-    return {
-        "passed": False,
-        "output": "No tests executed (placeholder)",
-        "exit_code": 1,
-        "duration_ms": 0.0,
-    }
+
+    start_time = time.time()
+
+    try:
+        sandbox = E2BSandbox.from_env()
+
+        async with sandbox:
+            # Write source code to sandbox
+            await sandbox.write_file(f"/home/user/{source_file}", source_code)
+
+            # Write test code to sandbox
+            await sandbox.write_file(f"/home/user/{test_file}", test_code)
+
+            # Install pytest if not present and run tests
+            result = await sandbox.run_command(
+                f"cd /home/user && pip install -q pytest && python -m pytest {test_file} -v",
+                timeout=120,
+            )
+
+            duration_ms = (time.time() - start_time) * 1000
+
+            # Combine stdout and stderr for full output
+            output = result.stdout
+            if result.stderr:
+                output += f"\n\nSTDERR:\n{result.stderr}"
+
+            passed = result.exit_code == 0
+
+            return {
+                "passed": passed,
+                "output": output,
+                "exit_code": result.exit_code,
+                "duration_ms": duration_ms,
+            }
+
+    except Exception as e:
+        duration_ms = (time.time() - start_time) * 1000
+        logger.error("Sandbox execution failed: %s", str(e))
+        return {
+            "passed": False,
+            "output": f"Sandbox execution error: {e}",
+            "exit_code": -1,
+            "duration_ms": duration_ms,
+        }
 
 
 async def generate_source_code(
@@ -107,9 +185,61 @@ async def generate_source_code(
     Returns:
         Generated source code as a string
     """
-    # In production, this would use ModelRouter with TaskType.CODING
     logger.info("Generating source code for: %s", task_description)
-    return f'"""Implementation for {source_file}"""\n\ndef placeholder():\n    pass'
+
+    router = _get_router()
+
+    # Build context about test failures if available
+    test_context = ""
+    if test_result:
+        test_context = f"""
+Previous Test Run Results:
+- Passed: {test_result.get('passed', False)}
+- Exit Code: {test_result.get('exit_code', 'N/A')}
+- Output:
+{test_result.get('output', 'No output')}
+"""
+
+    current_source_context = ""
+    if current_source and current_source.strip():
+        current_source_context = f"""
+Current Implementation (needs fixing):
+```python
+{current_source}
+```
+"""
+
+    prompt = f"""You are a TDD expert implementing the GREEN phase. Write Python code that makes the tests pass.
+
+Task Description:
+{task_description}
+
+Tests to Pass:
+```python
+{test_code}
+```
+{test_context}
+{current_source_context}
+Source file path: {source_file}
+
+Requirements:
+1. Write minimal implementation code to make ALL tests pass
+2. Follow Python best practices and type hints
+3. Include proper docstrings
+4. Do NOT modify the tests, only implement the source code
+
+Return ONLY the Python source code, no explanations or markdown formatting.
+"""
+
+    messages = [{"role": "user", "content": prompt}]
+
+    source_code = await router.route(
+        task_type=TaskType.CODING,
+        messages=messages,
+        metadata={"phase": "green", "source_file": source_file},
+    )
+
+    return source_code
 
 
 async def refactor_code(
@@ -129,9 +259,46 @@ async def refactor_code(
     Returns:
         Refactored source code as a string
     """
-    # In production, this would use ModelRouter with TaskType.CODING
     logger.info("Refactoring source code")
-    return source_code  # Return unchanged for now
+
+    router = _get_router()
+
+    prompt = f"""You are a TDD expert performing the REFACTOR phase. Improve the code quality while ensuring tests still pass.
+
+Original Task Description:
+{task_description}
+
+Current Implementation:
+```python
+{source_code}
+```
+
+Tests That Must Still Pass:
+```python
+{test_code}
+```
+
+Refactoring Guidelines:
+1. Improve code readability and maintainability
+2. Apply SOLID principles where appropriate
+3. Improve naming for clarity
+4. Add or improve type hints
+5. Optimize performance if possible without sacrificing readability
+6. Ensure proper error handling
+7. DO NOT change the public API - tests must still pass
+
+Return ONLY the refactored Python source code, no explanations or markdown formatting.
+"""
+
+    messages = [{"role": "user", "content": prompt}]
+
+    refactored_code = await router.route(
+        task_type=TaskType.CODING,
+        messages=messages,
+        metadata={"phase": "refactor"},
+    )
+
+    return refactored_code
 
 
 # =============================================================================
