@@ -1,8 +1,77 @@
 # Project Progress Dashboard
 
 **Project**: RADit / DAW (Deterministic Agentic Workbench)
-**Last Updated**: 2025-12-31T21:15:00Z
-**Current Phase**: V1 PRODUCTION READY - Deploy to daw.ping-gadgets.com
+**Last Updated**: 2025-12-31T23:30:00Z
+**Current Phase**: V1 PRODUCTION LIVE + Observability Epic Planned
+
+---
+
+## 🌐 V1 Production Deployment (LIVE 2025-12-31)
+
+**URL**: https://daw.ping-gadgets.com
+**Status**: ✅ LIVE AND HEALTHY
+
+### What Was Deployed
+- **Backend**: FastAPI on Docker (port 8000)
+- **Frontend**: Next.js on Docker (port 3000)
+- **Nginx**: Reverse proxy with SSL termination
+- **Redis**: Celery broker + LangGraph checkpoints
+- **Neo4j**: Already running on VPS
+
+### SSL/HTTPS Configuration
+- Let's Encrypt certificate installed via certbot
+- Cloudflare DNS proxy enabled
+- HSTS headers configured
+- TLS 1.2/1.3 only
+
+### Verified Endpoints
+```bash
+curl -s https://daw.ping-gadgets.com/ | grep -o '<title>.*</title>'
+# Output: <title>DAW - Deterministic Agentic Workbench</title>
+
+curl -s https://daw.ping-gadgets.com/health/live
+# Output: {"status":"alive","service":"daw-server"}
+```
+
+### Production Files Created
+- `apps/server/Dockerfile` - FastAPI multi-stage build
+- `apps/web/Dockerfile` - Next.js standalone build
+- `docker-compose.prod.yml` - Production orchestration
+- `nginx.ssl.conf` - HTTPS + reverse proxy config
+- `.env.prod.example` - Environment template
+
+---
+
+## 📊 Epic 13: Observability & Self-Healing (PLANNED 2025-12-31)
+
+**Epic Document**: `docs/planning/epics/EPIC-13-OBSERVABILITY.md`
+**Stories Added**: 19 (OBS-001 through OBS-019)
+**Estimated Effort**: ~150 hours
+
+### Architecture Overview
+```
+Data Collection (Prometheus, Vector) → Storage (Redis Streams)
+       ↓
+AI Analysis (Ollama SLM Tier 1 → OpenAI GPT-4o Tier 2)
+       ↓
+Actions (Self-Healing, Alerting, Runbooks)
+       ↓
+Visualization (Grafana, AI Insights Dashboard)
+```
+
+### Wave Breakdown
+| Wave | Stories | Focus |
+|------|---------|-------|
+| Wave 1 | OBS-001 to OBS-004 | Data Collection (Prometheus, Vector, Health, Events) |
+| Wave 2 | OBS-005 to OBS-009 | AI Analysis (Ollama, Anomaly, Logs, Escalation, RCA) |
+| Wave 3 | OBS-010 to OBS-013 | Self-Healing (Actions, Executor, Alerting, Runbooks) |
+| Wave 4 | OBS-014 to OBS-016 | Visualization (Grafana, AI Insights, Timeline) |
+| Wave 5 | OBS-017 to OBS-019 | Learning (Knowledge Base, Config Schema, Extraction) |
+
+### Key Design Decisions
+- **Tiered AI**: Ollama SLMs (free/fast) → OpenAI (complex/paid)
+- **Safety Guardrails**: Rate limits, circuit breakers, healing loop prevention
+- **Project-Agnostic**: Designed for extraction as standalone package
 
 ---
 
@@ -330,25 +399,22 @@ packages/
 
 ## Next Actions
 
-1. **Implement INTERACT-001** - Interview Response Collection
-   - Backend: WebSocket streaming, answer endpoint
-   - Frontend: ClarificationFlow.tsx component
+### Observability Epic (Priority)
+1. **OBS-001** - Metrics Collection Infrastructure
+   - Deploy Prometheus with Node Exporter, cAdvisor
+   - Add FastAPI metrics endpoint
 
-2. **Implement INTERACT-002** - PRD Presentation Display
-   - Frontend: PlanPresentation.tsx component
-   - Sections: Overview, Stories, Specs, Criteria, NFRs
+2. **OBS-005** - Ollama SLM Integration
+   - Deploy Ollama on VPS (can share with DAW)
+   - Load Mistral 7B and Phi-3 Mini
 
-3. **Implement INTERACT-003** - PRD Approval Gate
-   - Backend: AWAITING_PRD_APPROVAL status
-   - Frontend: ApprovalGate.tsx component
+3. **OBS-003** - Health Check Framework
+   - Unified HealthChecker with HTTP/TCP/exec probes
 
-4. **Implement INTERACT-004** - Task List Review
-   - Backend: AWAITING_TASK_APPROVAL status
-   - Frontend: TaskList.tsx component
-
-5. **Implement KANBAN-001/002/003** - Kanban Board
-   - Frontend: KanbanBoard.tsx, TaskCard.tsx, TaskDetailPanel.tsx
-   - Backend: Kanban endpoints, WebSocket events
+### After Observability
+4. **CI/CD Pipeline** - GitHub Actions for automated deployment
+   - Build, test, deploy to VPS on push to main
+   - Docker image caching for faster builds
 
 ---
 
