@@ -153,7 +153,7 @@ class TestRolePolicy:
 
     def test_role_policy_creation(self) -> None:
         """RolePolicy should be creatable with role and permissions."""
-        from daw_agents.mcp.rbac import Permission, RolePolicy, Role
+        from daw_agents.mcp.rbac import Permission, Role, RolePolicy
 
         policy = RolePolicy(
             role=Role.PLANNER,
@@ -168,7 +168,7 @@ class TestRolePolicy:
 
     def test_role_policy_has_permission(self) -> None:
         """RolePolicy should check if permission exists for a tool."""
-        from daw_agents.mcp.rbac import Permission, RolePolicy, Role
+        from daw_agents.mcp.rbac import Permission, Role, RolePolicy
 
         policy = RolePolicy(
             role=Role.PLANNER,
@@ -182,7 +182,7 @@ class TestRolePolicy:
 
     def test_role_policy_get_permission(self) -> None:
         """RolePolicy should retrieve permission for a tool."""
-        from daw_agents.mcp.rbac import Permission, RolePolicy, Role
+        from daw_agents.mcp.rbac import Permission, Role, RolePolicy
 
         policy = RolePolicy(
             role=Role.PLANNER,
@@ -427,7 +427,7 @@ class TestScopeValidation:
 
     def test_executor_write_in_project_directory_allowed(self) -> None:
         """Executor write_file should be allowed in project directory."""
-        from daw_agents.mcp.rbac import RBACPolicy, Role, PermissionContext
+        from daw_agents.mcp.rbac import PermissionContext, RBACPolicy, Role
 
         policy = RBACPolicy()
 
@@ -447,7 +447,7 @@ class TestScopeValidation:
 
     def test_executor_write_outside_project_denied(self) -> None:
         """Executor write_file should be denied outside project directory."""
-        from daw_agents.mcp.rbac import RBACPolicy, Role, PermissionContext
+        from daw_agents.mcp.rbac import PermissionContext, RBACPolicy, Role
 
         policy = RBACPolicy()
 
@@ -468,7 +468,7 @@ class TestScopeValidation:
 
     def test_healer_write_patches_only(self) -> None:
         """Healer write_file should only work for patches."""
-        from daw_agents.mcp.rbac import RBACPolicy, Role, PermissionContext
+        from daw_agents.mcp.rbac import PermissionContext, RBACPolicy, Role
 
         policy = RBACPolicy()
 
@@ -488,7 +488,7 @@ class TestScopeValidation:
 
     def test_healer_write_non_patch_denied(self) -> None:
         """Healer write_file should be denied for non-patch files."""
-        from daw_agents.mcp.rbac import RBACPolicy, Role, PermissionContext
+        from daw_agents.mcp.rbac import PermissionContext, RBACPolicy, Role
 
         policy = RBACPolicy()
 
@@ -517,7 +517,7 @@ class TestHumanApproval:
 
     def test_healer_production_requires_approval(self) -> None:
         """Healer in production should require human approval."""
-        from daw_agents.mcp.rbac import RBACPolicy, Role, PermissionContext
+        from daw_agents.mcp.rbac import PermissionContext, RBACPolicy, Role
 
         policy = RBACPolicy()
 
@@ -538,7 +538,7 @@ class TestHumanApproval:
 
     def test_healer_staging_no_approval_needed(self) -> None:
         """Healer in staging should NOT require approval."""
-        from daw_agents.mcp.rbac import RBACPolicy, Role, PermissionContext
+        from daw_agents.mcp.rbac import PermissionContext, RBACPolicy, Role
 
         policy = RBACPolicy()
 
@@ -558,7 +558,7 @@ class TestHumanApproval:
 
     def test_healer_development_no_approval_needed(self) -> None:
         """Healer in development should NOT require approval."""
-        from daw_agents.mcp.rbac import RBACPolicy, Role, PermissionContext
+        from daw_agents.mcp.rbac import PermissionContext, RBACPolicy, Role
 
         policy = RBACPolicy()
 
@@ -756,7 +756,7 @@ roles:
 
     def test_parse_yaml_invalid_format(self, tmp_path: Path) -> None:
         """YAML parser should raise error on invalid format."""
-        from daw_agents.mcp.rbac import RBACPolicy, PolicyParseError
+        from daw_agents.mcp.rbac import PolicyParseError, RBACPolicy
 
         yaml_content = "invalid: yaml: content:"
         yaml_file = tmp_path / "invalid.yaml"
@@ -767,7 +767,7 @@ roles:
 
     def test_parse_yaml_missing_required_fields(self, tmp_path: Path) -> None:
         """YAML parser should validate required fields."""
-        from daw_agents.mcp.rbac import RBACPolicy, PolicyParseError
+        from daw_agents.mcp.rbac import PolicyParseError, RBACPolicy
 
         yaml_content = """
 roles:
@@ -861,8 +861,8 @@ class TestGatewayIntegration:
     @pytest.mark.asyncio
     async def test_rbac_check_before_gateway(self) -> None:
         """RBAC policy can be used to check permissions before gateway call."""
-        from daw_agents.mcp.rbac import RBACPolicy, Role
         from daw_agents.mcp.gateway import MCPGateway, MCPGatewayConfig
+        from daw_agents.mcp.rbac import RBACPolicy, Role
 
         config = MCPGatewayConfig(
             issuer="https://daw.example.com",
@@ -900,8 +900,8 @@ class TestGatewayIntegration:
     @pytest.mark.asyncio
     async def test_rbac_denies_before_gateway(self) -> None:
         """RBAC policy can deny permissions before gateway call."""
-        from daw_agents.mcp.rbac import RBACPolicy, Role
         from daw_agents.mcp.gateway import MCPGateway, MCPGatewayConfig
+        from daw_agents.mcp.rbac import RBACPolicy, Role
 
         config = MCPGatewayConfig(
             issuer="https://daw.example.com",

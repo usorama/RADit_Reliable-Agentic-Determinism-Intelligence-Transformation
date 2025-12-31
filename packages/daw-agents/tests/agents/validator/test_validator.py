@@ -20,7 +20,6 @@ They must use DIFFERENT LLM models for cross-validation.
 
 from __future__ import annotations
 
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -612,7 +611,6 @@ class TestValidatorIntegration:
     async def test_validator_calls_model_router_for_validation(self) -> None:
         """Test that ValidatorAgent uses ModelRouter with TaskType.VALIDATION."""
         from daw_agents.agents.validator.agent import ValidatorAgent
-        from daw_agents.models.router import TaskType
 
         agent = ValidatorAgent()
 
@@ -649,9 +647,9 @@ class TestValidatorExports:
     def test_public_api_exports(self) -> None:
         """Test that public API is properly exported."""
         from daw_agents.agents.validator import (
-            ValidatorAgent,
             ValidationResult,
             ValidationState,
+            ValidatorAgent,
         )
 
         assert ValidatorAgent is not None

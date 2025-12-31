@@ -14,22 +14,21 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from typing import Any
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from daw_agents.testing.prompt_harness import (
     GoldenPair,
+    PromptDriftReport,
     PromptHarness,
     PromptTestConfig,
     PromptTestResult,
     PromptTestSuiteResult,
-    PromptDriftReport,
-    SimilarityScore,
     SchemaValidationResult,
+    SimilarityScore,
 )
-
 
 # =============================================================================
 # Test Fixtures

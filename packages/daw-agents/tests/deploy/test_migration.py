@@ -15,7 +15,7 @@ POLICY-002: Implement Zero-Copy Fork for Database Migrations
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -741,11 +741,9 @@ class TestMigrationOrchestrator:
     @pytest.mark.asyncio
     async def test_migration_orchestrator_integration_with_gates(self) -> None:
         """MigrationOrchestrator integrates with POLICY-001 deployment gates."""
-        from daw_agents.deploy.gates import DeploymentGates, GateStatus
         from daw_agents.deploy.migration import (
             MigrationConfig,
             MigrationOrchestrator,
-            MigrationStatus,
             ValidationResult,
         )
 
@@ -1277,7 +1275,7 @@ class TestAdditionalCoverage:
     @pytest.mark.asyncio
     async def test_migration_result_timestamps(self) -> None:
         """MigrationResult captures timestamps correctly."""
-        from datetime import datetime, timezone
+        from datetime import timezone
 
         from daw_agents.deploy.migration import MigrationResult, MigrationStatus
 

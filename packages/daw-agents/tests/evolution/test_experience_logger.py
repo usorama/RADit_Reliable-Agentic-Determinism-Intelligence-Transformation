@@ -12,10 +12,11 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from daw_agents.evolution.experience_logger import ExperienceLogger
 from daw_agents.evolution.schemas import (
     Artifact,
     ArtifactType,
@@ -26,10 +27,9 @@ from daw_agents.evolution.schemas import (
     SuccessRate,
     TaskType,
 )
-from daw_agents.evolution.experience_logger import ExperienceLogger
 
 if TYPE_CHECKING:
-    from daw_agents.memory.neo4j import Neo4jConnector
+    pass
 
 
 # =============================================================================

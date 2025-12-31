@@ -14,7 +14,6 @@ Following TDD workflow - tests written FIRST, then implementation.
 
 from __future__ import annotations
 
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -33,13 +32,12 @@ from daw_agents.agents.planner.prd_generator import (
     UserStoryPriority,
 )
 from daw_agents.schemas.prd_schema import (
-    PRDSchema,
-    UserStorySchema,
-    TechSpecSchema,
     AcceptanceCriteriaSchema,
     NonFunctionalRequirementSchema,
+    PRDSchema,
+    TechSpecSchema,
+    UserStorySchema,
 )
-
 
 # =============================================================================
 # Test PRD Schema Models

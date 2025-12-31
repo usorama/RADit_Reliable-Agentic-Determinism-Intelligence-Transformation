@@ -21,14 +21,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from daw_agents.ops.drift_detector import (
-    BaselineConfig,
-    DriftAction,
-    DriftDetector,
-    DriftMetric,
-    DriftSeverity,
-    MetricType,
-    TaskMetrics,
+from daw_agents.ops.actions import (
+    ActionResult,
+    DriftActionHandler,
 )
 
 # Import the modules we are testing - these do not exist yet (RED phase)
@@ -41,13 +36,17 @@ from daw_agents.ops.alerts import (
     SeverityActionMapping,
     WeeklyReportGenerator,
 )
-from daw_agents.ops.actions import (
-    ActionResult,
-    DriftActionHandler,
+from daw_agents.ops.drift_detector import (
+    DriftAction,
+    DriftDetector,
+    DriftMetric,
+    DriftSeverity,
+    MetricType,
+    TaskMetrics,
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    pass
 
 
 # ============================================================================

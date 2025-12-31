@@ -35,7 +35,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-
 # =============================================================================
 # Test HealerState TypedDict
 # =============================================================================
@@ -992,8 +991,8 @@ class TestKnowledgeStorage:
     @pytest.mark.asyncio
     async def test_store_successful_resolution(self) -> None:
         """Test storing a successful resolution in Neo4j."""
-        from daw_agents.agents.healer.nodes import store_resolution
         from daw_agents.agents.healer.models import ErrorInfo
+        from daw_agents.agents.healer.nodes import store_resolution
 
         error_info = ErrorInfo(
             tool_name="run_test",
@@ -1215,11 +1214,11 @@ class TestHealerExports:
     def test_public_api_exports(self) -> None:
         """Test that public API is properly exported."""
         from daw_agents.agents.healer import (
+            ErrorInfo,
             Healer,
             HealerResult,
             HealerState,
             HealerStatus,
-            ErrorInfo,
         )
 
         assert Healer is not None

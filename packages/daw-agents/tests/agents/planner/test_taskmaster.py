@@ -13,7 +13,6 @@ States: INTERVIEW -> ROUNDTABLE -> GENERATE_PRD -> COMPLETE
 
 from __future__ import annotations
 
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -21,10 +20,10 @@ import pytest
 from daw_agents.agents.planner.taskmaster import (
     PlannerState,
     PlannerStatus,
-    Taskmaster,
-    Task,
     PRDOutput,
     RoundtablePersona,
+    Task,
+    Taskmaster,
 )
 
 

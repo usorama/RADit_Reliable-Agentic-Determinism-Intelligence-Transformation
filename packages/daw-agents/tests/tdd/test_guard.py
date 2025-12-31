@@ -7,13 +7,11 @@ tests/ file exists and fails.
 """
 
 from pathlib import Path
-from typing import Any
-from unittest.mock import MagicMock, patch
 
 import pytest
 
-from daw_agents.tdd.guard import TDDGuard, TestResult
 from daw_agents.tdd.exceptions import TDDViolation
+from daw_agents.tdd.guard import TDDGuard, TestResult
 
 
 class TestTestResult:

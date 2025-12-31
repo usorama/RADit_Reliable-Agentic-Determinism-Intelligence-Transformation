@@ -13,13 +13,9 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
-
-import pytest
-import yaml
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    pass
 
 
 # =============================================================================

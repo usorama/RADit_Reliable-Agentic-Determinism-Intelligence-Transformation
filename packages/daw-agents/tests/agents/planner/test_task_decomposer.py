@@ -18,11 +18,19 @@ Reference: FR-02.4 in PRD
 from __future__ import annotations
 
 import json
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from daw_agents.agents.planner.complexity_analyzer import (
+    ComplexityAnalysis,
+    ComplexityScore,
+    DependencyGraph,
+    DependencyNode,
+    ModelRecommendation,
+    ModelTier,
+    RiskRating,
+)
 from daw_agents.agents.planner.task_decomposer import (
     DecomposedTask,
     DecompositionResult,
@@ -33,17 +41,7 @@ from daw_agents.agents.planner.task_decomposer import (
     TaskVerification,
     VerificationType,
 )
-from daw_agents.agents.planner.complexity_analyzer import (
-    ComplexityAnalysis,
-    ComplexityScore,
-    DependencyGraph,
-    DependencyNode,
-    ModelRecommendation,
-    ModelTier,
-    RiskRating,
-)
 from daw_agents.agents.planner.taskmaster import PRDOutput
-
 
 # -----------------------------------------------------------------------------
 # Test Fixtures
