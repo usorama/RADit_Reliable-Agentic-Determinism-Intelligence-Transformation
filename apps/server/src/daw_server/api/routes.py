@@ -17,11 +17,25 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
+from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+# Load environment variables from daw-agents package for LLM API keys
+_env_path = os.path.join(
+    os.path.dirname(__file__), "..", "..", "..", "..", "..", "packages", "daw-agents", ".env"
+)
+load_dotenv(os.path.abspath(_env_path))
+
 # Development bypass mode - allows testing without Clerk credentials
 DEV_BYPASS_AUTH = os.getenv("DEV_BYPASS_AUTH", "false").lower() == "true"
+
+# Import Taskmaster (Planner agent) for actual LLM-powered planning
+from daw_agents.agents.planner.taskmaster import (
+    Taskmaster,
+    PlannerStatus,
+    PlannerState,
+)
 
 from daw_server.api.schemas import (
     ApprovalAction,
@@ -356,14 +370,59 @@ def create_router(config: ClerkConfig) -> APIRouter:
                     context=request.context,
                 )
 
-            # In production, this would trigger the Planner agent
-            # For now, return the workflow status
+            # Invoke the Taskmaster (Planner) agent with actual LLM
+            taskmaster = Taskmaster()
+            initial_state = taskmaster.create_initial_state(
+                requirement=request.message,
+                workflow_id=workflow["id"],
+            )
+
+            # Run the workflow to generate interview questions
+            planner_state = await taskmaster.workflow.ainvoke(initial_state)
+
+            # Store planner state in workflow for persistence
+            WorkflowManager.update_workflow(
+                workflow["id"],
+                {
+                    "planner_state": planner_state,
+                    "phase": planner_state["status"].value if isinstance(planner_state["status"], PlannerStatus) else planner_state["status"],
+                },
+            )
+
+            # Format response based on planner status
+            if planner_state.get("status") == PlannerStatus.AWAITING_INTERVIEW:
+                interview_state = planner_state.get("interview_state")
+                if interview_state and interview_state.questions:
+                    questions_text = "\n".join(
+                        f"**Q{i+1}**: {q.text}"
+                        + (f"\n  Options: {', '.join(q.options)}" if q.options else "")
+                        for i, q in enumerate(interview_state.questions)
+                    )
+                    response_message = f"I'd like to understand your requirements better. Please answer these questions:\n\n{questions_text}"
+                else:
+                    response_message = "Let me gather some more information about your requirements."
+                response_phase = "interview"
+                response_status = "planning"
+            elif planner_state.get("status") == PlannerStatus.COMPLETE:
+                tasks = planner_state.get("tasks", [])
+                task_count = len(tasks)
+                WorkflowManager.update_workflow(workflow["id"], {"tasks_total": task_count})
+                response_message = f"I've analyzed your requirements and generated {task_count} tasks. Ready for review."
+                response_phase = "complete"
+                response_status = "awaiting_task_approval"
+            else:
+                # In progress - show current status
+                status_val = planner_state.get("status")
+                response_phase = status_val.value if isinstance(status_val, PlannerStatus) else str(status_val)
+                response_message = f"Processing your request... Current phase: {response_phase}"
+                response_status = "planning"
+
             return ChatResponse(
                 workflow_id=workflow["id"],
-                message="I'll help you with that. Let me analyze your requirements.",
-                status=workflow["status"],
+                message=response_message,
+                status=response_status,
                 tasks_generated=workflow.get("tasks_total"),
-                phase=workflow.get("phase"),
+                phase=response_phase,
             )
 
         except HTTPException:

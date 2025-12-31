@@ -73,28 +73,29 @@ def get_default_configs() -> dict[TaskType, ModelConfig]:
     from daw_agents.models.router import TaskType
 
     # Load from environment with sensible defaults
-    planning_model = os.environ.get("MODEL_PLANNING", "o1-preview")
-    coding_model = os.environ.get("MODEL_CODING", "claude-3-5-sonnet-20241022")
-    validation_model = os.environ.get("MODEL_VALIDATION", "gpt-4o")
-    fast_model = os.environ.get("MODEL_FAST", "claude-3-haiku-20240307")
+    # Using gpt-4o as default since we have OpenAI key configured
+    planning_model = os.environ.get("MODEL_PLANNING", "gpt-4o")
+    coding_model = os.environ.get("MODEL_CODING", "gpt-4o")
+    validation_model = os.environ.get("MODEL_VALIDATION", "gpt-4o-mini")
+    fast_model = os.environ.get("MODEL_FAST", "gpt-4o-mini")
 
     return {
         TaskType.PLANNING: ModelConfig(
             primary=planning_model,
-            fallback="claude-3-opus-20240229",  # High reasoning fallback
+            fallback="gpt-4o-mini",  # OpenAI fallback
             max_tokens=8192,  # Longer context for planning
             temperature=0.3,  # Lower temperature for consistent planning
         ),
         TaskType.CODING: ModelConfig(
             primary=coding_model,
-            fallback="gpt-4o",  # Balanced fallback
+            fallback="gpt-4o-mini",  # OpenAI fallback
             max_tokens=4096,
             temperature=0.2,  # Low temperature for precise code
         ),
         TaskType.VALIDATION: ModelConfig(
             primary=validation_model,
             # CRITICAL: Fallback must also be different from coding primary
-            fallback="claude-3-5-sonnet-20241022",
+            fallback="gpt-4o",  # Different from coding for cross-validation
             max_tokens=4096,
             temperature=0.1,  # Very low temperature for consistent validation
         ),
