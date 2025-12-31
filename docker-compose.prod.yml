@@ -29,9 +29,10 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - HELICONE_API_KEY=${HELICONE_API_KEY}
-      # Auth
-      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
-      - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
+      # Auth (enable dev bypass if no Clerk keys)
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY:-}
+      - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY:-}
+      - DEV_BYPASS_AUTH=${DEV_BYPASS_AUTH:-true}
       # Celery/LangGraph
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-daw_redis_prod}@redis:6379/0
       - LANGGRAPH_CHECKPOINT_BACKEND=redis://:${REDIS_PASSWORD:-daw_redis_prod}@redis:6379/1
@@ -58,15 +59,17 @@ services:
       args:
         - NEXT_PUBLIC_API_BASE_URL=https://daw.ping-gadgets.com/api
         - NEXT_PUBLIC_WS_URL=wss://daw.ping-gadgets.com/ws
-        - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
+        - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY:-}
         - NEXT_PUBLIC_APP_URL=https://daw.ping-gadgets.com
+        # Enable dev bypass when no Clerk keys configured
+        - NEXT_PUBLIC_DEV_BYPASS_AUTH=${DEV_BYPASS_AUTH:-true}
     container_name: daw-frontend
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY:-}
     depends_on:
       - backend
     healthcheck:
