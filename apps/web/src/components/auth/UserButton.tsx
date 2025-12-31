@@ -1,6 +1,12 @@
 'use client'
 
-import { UserButton as ClerkUserButton, SignedIn, SignedOut, SignInButton } from '@clerk/nextjs'
+import { UserButton as ClerkUserButton, SignInButton } from '@clerk/nextjs'
+import { SignedIn, SignedOut } from './AuthWrappers'
+
+/**
+ * Development bypass mode check
+ */
+const DEV_BYPASS_AUTH = process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true'
 
 /**
  * UserButton component displays the authenticated user's avatar and provides
@@ -38,6 +44,18 @@ export function UserButton({
   showName = false,
   size = 'default',
 }: UserButtonProps) {
+  // In dev bypass mode, show a simple dev user avatar
+  if (DEV_BYPASS_AUTH) {
+    return (
+      <div className="flex items-center gap-3">
+        <div className={`${sizeClasses[size]} rounded-full bg-gray-300 flex items-center justify-center text-gray-600 text-xs font-medium`}>
+          D
+        </div>
+        {showName && <span className="text-sm text-gray-700">Dev User</span>}
+      </div>
+    )
+  }
+
   return (
     <div className="flex items-center gap-3">
       <SignedIn>

@@ -7,10 +7,11 @@ export { SignIn } from './SignIn'
 export { SignUp } from './SignUp'
 export { UserButton } from './UserButton'
 
-// Re-export Clerk components for convenience
+// Export wrapped auth components that respect DEV_BYPASS_AUTH
+export { SignedIn, SignedOut } from './AuthWrappers'
+
+// Re-export remaining Clerk components for convenience
 export {
-  SignedIn,
-  SignedOut,
   SignInButton,
   SignUpButton,
   ClerkLoaded,
