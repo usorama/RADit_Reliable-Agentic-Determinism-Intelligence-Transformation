@@ -109,9 +109,19 @@ function FilePreviewBadge({
 }
 
 /**
+ * Quick action suggestions for new conversations.
+ * Defined outside component to avoid recreation on each render.
+ */
+const QUICK_ACTION_SUGGESTIONS = [
+  'Build a todo app',
+  'Create an API',
+  'Design a database',
+] as const;
+
+/**
  * Empty state when no messages.
  */
-function EmptyState() {
+function EmptyState({ onQuickAction }: { onQuickAction?: (message: string) => void }) {
   return (
     <div className="flex flex-col items-center justify-center h-full text-center p-8">
       <div className="w-16 h-16 mb-4 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
@@ -132,14 +142,11 @@ function EmptyState() {
         into actionable tasks.
       </p>
       <div className="mt-6 flex flex-wrap gap-2 justify-center">
-        {[
-          'Build a todo app',
-          'Create an API',
-          'Design a database',
-        ].map((suggestion) => (
+        {QUICK_ACTION_SUGGESTIONS.map((suggestion) => (
           <button
             key={suggestion}
-            className="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full text-sm text-gray-700 dark:text-gray-300 transition-colors"
+            onClick={() => onQuickAction?.(suggestion)}
+            className="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full text-sm text-gray-700 dark:text-gray-300 transition-colors cursor-pointer"
           >
             {suggestion}
           </button>
@@ -237,6 +244,11 @@ export function ChatInterface({
     }
   }, [inputValue, state.pendingFiles.length, sendMessage]);
 
+  // Handle quick action button clicks
+  const handleQuickAction = useCallback(async (message: string) => {
+    await sendMessage(message);
+  }, [sendMessage]);
+
   // Handle keyboard shortcuts
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -331,7 +343,7 @@ export function ChatInterface({
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto">
         {!hasMessages ? (
-          <EmptyState />
+          <EmptyState onQuickAction={handleQuickAction} />
         ) : (
           <div className="divide-y divide-gray-100 dark:divide-gray-800">
             {state.messages.map((message, index) => (
