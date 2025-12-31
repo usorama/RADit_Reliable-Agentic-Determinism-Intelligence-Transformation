@@ -47,10 +47,69 @@ class PlannerStatus(str, Enum):
     """Status values for the Planner state machine."""
 
     INTERVIEW = "interview"
+    AWAITING_INTERVIEW = "awaiting_interview"
     ROUNDTABLE = "roundtable"
     GENERATE_PRD = "generate_prd"
     COMPLETE = "complete"
     ERROR = "error"
+
+
+class QuestionType(str, Enum):
+    """Types of interview questions."""
+
+    TEXT = "text"
+    MULTI_CHOICE = "multi_choice"
+    CHECKBOX = "checkbox"
+
+
+class Question(BaseModel):
+    """Represents an interview question for user clarification.
+
+    Attributes:
+        id: Unique question identifier (e.g., Q-001)
+        type: Question type (text, multi_choice, checkbox)
+        text: The question text to display
+        options: Available options for multi_choice/checkbox questions
+        required: Whether the question must be answered
+        context: Additional context to help user answer
+    """
+
+    id: str = Field(..., description="Unique question identifier (e.g., Q-001)")
+    type: QuestionType = Field(
+        default=QuestionType.TEXT, description="Question type"
+    )
+    text: str = Field(..., description="The question text to display")
+    options: list[str] | None = Field(
+        default=None, description="Available options for multi_choice/checkbox"
+    )
+    required: bool = Field(default=True, description="Whether answer is required")
+    context: str | None = Field(
+        default=None, description="Additional context to help user answer"
+    )
+
+
+class InterviewState(BaseModel):
+    """State of an ongoing interview with the user.
+
+    Tracks the progress of clarifying questions and user responses.
+
+    Attributes:
+        workflow_id: ID of the workflow this interview belongs to
+        questions: List of questions to ask the user
+        answers: Dictionary mapping question IDs to user answers
+        current_index: Index of the current question being asked
+        completed: Whether the interview is complete
+    """
+
+    workflow_id: str = Field(..., description="Workflow ID this interview belongs to")
+    questions: list[Question] = Field(
+        default_factory=list, description="Questions to ask"
+    )
+    answers: dict[str, str | list[str]] = Field(
+        default_factory=dict, description="User answers keyed by question ID"
+    )
+    current_index: int = Field(default=0, description="Current question index")
+    completed: bool = Field(default=False, description="Whether interview is complete")
 
 
 class Task(BaseModel):
@@ -133,6 +192,7 @@ class PlannerState(TypedDict):
     tasks: list[Task]
     status: PlannerStatus
     error: str | None
+    interview_state: InterviewState | None  # Added for interview flow
 
 
 # -----------------------------------------------------------------------------
@@ -209,6 +269,36 @@ Focus on:
 5. Integration requirements
 
 Ask 3-5 specific, targeted questions. Be professional and concise."""
+
+QUESTION_GENERATION_PROMPT = """You are an expert Product Manager analyzing a user requirement to generate clarifying questions.
+
+USER REQUIREMENT:
+{requirement}
+
+PREVIOUS CONVERSATION:
+{conversation}
+
+Generate structured interview questions in JSON format:
+[
+    {{
+        "id": "Q-001",
+        "type": "text|multi_choice|checkbox",
+        "text": "The question to ask",
+        "options": ["option1", "option2"],  // Only for multi_choice/checkbox
+        "required": true,
+        "context": "Why this question matters"
+    }}
+]
+
+Guidelines:
+- Generate 3-5 targeted questions
+- Use "text" type for open-ended questions
+- Use "multi_choice" when user should pick one option
+- Use "checkbox" when user can select multiple options
+- Mark P0 questions as required=true
+- Include context to help user understand importance
+
+Output ONLY valid JSON array, no additional text."""
 
 PRD_GENERATION_PROMPT = """You are an expert Product Manager generating a structured PRD.
 
@@ -366,30 +456,82 @@ class Taskmaster:
         Returns:
             Next node name ("roundtable" or "generate_prd")
         """
+        # Check if interview is completed
+        interview_state = state.get("interview_state")
+        if interview_state and not interview_state.completed:
+            # Still awaiting user responses - this shouldn't happen in normal flow
+            # as we pause workflow when awaiting interview
+            return "generate_prd"
+
         # If we have clarifications, proceed to roundtable
-        # In a real implementation, this could check if user confirmed
         if state.get("clarifications"):
             return "roundtable"
         # Skip roundtable if no clarifications needed (simple request)
         return "generate_prd"
 
     async def _interview_node(self, state: PlannerState) -> dict[str, Any]:
-        """Interview node: Ask clarifying questions.
+        """Interview node: Generate or process clarifying questions.
+
+        This node handles the interview flow in two modes:
+        1. Initial entry: Generate questions and return AWAITING_INTERVIEW status
+        2. Resume with answers: Process answers and proceed to next step
 
         Args:
             state: Current planner state
 
         Returns:
-            State updates with messages and clarifications
+            State updates with messages, clarifications, and interview_state
         """
         logger.info("Entering interview node")
+
+        interview_state = state.get("interview_state")
+
+        # Check if we're resuming with completed answers
+        if interview_state and interview_state.completed:
+            logger.info("Interview completed, processing answers")
+            return await self._process_interview_answers(state, interview_state)
+
+        # Check if we have an existing interview in progress with answers
+        if interview_state and interview_state.answers:
+            # User provided some answers, check if complete
+            required_answered = all(
+                q.id in interview_state.answers
+                for q in interview_state.questions
+                if q.required
+            )
+            if required_answered:
+                # Mark as completed and process
+                updated_interview = InterviewState(
+                    workflow_id=interview_state.workflow_id,
+                    questions=interview_state.questions,
+                    answers=interview_state.answers,
+                    current_index=len(interview_state.questions),
+                    completed=True,
+                )
+                return await self._process_interview_answers(state, updated_interview)
+
+        # Generate new questions if no interview state exists
+        return await self._generate_interview_questions(state)
+
+    async def _generate_interview_questions(
+        self, state: PlannerState
+    ) -> dict[str, Any]:
+        """Generate interview questions based on the requirement.
+
+        Args:
+            state: Current planner state
+
+        Returns:
+            State updates with interview questions and AWAITING_INTERVIEW status
+        """
+        logger.info("Generating interview questions")
 
         # Build conversation context
         conversation = "\n".join(
             f"{m['role']}: {m['content']}" for m in state.get("messages", [])
         )
 
-        prompt = INTERVIEW_PROMPT.format(
+        prompt = QUESTION_GENERATION_PROMPT.format(
             requirement=state["requirement"], conversation=conversation
         )
 
@@ -397,30 +539,286 @@ class Taskmaster:
             response = await self._model_router.route(
                 task_type=TaskType.PLANNING,
                 messages=[
-                    {"role": "system", "content": "You are a Product Manager."},
+                    {
+                        "role": "system",
+                        "content": "You are a Product Manager. Output valid JSON only.",
+                    },
                     {"role": "user", "content": prompt},
                 ],
             )
 
-            # Add the assistant's questions to messages
-            new_messages = list(state.get("messages", []))
-            new_messages.append({"role": "assistant", "content": response})
+            # Parse the questions from JSON response
+            questions_data = json.loads(self._extract_json(response))
 
-            # In a real implementation, we'd wait for user response
-            # For now, simulate a clarification
-            clarifications = state.get("clarifications", [])
-            if not clarifications:
-                clarifications = [response]
+            # Ensure questions_data is a list
+            if not isinstance(questions_data, list):
+                raise ValueError("Expected JSON array of questions")
+
+            questions = []
+            for i, q_data in enumerate(questions_data):
+                # Skip invalid entries (non-dict items)
+                if not isinstance(q_data, dict):
+                    continue
+
+                # Normalize the type field
+                q_type = q_data.get("type", "text")
+                if q_type not in ["text", "multi_choice", "checkbox"]:
+                    q_type = "text"
+
+                questions.append(
+                    Question(
+                        id=q_data.get("id", f"Q-{i + 1:03d}"),
+                        type=QuestionType(q_type),
+                        text=q_data.get("text", ""),
+                        options=q_data.get("options"),
+                        required=q_data.get("required", True),
+                        context=q_data.get("context"),
+                    )
+                )
+
+            # Create interview state
+            # Generate a workflow_id if not present (for standalone usage)
+            workflow_id = state.get("workflow_id", "standalone")
+            interview = InterviewState(
+                workflow_id=workflow_id,
+                questions=questions,
+                answers={},
+                current_index=0,
+                completed=False,
+            )
+
+            # Add the questions to messages
+            new_messages = list(state.get("messages", []))
+            questions_text = "\n".join(
+                f"Q{i + 1}: {q.text}" for i, q in enumerate(questions)
+            )
+            new_messages.append({"role": "assistant", "content": questions_text})
 
             return {
                 "messages": new_messages,
-                "clarifications": clarifications,
-                "status": PlannerStatus.INTERVIEW,
+                "status": PlannerStatus.AWAITING_INTERVIEW,
+                "interview_state": interview,
             }
 
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.warning("Failed to parse questions JSON, falling back: %s", str(e))
+            # Fallback: Create a single text question
+            interview = InterviewState(
+                workflow_id=state.get("workflow_id", "standalone"),
+                questions=[
+                    Question(
+                        id="Q-001",
+                        type=QuestionType.TEXT,
+                        text="Please provide more details about your requirements.",
+                        required=True,
+                        context="We need more information to proceed.",
+                    )
+                ],
+                answers={},
+                current_index=0,
+                completed=False,
+            )
+            return {
+                "status": PlannerStatus.AWAITING_INTERVIEW,
+                "interview_state": interview,
+            }
         except Exception as e:
-            logger.error("Interview node failed: %s", str(e))
+            logger.error("Interview question generation failed: %s", str(e))
             raise
+
+    async def _process_interview_answers(
+        self, state: PlannerState, interview_state: InterviewState
+    ) -> dict[str, Any]:
+        """Process completed interview answers and prepare clarifications.
+
+        Args:
+            state: Current planner state
+            interview_state: Completed interview state with answers
+
+        Returns:
+            State updates with clarifications derived from answers
+        """
+        logger.info("Processing interview answers")
+
+        # Build clarifications from answers
+        clarifications: list[str] = []
+        for question in interview_state.questions:
+            answer = interview_state.answers.get(question.id)
+            if answer:
+                if isinstance(answer, list):
+                    answer_text = ", ".join(answer)
+                else:
+                    answer_text = answer
+                clarifications.append(f"{question.text}: {answer_text}")
+
+        # Update messages with the Q&A
+        new_messages = list(state.get("messages", []))
+        qa_summary = "\n".join(clarifications)
+        new_messages.append({"role": "user", "content": f"Answers:\n{qa_summary}"})
+
+        # Mark interview as completed
+        completed_interview = InterviewState(
+            workflow_id=interview_state.workflow_id,
+            questions=interview_state.questions,
+            answers=interview_state.answers,
+            current_index=len(interview_state.questions),
+            completed=True,
+        )
+
+        return {
+            "messages": new_messages,
+            "clarifications": clarifications,
+            "status": PlannerStatus.INTERVIEW,
+            "interview_state": completed_interview,
+        }
+
+    def submit_interview_answer(
+        self,
+        state: PlannerState,
+        question_id: str,
+        answer: str | list[str],
+    ) -> PlannerState:
+        """Submit an answer to an interview question.
+
+        This method is called by the API to submit user answers.
+
+        Args:
+            state: Current planner state
+            question_id: ID of the question being answered
+            answer: User's answer (string or list for checkbox)
+
+        Returns:
+            Updated PlannerState with the answer recorded
+
+        Raises:
+            ValueError: If no interview is in progress or question not found
+        """
+        interview_state = state.get("interview_state")
+        if not interview_state:
+            raise ValueError("No interview in progress")
+
+        # Verify question exists
+        question_ids = [q.id for q in interview_state.questions]
+        if question_id not in question_ids:
+            raise ValueError(f"Question {question_id} not found in interview")
+
+        # Add the answer
+        new_answers = dict(interview_state.answers)
+        new_answers[question_id] = answer
+
+        # Calculate new current index
+        current_idx = interview_state.current_index
+        for i, q in enumerate(interview_state.questions):
+            if q.id == question_id and i >= current_idx:
+                current_idx = i + 1
+                break
+
+        # Check if all required questions are answered
+        all_required_answered = all(
+            q.id in new_answers for q in interview_state.questions if q.required
+        )
+
+        updated_interview = InterviewState(
+            workflow_id=interview_state.workflow_id,
+            questions=interview_state.questions,
+            answers=new_answers,
+            current_index=current_idx,
+            completed=all_required_answered,
+        )
+
+        # Return updated state
+        new_state: PlannerState = {
+            **state,
+            "interview_state": updated_interview,
+        }
+
+        # If completed, update status to continue workflow
+        if updated_interview.completed:
+            new_state["status"] = PlannerStatus.INTERVIEW
+
+        return new_state
+
+    def skip_remaining_questions(self, state: PlannerState) -> PlannerState:
+        """Skip all remaining optional questions and complete interview.
+
+        Args:
+            state: Current planner state
+
+        Returns:
+            Updated PlannerState with interview marked complete
+
+        Raises:
+            ValueError: If required questions are unanswered
+        """
+        interview_state = state.get("interview_state")
+        if not interview_state:
+            raise ValueError("No interview in progress")
+
+        # Check if all required questions are answered
+        unanswered_required = [
+            q
+            for q in interview_state.questions
+            if q.required and q.id not in interview_state.answers
+        ]
+
+        if unanswered_required:
+            raise ValueError(
+                f"Cannot skip: {len(unanswered_required)} required questions unanswered"
+            )
+
+        # Mark as completed
+        updated_interview = InterviewState(
+            workflow_id=interview_state.workflow_id,
+            questions=interview_state.questions,
+            answers=interview_state.answers,
+            current_index=len(interview_state.questions),
+            completed=True,
+        )
+
+        new_state: PlannerState = {
+            **state,
+            "interview_state": updated_interview,
+            "status": PlannerStatus.INTERVIEW,
+        }
+
+        return new_state
+
+    def get_current_question(self, state: PlannerState) -> Question | None:
+        """Get the current question waiting for an answer.
+
+        Args:
+            state: Current planner state
+
+        Returns:
+            Current Question or None if interview complete or not started
+        """
+        interview_state = state.get("interview_state")
+        if not interview_state or interview_state.completed:
+            return None
+
+        if interview_state.current_index >= len(interview_state.questions):
+            return None
+
+        return interview_state.questions[interview_state.current_index]
+
+    def get_next_unanswered_question(self, state: PlannerState) -> Question | None:
+        """Get the next unanswered question.
+
+        Args:
+            state: Current planner state
+
+        Returns:
+            Next unanswered Question or None if all answered
+        """
+        interview_state = state.get("interview_state")
+        if not interview_state or interview_state.completed:
+            return None
+
+        for question in interview_state.questions:
+            if question.id not in interview_state.answers:
+                return question
+
+        return None
 
     async def _roundtable_node(self, state: PlannerState) -> dict[str, Any]:
         """Roundtable node: Collect critiques from synthetic personas.
@@ -615,8 +1013,19 @@ class Taskmaster:
             if end > start:
                 return text[start:end].strip()
 
-        # Try to find JSON directly
-        for start_char, end_char in [("{", "}"), ("[", "]")]:
+        # Try to find JSON directly - prioritize whichever delimiter appears first
+        bracket_idx = text.find("[")
+        brace_idx = text.find("{")
+
+        # Determine which appears first and use appropriate parsing order
+        if bracket_idx >= 0 and (brace_idx < 0 or bracket_idx < brace_idx):
+            # Array appears first
+            pairs = [("[", "]"), ("{", "}")]
+        else:
+            # Object appears first or only object exists
+            pairs = [("{", "}"), ("[", "]")]
+
+        for start_char, end_char in pairs:
             start = text.find(start_char)
             if start >= 0:
                 # Find matching end
@@ -635,11 +1044,14 @@ class Taskmaster:
     # Public API
     # -------------------------------------------------------------------------
 
-    def create_initial_state(self, requirement: str) -> PlannerState:
+    def create_initial_state(
+        self, requirement: str, workflow_id: str | None = None
+    ) -> PlannerState:
         """Create initial state for the workflow.
 
         Args:
             requirement: User's requirement string
+            workflow_id: Optional workflow ID for tracking
 
         Returns:
             Initial PlannerState
@@ -653,6 +1065,7 @@ class Taskmaster:
             "tasks": [],
             "status": PlannerStatus.INTERVIEW,
             "error": None,
+            "interview_state": None,
         }
 
     async def plan(self, requirement: str) -> list[Task]:
@@ -847,4 +1260,7 @@ __all__ = [
     "PlannerState",
     "PlannerStatus",
     "RoundtablePersona",
+    "Question",
+    "QuestionType",
+    "InterviewState",
 ]

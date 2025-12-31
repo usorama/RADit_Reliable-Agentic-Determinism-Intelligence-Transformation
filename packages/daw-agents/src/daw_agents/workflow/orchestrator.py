@@ -61,15 +61,17 @@ class OrchestratorStatus(str, Enum):
 
     Represents the current phase of the workflow:
     - PLANNING: Generating PRD and decomposing into tasks
+    - AWAITING_PRD_APPROVAL: Waiting for user to approve PRD before task execution
     - CODING: Executing tasks via Developer agent
     - VALIDATING: Validating code via Validator agent
     - DEPLOYING: Applying deployment gates
-    - AWAITING_APPROVAL: Waiting for human approval
+    - AWAITING_APPROVAL: Waiting for human approval (deployment)
     - COMPLETE: Workflow finished successfully
     - ERROR: Workflow failed with error
     """
 
     PLANNING = "planning"
+    AWAITING_PRD_APPROVAL = "awaiting_prd_approval"
     CODING = "coding"
     VALIDATING = "validating"
     DEPLOYING = "deploying"
@@ -84,12 +86,16 @@ class OrchestratorConfig(BaseModel):
     Attributes:
         max_retries: Maximum retry attempts for fixable validation failures (default: 3)
         require_human_approval: Whether to require human approval before deployment (default: True)
+        require_prd_approval: Whether to require human approval of PRD before execution (default: True)
         checkpoint_enabled: Whether to enable Redis state checkpoints (default: True)
     """
 
     max_retries: int = Field(default=3, ge=0, le=10, description="Max retry attempts")
     require_human_approval: bool = Field(
         default=True, description="Require human approval for deployment"
+    )
+    require_prd_approval: bool = Field(
+        default=True, description="Require human approval of PRD before execution"
     )
     checkpoint_enabled: bool = Field(
         default=True, description="Enable Redis state checkpoints"
@@ -143,7 +149,9 @@ class OrchestratorState(TypedDict):
         deployment_status: Status of deployment gate checks
         status: Current OrchestratorStatus value
         error: Error message if any step failed
-        human_approval_required: Whether awaiting human approval
+        human_approval_required: Whether awaiting human approval (deployment)
+        prd_approval_required: Whether awaiting PRD approval before execution
+        prd_feedback: User feedback from PRD review (for rejection/modification)
         retry_count: Current retry count for current task
     """
 
@@ -157,6 +165,8 @@ class OrchestratorState(TypedDict):
     status: str
     error: str | None
     human_approval_required: bool
+    prd_approval_required: bool
+    prd_feedback: str | None
     retry_count: int
 
 
@@ -218,8 +228,11 @@ class Orchestrator:
         self._developer = developer
         self._validator = validator
 
-        # Human approval state
+        # Human approval state (deployment)
         self._pending_approval: dict[str, Any] | None = None
+
+        # PRD approval state
+        self._pending_prd_approval: dict[str, Any] | None = None
 
         # Event handlers for streaming
         self._event_handlers: list[Callable[[dict[str, Any]], None]] = []
@@ -258,12 +271,13 @@ class Orchestrator:
         # Add edges
         builder.add_edge(START, "plan")
 
-        # After plan: either execute or error
+        # After plan: execute, await PRD approval, or error
         builder.add_conditional_edges(
             "plan",
             self._route_after_plan,
             {
                 "execute": "execute",
+                "awaiting_prd_approval": END,  # Workflow pauses for PRD approval
                 "error": END,
             },
         )
@@ -307,6 +321,8 @@ class Orchestrator:
         3. Generate PRD document
         4. Decompose PRD into atomic tasks
 
+        If PRD approval is required (config), pauses with AWAITING_PRD_APPROVAL status.
+
         Args:
             state: Current orchestrator state
 
@@ -342,6 +358,26 @@ class Orchestrator:
                 }
 
             logger.info("Planning complete: %d tasks generated", len(task_list))
+
+            # Check if PRD approval is required before proceeding to execution
+            if self._config.require_prd_approval:
+                logger.info("PRD approval required, pausing workflow")
+                self._pending_prd_approval = {
+                    "prd_output": prd_output,
+                    "tasks": task_list,
+                }
+                self._emit_event({
+                    "type": "status_change",
+                    "status": "awaiting_prd_approval",
+                    "prd": prd_output,
+                    "tasks_count": len(task_list),
+                })
+                return {
+                    "prd_output": prd_output,
+                    "tasks": task_list,
+                    "status": OrchestratorStatus.AWAITING_PRD_APPROVAL.value,
+                    "prd_approval_required": True,
+                }
 
             return {
                 "prd_output": prd_output,
@@ -548,12 +584,15 @@ class Orchestrator:
             state: Current orchestrator state
 
         Returns:
-            Next node name ("execute" or "error")
+            Next node name ("execute", "awaiting_prd_approval", or "error")
         """
         if state.get("error"):
             return "error"
         if not state.get("tasks"):
             return "error"
+        # If PRD approval is required, end workflow here and wait for approval
+        if state.get("prd_approval_required"):
+            return "awaiting_prd_approval"
         return "execute"
 
     def _route_after_execute(self, state: OrchestratorState) -> str:
@@ -634,6 +673,8 @@ class Orchestrator:
             "status": OrchestratorStatus.PLANNING.value,
             "error": None,
             "human_approval_required": False,
+            "prd_approval_required": False,
+            "prd_feedback": None,
             "retry_count": 0,
         }
 
@@ -662,6 +703,7 @@ class Orchestrator:
             success = final_state.get("status") in [
                 OrchestratorStatus.COMPLETE.value,
                 OrchestratorStatus.AWAITING_APPROVAL.value,
+                OrchestratorStatus.AWAITING_PRD_APPROVAL.value,
             ]
 
             return WorkflowResult(
@@ -726,6 +768,130 @@ class Orchestrator:
         self._pending_approval = None
 
         return {"cancelled": True, "reason": reason}
+
+    # -------------------------------------------------------------------------
+    # PRD Review API
+    # -------------------------------------------------------------------------
+
+    async def approve_prd(self, workflow_id: str) -> dict[str, Any]:
+        """Approve the generated PRD and proceed to task execution.
+
+        Resumes the workflow after user approves the PRD.
+
+        Args:
+            workflow_id: ID of the workflow awaiting PRD approval
+
+        Returns:
+            Dict with status and PRD information
+        """
+        logger.info("Approving PRD for workflow: %s", workflow_id)
+
+        if not self._pending_prd_approval:
+            logger.warning("No pending PRD approval found")
+            return {
+                "success": False,
+                "error": "No pending PRD approval found",
+            }
+
+        # Get pending PRD data
+        prd_data = self._pending_prd_approval
+        self._pending_prd_approval = None
+
+        self._emit_event({
+            "type": "prd_approved",
+            "workflow_id": workflow_id,
+        })
+
+        return {
+            "success": True,
+            "status": OrchestratorStatus.CODING.value,
+            "prd": prd_data.get("prd_output"),
+            "tasks_count": len(prd_data.get("tasks", [])),
+            "message": "PRD approved. Proceeding to task execution.",
+        }
+
+    async def reject_prd(
+        self, workflow_id: str, feedback: str = ""
+    ) -> dict[str, Any]:
+        """Reject the generated PRD and return to interview phase.
+
+        User provides feedback explaining what needs to change.
+        Workflow returns to planning phase with the feedback.
+
+        Args:
+            workflow_id: ID of the workflow awaiting PRD approval
+            feedback: User feedback explaining rejection reason
+
+        Returns:
+            Dict with status and next steps
+        """
+        logger.info("Rejecting PRD for workflow: %s, feedback: %s", workflow_id, feedback[:100] if feedback else "")
+
+        if not self._pending_prd_approval:
+            logger.warning("No pending PRD approval found")
+            return {
+                "success": False,
+                "error": "No pending PRD approval found",
+            }
+
+        # Clear pending PRD
+        self._pending_prd_approval = None
+
+        self._emit_event({
+            "type": "prd_rejected",
+            "workflow_id": workflow_id,
+            "feedback": feedback,
+        })
+
+        return {
+            "success": True,
+            "status": OrchestratorStatus.PLANNING.value,
+            "message": "PRD rejected. Returning to interview phase.",
+            "feedback": feedback,
+        }
+
+    async def modify_prd(
+        self, workflow_id: str, feedback: str
+    ) -> dict[str, Any]:
+        """Request modifications to the generated PRD.
+
+        User provides specific feedback for PRD changes.
+        Workflow regenerates PRD with the feedback.
+
+        Args:
+            workflow_id: ID of the workflow awaiting PRD approval
+            feedback: User feedback describing desired modifications
+
+        Returns:
+            Dict with status and modification details
+        """
+        logger.info("Requesting PRD modification for workflow: %s", workflow_id)
+
+        if not self._pending_prd_approval:
+            logger.warning("No pending PRD approval found")
+            return {
+                "success": False,
+                "error": "No pending PRD approval found",
+            }
+
+        # Keep the PRD data for reference during modification
+        prd_data = self._pending_prd_approval
+        self._pending_prd_approval = None
+
+        self._emit_event({
+            "type": "prd_modification_requested",
+            "workflow_id": workflow_id,
+            "feedback": feedback,
+            "original_prd": prd_data.get("prd_output"),
+        })
+
+        return {
+            "success": True,
+            "status": OrchestratorStatus.PLANNING.value,
+            "message": "PRD modification requested. Regenerating with feedback.",
+            "feedback": feedback,
+            "original_prd": prd_data.get("prd_output"),
+        }
 
     async def restore_from_checkpoint(self, checkpoint_id: str) -> OrchestratorState | None:
         """Restore workflow state from Redis checkpoint.
