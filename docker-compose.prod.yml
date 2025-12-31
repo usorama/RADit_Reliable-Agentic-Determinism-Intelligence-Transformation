@@ -106,15 +106,17 @@ services:
     networks:
       - daw-network
 
-  # Nginx Reverse Proxy (SSL termination via Cloudflare)
+  # Nginx Reverse Proxy with SSL
   nginx:
     image: nginx:alpine
     container_name: daw-nginx
     restart: unless-stopped
     ports:
       - "80:80"
+      - "443:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx.ssl.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - backend
       - frontend
