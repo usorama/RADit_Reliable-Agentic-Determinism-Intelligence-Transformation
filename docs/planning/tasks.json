@@ -2238,7 +2238,7 @@
       "command": "pytest packages/observability/tests/test_health.py -v"
     },
     "estimated_hours": 4,
-    "status": "pending"
+    "status": "completed"
   },
   {
     "id": "OBS-004",
@@ -2396,7 +2396,7 @@
       "command": "pytest packages/observability/tests/test_action_registry.py -v"
     },
     "estimated_hours": 6,
-    "status": "pending"
+    "status": "completed"
   },
   {
     "id": "OBS-011",
