@@ -404,9 +404,69 @@ def create_router(config: ClerkConfig) -> APIRouter:
                 response_phase = "interview"
                 response_status = "planning"
             elif planner_state.get("status") == PlannerStatus.COMPLETE:
-                tasks = planner_state.get("tasks", [])
-                task_count = len(tasks)
-                WorkflowManager.update_workflow(workflow["id"], {"tasks_total": task_count})
+                planner_tasks = planner_state.get("tasks", [])
+                task_count = len(planner_tasks)
+
+                # Convert Taskmaster tasks to API schema format
+                api_tasks = []
+                dependencies_list = []
+                for task in planner_tasks:
+                    # Map task type to API enum
+                    task_type_map = {
+                        "setup": TaskType.SETUP,
+                        "code": TaskType.CODE,
+                        "test": TaskType.TEST,
+                        "docs": TaskType.DOCS,
+                    }
+                    api_task = Task(
+                        id=task.id,
+                        description=task.description,
+                        type=task_type_map.get(task.type, TaskType.CODE),
+                        complexity=TaskComplexity.MEDIUM,  # Default
+                        dependencies=task.dependencies,
+                        estimated_hours=task.estimated_hours,
+                    )
+                    api_tasks.append(api_task)
+
+                    # Build dependencies
+                    for dep_id in task.dependencies:
+                        dependencies_list.append(Dependency(sourceId=dep_id, targetId=task.id))
+
+                # Group tasks into phases and stories based on priority
+                p0_tasks = [t for t in api_tasks if any(pt.priority == "P0" for pt in planner_tasks if pt.id == t.id)]
+                p1_tasks = [t for t in api_tasks if any(pt.priority == "P1" for pt in planner_tasks if pt.id == t.id)]
+                p2_tasks = [t for t in api_tasks if any(pt.priority == "P2" for pt in planner_tasks if pt.id == t.id)]
+
+                # Create story for each priority level
+                stories = []
+                if p0_tasks:
+                    stories.append(Story(id="story-p0", title="Critical Path", priority=StoryPriority.P0, tasks=p0_tasks))
+                if p1_tasks:
+                    stories.append(Story(id="story-p1", title="High Priority", priority=StoryPriority.P1, tasks=p1_tasks))
+                if p2_tasks:
+                    stories.append(Story(id="story-p2", title="Nice to Have", priority=StoryPriority.P2, tasks=p2_tasks))
+
+                # If no priority filtering worked, put all in one story
+                if not stories and api_tasks:
+                    stories.append(Story(id="story-main", title="Main Tasks", priority=StoryPriority.P0, tasks=api_tasks))
+
+                # Create single phase for MVP
+                phases = [Phase(
+                    id="phase-1",
+                    name="Implementation",
+                    description="Main implementation phase",
+                    stories=stories,
+                )]
+
+                # Store tasks in workflow for tasks endpoint
+                tasks_data = {
+                    "phases": [p.model_dump(by_alias=True) for p in phases],
+                    "stories": [s.model_dump(by_alias=True) for s in stories],
+                    "tasks": [t.model_dump(by_alias=True) for t in api_tasks],
+                    "dependencies": [d.model_dump(by_alias=True) for d in dependencies_list],
+                }
+                WorkflowManager.update_workflow(workflow["id"], {"tasks_total": task_count, "tasks": tasks_data})
+
                 response_message = f"I've analyzed your requirements and generated {task_count} tasks. Ready for review."
                 response_phase = "complete"
                 response_status = "awaiting_task_approval"
