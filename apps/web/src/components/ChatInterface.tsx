@@ -109,15 +109,19 @@ function FilePreviewBadge({
 }
 
 /**
+ * Quick action suggestions for new conversations.
+ * Defined outside component to avoid recreation on each render.
+ */
+const QUICK_ACTION_SUGGESTIONS = [
+  'Build a todo app',
+  'Create an API',
+  'Design a database',
+] as const;
+
+/**
  * Empty state when no messages.
  */
 function EmptyState({ onQuickAction }: { onQuickAction?: (message: string) => void }) {
-  const suggestions = [
-    'Build a todo app',
-    'Create an API',
-    'Design a database',
-  ];
-
   return (
     <div className="flex flex-col items-center justify-center h-full text-center p-8">
       <div className="w-16 h-16 mb-4 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
@@ -138,7 +142,7 @@ function EmptyState({ onQuickAction }: { onQuickAction?: (message: string) => vo
         into actionable tasks.
       </p>
       <div className="mt-6 flex flex-wrap gap-2 justify-center">
-        {suggestions.map((suggestion) => (
+        {QUICK_ACTION_SUGGESTIONS.map((suggestion) => (
           <button
             key={suggestion}
             onClick={() => onQuickAction?.(suggestion)}
