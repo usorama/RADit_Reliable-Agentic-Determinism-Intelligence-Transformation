@@ -2177,5 +2177,431 @@
       "path": "packages/daw-agents/src/daw_agents/models/ensemble.py"
     },
     "status": "pending"
+  },
+  {
+    "id": "OBS-001",
+    "type": "code",
+    "priority": "P1",
+    "phase": 19,
+    "epic": "Epic 13: Holistic Observability & Self-Healing",
+    "scope": "Production",
+    "description": "Metrics Collection Infrastructure - Deploy Prometheus + exporters",
+    "dependencies": [],
+    "context_files": [
+      "packages/observability/docker/prometheus/prometheus.yml",
+      "packages/observability/exporters/app_exporter.py"
+    ],
+    "instruction": "Implement metrics collection: (1) Deploy Prometheus in Docker with persistent storage, (2) Node Exporter for host metrics, (3) cAdvisor for container metrics, (4) Custom FastAPI metrics endpoint, (5) Redis/Neo4j exporters, (6) 15s scrape for critical, 60s for standard, (7) 15-day retention.",
+    "verification": {
+      "type": "test_pass",
+      "command": "curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets | length'"
+    },
+    "estimated_hours": 6,
+    "status": "pending"
+  },
+  {
+    "id": "OBS-002",
+    "type": "code",
+    "priority": "P1",
+    "phase": 19,
+    "epic": "Epic 13: Holistic Observability & Self-Healing",
+    "scope": "Production",
+    "description": "Centralized Log Aggregation - Deploy Vector for log collection",
+    "dependencies": [],
+    "context_files": [
+      "packages/observability/docker/vector/vector.toml",
+      "packages/observability/collectors/logs.py"
+    ],
+    "instruction": "Implement log aggregation: (1) Deploy Vector for log collection, (2) Parse Docker container logs, (3) Structure logs with JSON parsing, (4) Forward to Loki or Redis Streams, (5) Log rotation and retention, (6) Application log format standardization.",
+    "verification": {
+      "type": "test_pass",
+      "command": "docker logs daw-vector 2>&1 | grep -c 'Log event processed'"
+    },
+    "estimated_hours": 6,
+    "status": "pending"
+  },
+  {
+    "id": "OBS-003",
+    "type": "code",
+    "priority": "P1",
+    "phase": 19,
+    "epic": "Epic 13: Holistic Observability & Self-Healing",
+    "scope": "Production",
+    "description": "Health Check Framework - Unified health probe system",
+    "dependencies": [],
+    "context_files": [
+      "packages/observability/collectors/health.py"
+    ],
+    "instruction": "Implement health checks: (1) Unified HealthChecker class, (2) HTTP, TCP, exec probe types, (3) Configurable thresholds and intervals, (4) Aggregate health endpoint, (5) Dependency health tracking (Neo4j, Redis), (6) Graceful degradation indicators.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/observability/tests/test_health.py -v"
+    },
+    "estimated_hours": 4,
+    "status": "pending"
+  },
+  {
+    "id": "OBS-004",
+    "type": "code",
+    "priority": "P1",
+    "phase": 19,
+    "epic": "Epic 13: Holistic Observability & Self-Healing",
+    "scope": "Production",
+    "description": "Event Correlation Pipeline - Redis Streams for event ingestion",
+    "dependencies": [
+      "OBS-001",
+      "OBS-002"
+    ],
+    "context_files": [
+      "packages/observability/storage/event_store.py"
+    ],
+    "instruction": "Implement event correlation: (1) Redis Streams for real-time events, (2) Metric and log event correlation, (3) Sliding time windows (1m, 5m, 15m, 1h), (4) Event deduplication, (5) Cross-service correlation by trace ID, (6) Event retention and cleanup.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/observability/tests/test_event_store.py -v"
+    },
+    "estimated_hours": 8,
+    "status": "pending"
+  },
+  {
+    "id": "OBS-005",
+    "type": "code",
+    "priority": "P1",
+    "phase": 19,
+    "epic": "Epic 13: Holistic Observability & Self-Healing",
+    "scope": "Production",
+    "description": "Ollama SLM Integration - Local AI inference with Mistral/Phi-3",
+    "dependencies": [],
+    "context_files": [
+      "packages/observability/ai/ollama_client.py",
+      "packages/observability/ai/model_router.py"
+    ],
+    "instruction": "Implement Ollama integration: (1) Deploy Ollama in Docker (CPU or GPU), (2) Load Mistral 7B and Phi-3 Mini, (3) Python client with retry/timeout, (4) Model selection by task urgency, (5) Response parsing with confidence scoring, (6) <500ms for anomaly detection benchmark.",
+    "verification": {
+      "type": "test_pass",
+      "command": "curl -s http://localhost:11434/api/tags | jq '.models | length'"
+    },
+    "estimated_hours": 6,
+    "status": "pending"
+  },
+  {
+    "id": "OBS-006",
+    "type": "code",
+    "priority": "P1",
+    "phase": 19,
+    "epic": "Epic 13: Holistic Observability & Self-Healing",
+    "scope": "Production",
+    "description": "Anomaly Detection Agent - SLM-powered metric/log anomaly detection",
+    "dependencies": [
+      "OBS-004",
+      "OBS-005"
+    ],
+    "context_files": [
+      "packages/observability/ai/agents/anomaly_detector.py",
+      "packages/observability/ai/prompts/anomaly_detection.py"
+    ],
+    "instruction": "Implement anomaly detection: (1) Statistical pre-filter (z-score 3.0), (2) SLM analysis for context, (3) Multi-window analysis (1m/5m/15m/1h), (4) Baseline calculation from history, (5) Confidence threshold for escalation (<70%), (6) Pattern library for known anomalies.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/observability/tests/test_anomaly_detection.py -v"
+    },
+    "estimated_hours": 12,
+    "status": "pending"
+  },
+  {
+    "id": "OBS-007",
+    "type": "code",
+    "priority": "P1",
+    "phase": 19,
+    "epic": "Epic 13: Holistic Observability & Self-Healing",
+    "scope": "Production",
+    "description": "Log Classification Agent - Automatic severity and category classification",
+    "dependencies": [
+      "OBS-002",
+      "OBS-005"
+    ],
+    "context_files": [
+      "packages/observability/ai/agents/log_classifier.py",
+      "packages/observability/ai/prompts/log_classification.py"
+    ],
+    "instruction": "Implement log classification: (1) Severity classification (DEBUG/INFO/WARN/ERROR/CRITICAL), (2) Category tagging (auth, db, api, system), (3) Batch classification for efficiency, (4) Error pattern extraction, (5) Stack trace parsing, (6) <200ms classification latency.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/observability/tests/test_log_classification.py -v"
+    },
+    "estimated_hours": 8,
+    "status": "pending"
+  },
+  {
+    "id": "OBS-008",
+    "type": "code",
+    "priority": "P1",
+    "phase": 19,
+    "epic": "Epic 13: Holistic Observability & Self-Healing",
+    "scope": "Production",
+    "description": "OpenAI Escalation Pipeline - GPT-4o for complex analysis",
+    "dependencies": [
+      "OBS-006",
+      "OBS-007"
+    ],
+    "context_files": [
+      "packages/observability/ai/openai_client.py"
+    ],
+    "instruction": "Implement OpenAI escalation: (1) Escalation triggers (confidence <70%, unknown pattern, multi-component), (2) Context packaging for GPT-4o, (3) Cost tracking per escalation, (4) Response caching for similar issues, (5) Rate limiting (max 10/hour default), (6) Fallback to SLM if OpenAI unavailable.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/observability/tests/test_escalation.py -v"
+    },
+    "estimated_hours": 6,
+    "status": "pending"
+  },
+  {
+    "id": "OBS-009",
+    "type": "code",
+    "priority": "P1",
+    "phase": 19,
+    "epic": "Epic 13: Holistic Observability & Self-Healing",
+    "scope": "Production",
+    "description": "Root Cause Analysis Agent - Multi-signal correlation for RCA",
+    "dependencies": [
+      "OBS-008"
+    ],
+    "context_files": [
+      "packages/observability/ai/agents/rca_agent.py",
+      "packages/observability/ai/prompts/root_cause_analysis.py"
+    ],
+    "instruction": "Implement RCA: (1) Multi-signal correlation (metrics + logs + traces), (2) Dependency graph traversal, (3) Timeline reconstruction, (4) GPT-4o for complex correlation, (5) RCA report generation, (6) Historical similar incident matching, (7) Confidence scoring for root cause.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/observability/tests/test_rca_agent.py -v"
+    },
+    "estimated_hours": 12,
+    "status": "pending"
+  },
+  {
+    "id": "OBS-010",
+    "type": "code",
+    "priority": "P1",
+    "phase": 19,
+    "epic": "Epic 13: Holistic Observability & Self-Healing",
+    "scope": "Production",
+    "description": "Remediation Action Registry - Configurable action definitions",
+    "dependencies": [],
+    "context_files": [
+      "packages/observability/actions/registry.py"
+    ],
+    "instruction": "Implement action registry: (1) YAML-based action definitions, (2) Actions: restart, scale, rollback, clear_cache, (3) Cooldown periods per action, (4) Max attempt limits, (5) Approval requirements, (6) Action validation and dry-run support.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/observability/tests/test_action_registry.py -v"
+    },
+    "estimated_hours": 6,
+    "status": "pending"
+  },
+  {
+    "id": "OBS-011",
+    "type": "code",
+    "priority": "P1",
+    "phase": 19,
+    "epic": "Epic 13: Holistic Observability & Self-Healing",
+    "scope": "Production",
+    "description": "Self-Healing Executor - Automated remediation with safety guardrails",
+    "dependencies": [
+      "OBS-010",
+      "OBS-006"
+    ],
+    "context_files": [
+      "packages/observability/actions/executor.py",
+      "packages/observability/actions/guardrails.py"
+    ],
+    "instruction": "Implement self-healing: (1) Safe action execution via Docker API, (2) Rate limiting (max 3/service/hour), (3) Circuit breaker for repeated failures, (4) Rollback capability, (5) Audit trail logging, (6) Human approval for destructive actions, (7) Healing loop prevention.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/observability/tests/test_self_healing.py -v"
+    },
+    "estimated_hours": 12,
+    "status": "pending"
+  },
+  {
+    "id": "OBS-012",
+    "type": "code",
+    "priority": "P1",
+    "phase": 19,
+    "epic": "Epic 13: Holistic Observability & Self-Healing",
+    "scope": "Production",
+    "description": "Alert Routing Framework - Multi-channel alerting",
+    "dependencies": [
+      "OBS-006"
+    ],
+    "context_files": [
+      "packages/observability/alerting/router.py",
+      "packages/observability/alerting/slack.py"
+    ],
+    "instruction": "Implement alerting: (1) Multi-channel routing (Slack, Email, PagerDuty), (2) Severity-based routing rules, (3) Alert deduplication and grouping, (4) Escalation timers, (5) On-call schedule integration, (6) AI-enhanced alert messages with context.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/observability/tests/test_alerting.py -v"
+    },
+    "estimated_hours": 8,
+    "status": "pending"
+  },
+  {
+    "id": "OBS-013",
+    "type": "code",
+    "priority": "P2",
+    "phase": 19,
+    "epic": "Epic 13: Holistic Observability & Self-Healing",
+    "scope": "Production",
+    "description": "Runbook Automation - Guided remediation playbooks",
+    "dependencies": [
+      "OBS-011"
+    ],
+    "context_files": [
+      "packages/observability/actions/runbooks.py"
+    ],
+    "instruction": "Implement runbooks: (1) YAML-based runbook definitions, (2) Step-by-step guided remediation, (3) AI assistance for decision points, (4) Execution logging, (5) Partial execution and resume, (6) Human checkpoints for critical steps.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/observability/tests/test_runbooks.py -v"
+    },
+    "estimated_hours": 8,
+    "status": "pending"
+  },
+  {
+    "id": "OBS-014",
+    "type": "code",
+    "priority": "P2",
+    "phase": 19,
+    "epic": "Epic 13: Holistic Observability & Self-Healing",
+    "scope": "Production",
+    "description": "Grafana Dashboard Setup - Pre-built monitoring dashboards",
+    "dependencies": [
+      "OBS-001"
+    ],
+    "context_files": [
+      "packages/observability/docker/grafana/dashboards/"
+    ],
+    "instruction": "Implement dashboards: (1) Deploy Grafana in Docker, (2) System health overview dashboard, (3) Performance metrics dashboard, (4) Error rate and log dashboard, (5) Container resource dashboard, (6) Datasource provisioning for Prometheus/Loki.",
+    "verification": {
+      "type": "test_pass",
+      "command": "curl -s http://localhost:3001/api/dashboards | jq '.dashboards | length'"
+    },
+    "estimated_hours": 6,
+    "status": "pending"
+  },
+  {
+    "id": "OBS-015",
+    "type": "code",
+    "priority": "P2",
+    "phase": 19,
+    "epic": "Epic 13: Holistic Observability & Self-Healing",
+    "scope": "Production",
+    "description": "AI Insights Dashboard - Custom UI for AI-generated insights",
+    "dependencies": [
+      "OBS-009"
+    ],
+    "context_files": [
+      "packages/observability/dashboard/api.py",
+      "apps/web/src/components/observability/InsightsDashboard.tsx"
+    ],
+    "instruction": "Implement insights UI: (1) FastAPI endpoint for AI insights, (2) React component for insight display, (3) Real-time insight streaming, (4) Insight history and filtering, (5) Recommendation cards with actions, (6) Confidence indicators.",
+    "verification": {
+      "type": "file_exists",
+      "path": "apps/web/src/components/observability/InsightsDashboard.tsx"
+    },
+    "estimated_hours": 12,
+    "status": "pending"
+  },
+  {
+    "id": "OBS-016",
+    "type": "code",
+    "priority": "P2",
+    "phase": 19,
+    "epic": "Epic 13: Holistic Observability & Self-Healing",
+    "scope": "Production",
+    "description": "Incident Timeline View - Visual timeline of incidents",
+    "dependencies": [
+      "OBS-011",
+      "OBS-012"
+    ],
+    "context_files": [
+      "apps/web/src/components/observability/IncidentTimeline.tsx"
+    ],
+    "instruction": "Implement incident timeline: (1) Timeline visualization component, (2) Event grouping by incident, (3) Action and alert markers, (4) Root cause highlighting, (5) Resolution status tracking, (6) Incident duration and MTTR display.",
+    "verification": {
+      "type": "file_exists",
+      "path": "apps/web/src/components/observability/IncidentTimeline.tsx"
+    },
+    "estimated_hours": 8,
+    "status": "pending"
+  },
+  {
+    "id": "OBS-017",
+    "type": "code",
+    "priority": "P2",
+    "phase": 19,
+    "epic": "Epic 13: Holistic Observability & Self-Healing",
+    "scope": "Production",
+    "description": "Knowledge Base Builder - Store successful resolutions",
+    "dependencies": [
+      "OBS-011"
+    ],
+    "context_files": [
+      "packages/observability/storage/knowledge_base.py"
+    ],
+    "instruction": "Implement knowledge base: (1) Store successful remediation patterns, (2) Pattern matching for similar incidents, (3) Success rate tracking per pattern, (4) Automatic pattern extraction, (5) Neo4j storage for relationships, (6) Pattern recommendation API.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/observability/tests/test_knowledge_base.py -v"
+    },
+    "estimated_hours": 8,
+    "status": "pending"
+  },
+  {
+    "id": "OBS-018",
+    "type": "code",
+    "priority": "P2",
+    "phase": 19,
+    "epic": "Epic 13: Holistic Observability & Self-Healing",
+    "scope": "Production",
+    "description": "Configuration Schema - Project-agnostic configuration format",
+    "dependencies": [
+      "OBS-001",
+      "OBS-005",
+      "OBS-010"
+    ],
+    "context_files": [
+      "packages/observability/config/schema.json",
+      "packages/observability/config/defaults.yaml"
+    ],
+    "instruction": "Implement config schema: (1) JSON Schema for observability config, (2) Default values for common setups, (3) Service discovery configuration, (4) Alert rule templates, (5) Action definitions, (6) Environment variable overrides, (7) Config validation.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pytest packages/observability/tests/test_config.py -v"
+    },
+    "estimated_hours": 6,
+    "status": "pending"
+  },
+  {
+    "id": "OBS-019",
+    "type": "code",
+    "priority": "P3",
+    "phase": 20,
+    "epic": "Epic 13: Holistic Observability & Self-Healing",
+    "scope": "Future",
+    "description": "Standalone Package Extraction - Extract as independent framework",
+    "dependencies": [
+      "OBS-018"
+    ],
+    "context_files": [
+      "packages/observability/"
+    ],
+    "instruction": "Extract standalone package: (1) Remove DAW-specific dependencies, (2) Create pip-installable package, (3) CLI for setup and configuration, (4) Docker Compose template generator, (5) Documentation for standalone use, (6) Example configurations for common stacks.",
+    "verification": {
+      "type": "test_pass",
+      "command": "pip install ./packages/observability && observability --help"
+    },
+    "estimated_hours": 10,
+    "status": "pending"
   }
 ]
